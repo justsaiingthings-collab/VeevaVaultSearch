@@ -702,21 +702,6 @@
         <div class="hint">Default: v24.1 · Check <a href="https://developer.veevavault.com/api/" target="_blank" style="color:var(--c-brand)">developer.veevavault.com</a> for latest.</div>
       </div>
 
-      <div class="field">
-        <label for="proxy-url">Proxy URL <span class="opt">(required for live Vault; leave blank for demo)</span></label>
-        <input
-          type="text"
-          id="proxy-url"
-          placeholder="https://abc123.execute-api.us-east-1.amazonaws.com"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <div class="hint">
-          The base URL of your deployed Lambda proxy. Run <code>proxy/deploy.sh</code> to get this URL.
-          Queries are forwarded server-side — your Vault token never leaves the proxy.
-        </div>
-      </div>
-
     </div>
     <div class="card-footer">
       <div class="spacer"></div>
@@ -910,6 +895,14 @@
 
   <script>
     // ─────────────────────────────────────────────────────────
+    // OPERATOR CONFIG — set this once after running deploy.sh
+    // Customers never see or touch this value.
+    // ─────────────────────────────────────────────────────────
+    const PROXY_URL = (
+      'https://r3ddcs9qhk.execute-api.us-west-1.amazonaws.com'
+    ).replace(/\/$/, '');
+
+    // ─────────────────────────────────────────────────────────
     // STATE
     // ─────────────────────────────────────────────────────────
     const state = {
@@ -1009,8 +1002,7 @@
       state.vaultUrl    = `https://${resolved}.veevavault.com`;
       state.apiVersion  = `v${document.getElementById('api-version').value.replace(/^v/,'')}`;
       state.label       = document.getElementById('conn-label').value.trim() || `${resolved} Vault`;
-      // Normalise proxy URL — strip trailing slash
-      state.proxyUrl    = document.getElementById('proxy-url').value.trim().replace(/\/$/, '');
+      state.proxyUrl = PROXY_URL;
 
       document.getElementById('step2-domain-label').textContent = `${resolved}.veevavault.com`;
       setStep(2);
@@ -1617,9 +1609,8 @@
       state.apiVersion  = conn.apiVersion;
       state.label       = conn.label;
 
-      // Restore proxy URL
-      document.getElementById('proxy-url').value = conn.proxyUrl || '';
-      state.proxyUrl = conn.proxyUrl || '';
+      // Proxy URL is always the operator constant — never stored per-connection
+      state.proxyUrl = PROXY_URL;
 
       // Pre-fill step 2
       selectAuth(conn.authMethod);
@@ -1753,7 +1744,7 @@
       state.apiVersion = quickConn.apiVersion;
       state.username   = quickConn.username;
       state.password   = password;
-      state.proxyUrl   = quickConn.proxyUrl || '';
+      state.proxyUrl   = PROXY_URL;
 
       try {
         const result = await testPasswordAuth();
@@ -1787,7 +1778,7 @@
       state.vaultUrl         = quickConn.vaultUrl;
       state.apiVersion       = quickConn.apiVersion;
       state.label            = quickConn.label;
-      state.proxyUrl         = quickConn.proxyUrl       || '';
+      state.proxyUrl         = PROXY_URL;
       state.username         = quickConn.username        || '';
       state.clientId         = quickConn.clientId        || '';
       state.oauthProfile     = quickConn.oauthProfile    || '';
