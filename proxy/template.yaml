@@ -1,0 +1,151 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  VeevaVaultSearch Proxy — Lambda + HTTP API Gateway
+  Routes VQL queries from the browser to any Vault tenant.
+  Designed to stay within AWS free tier for MVP usage.
+
+# ── Free-tier budget ────────────────────────────────────────────────────────
+# Lambda:          1M requests/month + 400K GB-seconds (always free)
+# HTTP API GW:     1M calls/month free for first 12 months, then $1/million
+# CloudWatch Logs: 5GB ingestion + 5GB storage free
+#
+# At 128MB / ~200ms per query, 1M queries ≈ 25,600 GB-seconds → well inside free tier.
+
+Parameters:
+
+  AllowedOrigin:
+    Type: String
+    Default: '*'
+    Description: >
+      CORS allowed origin. Set to your UI domain in production,
+      e.g. https://yourapp.com. Use * for local development only.
+
+  AllowAnyHost:
+    Type: String
+    Default: '0'
+    AllowedValues: ['0', '1']
+    Description: >
+      Set to "1" to allow non-veevavault.com Vault URLs (on-prem / private tenants).
+
+  RequestTimeoutMs:
+    Type: Number
+    Default: 10000
+    Description: Upstream Vault API timeout in milliseconds.
+
+  LogRetentionDays:
+    Type: Number
+    Default: 30
+    Description: CloudWatch log retention in days (30 = within free tier).
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    MemorySize: 128        # minimum; free tier covers 400K GB-s/month
+    Timeout: 15            # must exceed RequestTimeoutMs + overhead
+    Handler: handler.handler
+    Architectures:
+      - arm64              # Graviton2: 20% cheaper compute, same free-tier quota
+    Environment:
+      Variables:
+        ALLOWED_ORIGIN:     !Ref AllowedOrigin
+        ALLOW_ANY_HOST:     !Ref AllowAnyHost
+        REQUEST_TIMEOUT_MS: !Ref RequestTimeoutMs
+
+Resources:
+
+  # ── HTTP API Gateway ──────────────────────────────────────────────────────
+  # HTTP API (v2) is ~70% cheaper than REST API and has better free-tier limits.
+  VaultProxyApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: '$default'
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowHeaders:
+          - Content-Type
+          - X-Vault-URL
+          - X-Vault-Token
+          - X-Vault-API-Version
+        AllowMethods:
+          - POST
+          - GET
+          - OPTIONS
+        MaxAge: 300
+      # Throttle to protect free tier (500 req/s burst is generous for MVP)
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 100
+        ThrottlingRateLimit:  50
+
+  # ── Lambda function ───────────────────────────────────────────────────────
+  VaultProxyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: vault-search-proxy
+      Description:  Forwards VQL queries from the browser to any Vault tenant
+      CodeUri: .
+      # No VPC needed — Veeva SaaS Vault is publicly accessible via HTTPS.
+      # For on-prem Vault inside a customer VPC, add VpcConfig here.
+      Events:
+        QueryRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VaultProxyApi
+            Path:  /query
+            Method: POST
+        AuthRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VaultProxyApi
+            Path:  /auth
+            Method: POST
+        HealthRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VaultProxyApi
+            Path:  /health
+            Method: GET
+        OAuthSessionRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VaultProxyApi
+            Path:  /oauth/session
+            Method: POST
+        # Explicit OPTIONS routes so API GW forwards preflight to Lambda
+        # (only needed if you want custom preflight logic; CorsConfiguration above
+        #  handles it automatically for most cases)
+
+  # ── CloudWatch log group ──────────────────────────────────────────────────
+  VaultProxyLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:      !Sub '/aws/lambda/${VaultProxyFunction}'
+      RetentionInDays:   !Ref LogRetentionDays
+
+# ── Outputs ───────────────────────────────────────────────────────────────────
+Outputs:
+
+  ProxyBaseUrl:
+    Description: >
+      Base URL for the proxy. Paste this into VaultSearch connect.html as the
+      "Proxy URL" field. Example: https://abc123.execute-api.us-east-1.amazonaws.com
+    Value: !Sub 'https://${VaultProxyApi}.execute-api.${AWS::Region}.amazonaws.com'
+    Export:
+      Name: VaultProxyBaseUrl
+
+  QueryEndpoint:
+    Description: Full URL for VQL query forwarding
+    Value: !Sub 'https://${VaultProxyApi}.execute-api.us-east-1.amazonaws.com/query'
+
+  AuthEndpoint:
+    Description: Full URL for Vault authentication
+    Value: !Sub 'https://${VaultProxyApi}.execute-api.us-east-1.amazonaws.com/auth'
+
+  HealthEndpoint:
+    Description: Health check URL
+    Value: !Sub 'https://${VaultProxyApi}.execute-api.us-east-1.amazonaws.com/health'
+
+  FunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt VaultProxyFunction.Arn

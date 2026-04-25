@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VaultSearch V2 Roadmap — Product Evolution</title>
+  <style>
+    /* ── Tokens ────────────────────────────────────────────── */
+    :root {
+      --ink:       #0D1117;
+      --ink-2:     #3D4451;
+      --ink-3:     #6B7280;
+      --ink-4:     #9CA3AF;
+      --surface:   #FFFFFF;
+      --surface-2: #F8FAFC;
+      --surface-3: #F1F5F9;
+      --border:    #E2E8F0;
+      --brand:     #4A6CF7;
+      --brand-dk:  #3A58D9;
+      --brand-lt:  #EEF1FE;
+      --red:       #EF4444;
+      --red-lt:    #FEF2F2;
+      --amber:     #F59E0B;
+      --amber-lt:  #FFFBEB;
+      --green:     #10B981;
+      --green-lt:  #ECFDF5;
+      --slate:     #64748B;
+      --slate-lt:  #F1F5F9;
+      --font:      -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      --mono:      'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      color: var(--ink);
+      background: var(--surface);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ────────────────────────────────────────────── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    .container-sm { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Nav ───────────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; gap: 0; height: 58px;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; margin-right: auto;
+    }
+    .nav-logo-mark {
+      width: 30px; height: 30px; background: var(--brand);
+      border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    }
+    .nav-logo-mark svg { color: #fff; }
+    .nav-logo-name { font-size: 16px; font-weight: 700; color: var(--ink); }
+    .nav-logo-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+      background: var(--brand-lt); color: var(--brand); padding: 2px 6px; border-radius: 4px;
+    }
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a { font-size: 13.5px; font-weight: 500; color: var(--ink-2); text-decoration: none; transition: color .15s; }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-cta {
+      margin-left: 24px;
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 34px; padding: 0 16px;
+      background: var(--brand); color: #fff;
+      font-size: 13px; font-weight: 600;
+      border-radius: 7px; text-decoration: none;
+      transition: background .15s, transform .15s;
+    }
+    .nav-cta:hover { background: var(--brand-dk); transform: translateY(-1px); }
+
+    /* ── Hero ──────────────────────────────────────────────── */
+    .hero {
+      padding: 96px 0 80px;
+      background: linear-gradient(160deg, #0D1117 0%, #1a1f35 60%, #0f1729 100%);
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 800px 500px at 60% -100px, rgba(74,108,247,.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 1100px; margin: 0 auto; padding: 0 24px;
+      position: relative; z-index: 1;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+      color: var(--brand); background: rgba(74,108,247,.12);
+      border: 1px solid rgba(74,108,247,.25);
+      padding: 5px 12px; border-radius: 20px; margin-bottom: 20px;
+    }
+    .hero-eyebrow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 52px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+      color: #fff;
+      margin-bottom: 22px;
+      max-width: 620px;
+    }
+    .hero-sub {
+      font-size: 17px;
+      line-height: 1.65;
+      color: #94A3B8;
+      margin-bottom: 36px;
+      max-width: 560px;
+    }
+
+    /* ── Section scaffolding ───────────────────────────────── */
+    section { padding: 88px 0; }
+    .section-eyebrow {
+      font-size: 12px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+      color: var(--brand); margin-bottom: 14px;
+    }
+    .section-heading {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800; line-height: 1.15; letter-spacing: -.02em;
+      color: var(--ink); margin-bottom: 16px;
+    }
+    .section-sub {
+      font-size: 17px; line-height: 1.65; color: var(--ink-3);
+      max-width: 560px;
+    }
+    .section-header { margin-bottom: 56px; }
+
+    /* ── V1 vs V2 comparison section ────────────────────────── */
+    .comparison-section { background: var(--surface-2); }
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+    .comparison-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 36px;
+      display: flex; flex-direction: column; gap: 20px;
+    }
+    .comparison-label {
+      font-size: 12px; font-weight: 700; letter-spacing: .5px;
+      text-transform: uppercase; color: var(--ink-3);
+    }
+    .comparison-title {
+      font-size: 22px; font-weight: 800; color: var(--ink);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .comparison-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 700; padding: 4px 10px;
+      border-radius: 4px; letter-spacing: .3px;
+    }
+    .cb-v1 {
+      background: #F1F5F9; color: #475569;
+    }
+    .cb-v2 {
+      background: var(--brand-lt); color: var(--brand);
+    }
+    .comparison-features {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .comparison-feature {
+      display: flex; align-items: flex-start; gap: 10px;
+      font-size: 14px; line-height: 1.55; color: var(--ink-2);
+    }
+    .cf-icon {
+      font-size: 16px; flex-shrink: 0; margin-top: 2px;
+    }
+
+    /* ── Roadmap cards section ─────────────────────────────── */
+    .roadmap-section { background: var(--surface); }
+    .roadmap-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 28px;
+    }
+    .roadmap-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      border-top: 4px solid var(--border);
+      display: flex; flex-direction: column; gap: 16px;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .roadmap-card:hover {
+      box-shadow: 0 8px 32px rgba(0,0,0,.08);
+      transform: translateY(-2px);
+    }
+    .rc-top {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    }
+    .rc-title {
+      font-size: 16px; font-weight: 700; color: var(--ink); flex: 1;
+      line-height: 1.35;
+    }
+    .rc-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 700; padding: 4px 10px;
+      border-radius: 4px; letter-spacing: .3px; white-space: nowrap;
+    }
+    .rc-status-design {
+      background: var(--brand-lt); color: var(--brand);
+    }
+    .rc-status-planned {
+      background: var(--amber-lt); color: #92400E;
+    }
+    .rc-status-research {
+      background: #F1F5F9; color: #475569;
+    }
+
+    /* Border colors by status */
+    .roadmap-card.status-design { border-top-color: var(--brand); }
+    .roadmap-card.status-planned { border-top-color: var(--amber); }
+    .roadmap-card.status-research { border-top-color: var(--slate); }
+
+    .rc-section {
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .rc-section-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .4px;
+      text-transform: uppercase; color: var(--ink-3);
+    }
+    .rc-section-text {
+      font-size: 14px; line-height: 1.6; color: var(--ink-2);
+    }
+    .rc-code {
+      font-size: 12px; font-family: var(--mono);
+      background: var(--surface-2); color: var(--ink);
+      padding: 2px 5px; border-radius: 3px;
+      display: inline;
+    }
+
+    /* ── Principles section ────────────────────────────────── */
+    .principles-section { background: var(--surface-2); }
+    .principles-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    .principle-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .principle-icon {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+    .principle-title {
+      font-size: 15px; font-weight: 700; color: var(--ink);
+    }
+    .principle-desc {
+      font-size: 14px; line-height: 1.6; color: var(--ink-3);
+    }
+
+    /* ── CTA section ───────────────────────────────────────── */
+    .cta-section {
+      background: linear-gradient(135deg, #0D1117 0%, #1a1f35 100%);
+      padding: 96px 0;
+      text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 600px 400px at 50% 50%, rgba(74,108,247,.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-section h2 {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 800; line-height: 1.1; letter-spacing: -.02em;
+      color: #fff; margin-bottom: 16px; position: relative;
+    }
+    .cta-section p { font-size: 17px; color: #94A3B8; margin-bottom: 16px; position: relative; line-height: 1.65; }
+    .cta-actions { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; position: relative; margin-top: 36px; }
+    .btn-cta-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      height: 48px; padding: 0 24px;
+      background: var(--brand); color: #fff;
+      font-size: 15px; font-weight: 600;
+      border-radius: 10px; text-decoration: none;
+      transition: all .15s;
+    }
+    .btn-cta-primary:hover { background: var(--brand-dk); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(74,108,247,.35); }
+    .btn-cta-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      height: 48px; padding: 0 20px;
+      color: #CBD5E1; font-size: 15px; font-weight: 500;
+      border: 1px solid rgba(255,255,255,.12); border-radius: 10px;
+      text-decoration: none; transition: all .15s;
+    }
+    .btn-cta-secondary:hover { background: rgba(255,255,255,.06); color: #fff; }
+    .cta-email {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 15px; font-weight: 500; color: #94A3B8;
+      position: relative;
+    }
+    .cta-email code {
+      font-family: var(--mono); background: rgba(0,0,0,.2);
+      padding: 2px 6px; border-radius: 4px; color: #fff;
+    }
+
+    /* ── Footer ────────────────────────────────────────────── */
+    footer {
+      background: var(--ink);
+      padding: 40px 0;
+    }
+    .footer-inner {
+      max-width: 1100px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    .footer-logo { display: flex; align-items: center; gap: 8px; }
+    .footer-logo-mark { width: 24px; height: 24px; background: var(--brand); border-radius: 5px; display: flex; align-items: center; justify-content: center; }
+    .footer-logo-mark svg { color: #fff; }
+    .footer-logo-name { font-size: 14px; font-weight: 700; color: #fff; }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: #4B5563; text-decoration: none; transition: color .15s; }
+    .footer-links a:hover { color: #9CA3AF; }
+    .footer-copy { font-size: 12px; color: #374151; }
+
+    /* ── Hamburger menu ────────────────────────────────────── */
+    .nav-hamburger {
+      display: none;
+      background: none; border: none; cursor: pointer;
+      padding: 6px; color: var(--ink-2); margin-left: 8px;
+    }
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 12px 0;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      padding: 12px 24px;
+      font-size: 15px; font-weight: 500; color: var(--ink-2);
+      text-decoration: none; border-bottom: 1px solid var(--surface-3);
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
+    .mobile-menu a:hover { background: var(--surface-2); color: var(--ink); }
+
+    /* ── Responsive ────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .comparison-grid { grid-template-columns: 1fr; }
+      .roadmap-grid { grid-template-columns: 1fr; }
+      .principles-grid { grid-template-columns: 1fr; }
+      .nav-links { display: none; }
+      .nav-hamburger { display: flex; }
+    }
+    @media (max-width: 600px) {
+      section { padding: 56px 0; }
+      .hero { padding: 52px 0 48px; }
+      .hero h1 { font-size: 32px; }
+      .hero-sub { font-size: 15px; }
+      .section-heading { font-size: 26px; }
+      .section-sub { font-size: 15px; }
+      .nav-cta { display: none; }
+      .nav-hamburger { display: flex; margin-left: auto; }
+      .container, .container-sm { padding: 0 16px; }
+      .cta-section h2 { font-size: 26px; }
+      .cta-section p { font-size: 15px; }
+      .comparison-card { padding: 24px; }
+      .roadmap-card { padding: 20px; }
+      .principle-card { padding: 20px; }
+      .rc-title { font-size: 15px; }
+      .comparison-title { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <div class="nav-logo-mark">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+        </svg>
+      </div>
+      <span class="nav-logo-name">VaultSearch</span>
+      <span class="nav-logo-badge">Beta</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html#pain">Why VaultSearch</a>
+      <a href="index.html#how">How it works</a>
+      <a href="index.html#compare">Comparison</a>
+      <a href="upcoming.html">Roadmap</a>
+      <a href="docs.html">Docs</a>
+    </div>
+    <a href="demo.html" class="nav-cta">
+      Try Demo
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+    </a>
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
+      <svg id="menu-icon" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobile-menu">
+    <a href="index.html#pain" onclick="toggleMenu()">Why VaultSearch</a>
+    <a href="index.html#how" onclick="toggleMenu()">How it works</a>
+    <a href="index.html#compare" onclick="toggleMenu()">Comparison</a>
+    <a href="upcoming.html">Roadmap</a>
+    <a href="connect.html">Connect Vault</a>
+    <a href="demo.html">Try Demo</a>
+    <a href="docs.html">Documentation</a>
+  </div>
+</nav>
+<script>
+  function toggleMenu() {
+    document.getElementById('mobile-menu').classList.toggle('open');
+  }
+</script>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-eyebrow">
+      <div class="hero-eyebrow-dot"></div>
+      VaultSearch V2: The AI-Safe Evolution
+    </div>
+    <h1>VaultSearch V1 ships without AI.<br>Here's exactly why — and what comes next.</h1>
+    <p class="hero-sub">V1 is deterministic by design. In regulated environments, reproducibility and audit trails are non-negotiable. We're building V2 to add AI capabilities incrementally, only where they can be made safe, explainable, and still fully auditable.</p>
+  </div>
+</section>
+
+<!-- ── V1 vs V2 comparison ────────────────────────────────── -->
+<section class="comparison-section">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Now vs. Next</p>
+      <h2 class="section-heading">What you have, what's coming.</h2>
+    </div>
+
+    <div class="comparison-grid">
+      <!-- V1 Card -->
+      <div class="comparison-card">
+        <div>
+          <p class="comparison-label">Available now</p>
+          <div class="comparison-title">
+            VaultSearch V1
+            <span class="comparison-badge cb-v1">Deterministic</span>
+          </div>
+        </div>
+        <div class="comparison-features">
+          <div class="comparison-feature">
+            <span class="cf-icon">✓</span>
+            <span>Rule-based VQL parser (28 templates)</span>
+          </div>
+          <div class="comparison-feature">
+            <span class="cf-icon">✓</span>
+            <span>Role-based query suggestions</span>
+          </div>
+          <div class="comparison-feature">
+            <span class="cf-icon">✓</span>
+            <span>Full audit log of every search</span>
+          </div>
+          <div class="comparison-feature">
+            <span class="cf-icon">✓</span>
+            <span>Zero external API calls</span>
+          </div>
+          <div class="comparison-feature">
+            <span class="cf-icon">✓</span>
+            <span>Vault-native ACL enforcement</span>
+          </div>
+          <div class="comparison-feature">
+            <span class="cf-icon">✓</span>
+            <span>Same result, every time</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- V2 Card -->
+      <div class="comparison-card">
+        <div>
+          <p class="comparison-label">Coming in V2</p>
+          <div class="comparison-title">
+            VaultSearch V2
+            <span class="comparison-badge cb-v2">AI-Enhanced</span>
+          </div>
+        </div>
+        <div class="comparison-features">
+          <div class="comparison-feature">
+            <span class="cf-icon">✓</span>
+            <span>Everything from V1</span>
+          </div>
+          <div class="comparison-feature">
+            <span class="cf-icon">+</span>
+            <span>Natural language to VQL compiler</span>
+          </div>
+          <div class="comparison-feature">
+            <span class="cf-icon">+</span>
+            <span>Semantic document similarity</span>
+          </div>
+          <div class="comparison-feature">
+            <span class="cf-icon">+</span>
+            <span>Anomaly detection in deviations</span>
+          </div>
+          <div class="comparison-feature">
+            <span class="cf-icon">+</span>
+            <span>Predictive CAPA closure risk</span>
+          </div>
+          <div class="comparison-feature">
+            <span class="cf-icon">+</span>
+            <span>Cross-document knowledge graph</span>
+          </div>
+          <div class="comparison-feature">
+            <span class="cf-icon">+</span>
+            <span>Smart personalized suggestions</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Roadmap cards ─────────────────────────────────────────── -->
+<section class="roadmap-section">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Planned Features</p>
+      <h2 class="section-heading">The V2 roadmap.</h2>
+      <p class="section-sub">Each feature solves a specific pain we've heard from QA teams. Each one includes a technical approach that keeps safety and explainability front-and-center.</p>
+    </div>
+
+    <div class="roadmap-grid">
+
+      <!-- Feature 1: NL to VQL Compiler -->
+      <div class="roadmap-card status-design">
+        <div class="rc-top">
+          <div class="rc-title">Natural Language → VQL Compiler</div>
+          <span class="rc-status rc-status-design">In Design</span>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Problem</div>
+          <div class="rc-section-text">
+            The rule-based parser handles ~80% of queries well. But compound or ambiguous requests fall through: "SOPs modified after the last deviation for Batch 7734" or "deviations that triggered a CAPA still open."
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Approach</div>
+          <div class="rc-section-text">
+            Fine-tuned LLM trained on your Vault's schema and valid VQL patterns. All generated VQL is shown to the user before execution and logged. Human-in-the-loop: user reviews and approves the query.
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">Why Not V1?</div>
+          <div class="rc-section-text">
+            Required a curated VQL training corpus scoped to your Vault's schema. We're building that library now with early customers.
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature 2: Semantic Similarity -->
+      <div class="roadmap-card status-planned">
+        <div class="rc-top">
+          <div class="rc-title">Semantic Document Similarity</div>
+          <span class="rc-status rc-status-planned">Planned Q3 2026</span>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Problem</div>
+          <div class="rc-section-text">
+            Two SOPs that cover the exact same process have wildly different names. Native search misses the relationship. You'd have to know both names to find both documents.
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Approach</div>
+          <div class="rc-section-text">
+            Embedding-based similarity run on document metadata (titles, descriptions, keywords) — not content, to stay within Vault data residency rules. Similar documents surfaced as "Related" cards in the result panel.
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">Why Not V1?</div>
+          <div class="rc-section-text">
+            Embeddings require a vector store outside Vault. Data residency and compliance implications need legal sign-off with your IT and security teams.
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature 3: Anomaly Detection -->
+      <div class="roadmap-card status-research">
+        <div class="rc-top">
+          <div class="rc-title">Anomaly Detection in Deviation Trends</div>
+          <span class="rc-status rc-status-research">Research</span>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Problem</div>
+          <div class="rc-section-text">
+            A spike in deviations for a product line goes unnoticed until the audit. No one is actively watching the pattern — they're only reacting to individual records as they come in.
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Approach</div>
+          <div class="rc-section-text">
+            Time-series analysis on deviation open/close rate by product, site, and severity. Weekly digest surfaced in the search panel for QA Admin role. Threshold-based alerts.
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">Why Not V1?</div>
+          <div class="rc-section-text">
+            Requires historical data aggregation and stable patterns. Piloting with 3 customers first to validate utility before general release.
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature 4: CAPA Closure Risk -->
+      <div class="roadmap-card status-research">
+        <div class="rc-top">
+          <div class="rc-title">Predictive CAPA Closure Risk</div>
+          <span class="rc-status rc-status-research">Research</span>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Problem</div>
+          <div class="rc-section-text">
+            CAPAs go overdue because no one flagged early that this particular CAPA was likely to slip based on the team's historical closure pattern and severity.
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Approach</div>
+          <div class="rc-section-text">
+            Lightweight classification model trained on historical CAPA metadata (severity, assigned team, product line, days-to-close). Risk score on open CAPAs. Feature weights always shown — no black box.
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">Why Not V1?</div>
+          <div class="rc-section-text">
+            Model requires 12+ months of CAPA history per tenant to be reliable. Cold-start problem. Building with customers who have the data depth.
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature 5: Knowledge Graph -->
+      <div class="roadmap-card status-planned">
+        <div class="rc-top">
+          <div class="rc-title">Cross-Document Knowledge Graph</div>
+          <span class="rc-status rc-status-planned">Planned Q4 2026</span>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Problem</div>
+          <div class="rc-section-text">
+            Finding all documents related to a deviation (the SOP it violated, the CAPA it spawned, the training records it triggered) requires 5 separate searches today.
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Approach</div>
+          <div class="rc-section-text">
+            Build a relationship graph from Vault object references and custom links. One-click "Show all related documents" per result. Relationship types displayed (violates, triggers, supersedes, etc.).
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">Why Not V1?</div>
+          <div class="rc-section-text">
+            Graph construction requires custom Vault SDK work and metadata standardization across object types. Scoping the work now.
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature 6: Smart Suggestions -->
+      <div class="roadmap-card status-planned">
+        <div class="rc-top">
+          <div class="rc-title">Smart Query Suggestions from Usage Patterns</div>
+          <span class="rc-status rc-status-planned">Planned Q3 2026</span>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Problem</div>
+          <div class="rc-section-text">
+            Suggested chips are role-based and static. A QA manager who runs "High Severity Deviations" every Monday should see that at the top automatically. Personalization is missing.
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">The Approach</div>
+          <div class="rc-section-text">
+            Frequency-based personalization per user, purely local (no cross-user data or training). Purely sessionStorage + optional server-side persistence (if opted in).
+          </div>
+        </div>
+
+        <div class="rc-section">
+          <div class="rc-section-label">Why Not V1?</div>
+          <div class="rc-section-text">
+            Requires usage tracking infrastructure and privacy controls. Building the architecture now.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── What we won't do ──────────────────────────────────────── -->
+<section class="principles-section">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Trust by Design</p>
+      <h2 class="section-heading">What we won't do.</h2>
+      <p class="section-sub">These commitments are permanent, not marketing. They reflect what regulated environments require.</p>
+    </div>
+
+    <div class="principles-grid">
+      <div class="principle-card">
+        <div class="principle-icon">🔐</div>
+        <div class="principle-title">We won't use AI for access control.</div>
+        <div class="principle-desc">
+          ACL decisions stay deterministic. AI surfaces documents; humans make the access decision. Vault's native permissions always enforce the boundary.
+        </div>
+      </div>
+
+      <div class="principle-card">
+        <div class="principle-icon">📤</div>
+        <div class="principle-title">We won't send content to external LLMs without explicit opt-in.</div>
+        <div class="principle-desc">
+          Document text stays in your instance. If we offer an optional feature that requires external APIs, you'll see it, agree to it, and control it.
+        </div>
+      </div>
+
+      <div class="principle-card">
+        <div class="principle-icon">📋</div>
+        <div class="principle-title">We won't replace VQL in the audit log with "AI decided this."</div>
+        <div class="principle-desc">
+          Every search is logged with human-readable VQL, template name, user, timestamp. Inspectors can read it. No black boxes in the audit trail.
+        </div>
+      </div>
+
+      <div class="principle-card">
+        <div class="principle-icon">💡</div>
+        <div class="principle-title">Every AI action has a human-readable explanation.</div>
+        <div class="principle-desc">
+          Risk scores show feature weights. Generated queries show the VQL before execution. Anomalies link to the data they're based on. No opaque recommendations.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ───────────────────────────────────────────────────── -->
+<section class="cta-section">
+  <div class="container-sm">
+    <h2>Want to pilot a V2 feature?</h2>
+    <p>We're working with early customers on every V2 capability. If your team has the data and use case, let's talk.</p>
+    <div class="cta-actions">
+      <a href="mailto:justsaiingthings@gmail.com" class="btn-cta-primary">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        Email us
+      </a>
+      <a href="connect.html" class="btn-cta-secondary">
+        Connect your Vault →
+      </a>
+    </div>
+    <p style="margin-top: 32px; font-size: 14px; color: #94A3B8;">
+      <span class="cta-email">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        <code>justsaiingthings@gmail.com</code>
+      </span>
+    </p>
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">
+      <div class="footer-logo-mark">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+        </svg>
+      </div>
+      <span class="footer-logo-name">VaultSearch</span>
+    </div>
+    <div class="footer-links">
+      <a href="index.html">Home</a>
+      <a href="demo.html">Demo</a>
+      <a href="connect.html">Connect</a>
+      <a href="docs.html">Docs</a>
+      <a href="upcoming.html">Roadmap</a>
+    </div>
+    <span class="footer-copy">Built for QA teams in regulated environments.</span>
+  </div>
+</footer>
+
+</body>
+</html>

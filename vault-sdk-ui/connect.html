@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connect to Veeva Vault — VaultSearch</title>
+  <style>
+    /* ── Reset & Tokens ──────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --c-bg:        #F5F6FA;
+      --c-surface:   #FFFFFF;
+      --c-border:    #E2E5EE;
+      --c-border-focus: #4A6CF7;
+      --c-text:      #0F172A;
+      --c-text-2:    #475569;
+      --c-text-3:    #94A3B8;
+      --c-brand:     #4A6CF7;
+      --c-brand-dk:  #3A58D9;
+      --c-brand-lt:  #EEF1FE;
+      --c-success:   #10B981;
+      --c-success-lt:#D1FAE5;
+      --c-warn:      #F59E0B;
+      --c-warn-lt:   #FEF3C7;
+      --c-error:     #EF4444;
+      --c-error-lt:  #FEE2E2;
+      --c-oauth:     #6366F1;
+      --c-oauth-lt:  #EEF2FF;
+      --radius:      12px;
+      --radius-sm:   8px;
+      --shadow:      0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+      --shadow-lg:   0 8px 32px rgba(0,0,0,.10);
+      --font:        -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --transition:  180ms cubic-bezier(.4,0,.2,1);
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--c-bg);
+      color: var(--c-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+    }
+
+    /* ── Top Bar ─────────────────────────────────────────────── */
+    .topbar {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .topbar-logo {
+      width: 34px; height: 34px;
+      background: var(--c-brand);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .topbar-logo svg { color: #fff; }
+    .topbar-title { font-weight: 700; font-size: 17px; color: var(--c-text); }
+    .topbar-sub   { font-size: 13px; color: var(--c-text-2); margin-left: auto; }
+
+    /* ── Progress Steps ──────────────────────────────────────── */
+    .steps {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 28px;
+    }
+    .step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      position: relative;
+    }
+    /* Connector runs between dot edges — never touches the label */
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 16px; /* vertical center of the 32px dot */
+      left: calc(50% + 16px);   /* right edge of this step's dot */
+      width: calc(100% - 32px); /* spans to left edge of next step's dot */
+      height: 2px;
+      background: var(--c-border);
+      transition: background var(--transition);
+    }
+    .step.done:not(:last-child)::after { background: var(--c-brand); }
+    .step-dot {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--c-border);
+      background: var(--c-surface);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      color: var(--c-text-3);
+      flex-shrink: 0;
+      transition: all var(--transition);
+      z-index: 1;
+    }
+    .step.active .step-dot {
+      border-color: var(--c-brand);
+      background: var(--c-brand);
+      color: #fff;
+    }
+    .step.done .step-dot {
+      border-color: var(--c-brand);
+      background: var(--c-brand);
+      color: #fff;
+    }
+    .step-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--c-text-3);
+      white-space: nowrap;
+    }
+    .step.active .step-label { color: var(--c-brand); }
+    .step.done  .step-label  { color: var(--c-text-2); }
+
+    /* ── Card ────────────────────────────────────────────────── */
+    .card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 24px 28px 0;
+    }
+    .card-header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--c-text);
+      margin-bottom: 6px;
+    }
+    .card-header p {
+      font-size: 14px;
+      color: var(--c-text-2);
+      line-height: 1.5;
+    }
+    .card-body {
+      padding: 24px 28px;
+    }
+
+    /* ── Form elements ───────────────────────────────────────── */
+    .field { margin-bottom: 18px; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--c-text);
+      margin-bottom: 6px;
+    }
+    label span.opt {
+      font-weight: 400;
+      color: var(--c-text-3);
+      margin-left: 4px;
+    }
+
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-prefix {
+      position: absolute;
+      left: 12px;
+      font-size: 13px;
+      color: var(--c-text-3);
+      pointer-events: none;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .input-suffix {
+      position: absolute;
+      right: 12px;
+      font-size: 13px;
+      color: var(--c-text-3);
+      pointer-events: none;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    select {
+      width: 100%;
+      height: 42px;
+      padding: 0 14px;
+      font-size: 14px;
+      font-family: var(--font);
+      color: var(--c-text);
+      background: #fff;
+      border: 1.5px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      appearance: none;
+    }
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    input[type="email"]:focus,
+    select:focus {
+      border-color: var(--c-border-focus);
+      box-shadow: 0 0 0 3px rgba(74,108,247,.12);
+    }
+    input.has-prefix     { padding-left: 82px; }   /* for "https://" */
+    input.has-prefix-sm  { padding-left: 26px; }   /* for short prefixes like "v" */
+    input.has-suffix     { padding-right: 130px; }
+    input.has-action  { padding-right: 48px; }
+
+    .input-action-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: var(--c-text-3);
+      line-height: 0;
+      border-radius: 4px;
+      transition: color var(--transition);
+    }
+    .input-action-btn:hover { color: var(--c-text-2); }
+
+    .hint {
+      font-size: 12px;
+      color: var(--c-text-3);
+      margin-top: 5px;
+    }
+    .hint.error { color: var(--c-error); }
+    .hint.success { color: var(--c-success); }
+
+    /* ── Domain preview pill ─────────────────────────────────── */
+    .domain-preview {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: var(--c-brand-lt);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+    }
+    .domain-preview.visible { display: flex; }
+    .domain-preview-label { color: var(--c-text-2); }
+    .domain-preview-url   { color: var(--c-brand); font-weight: 600; font-family: monospace; }
+
+    /* ── Auth type cards ─────────────────────────────────────── */
+    .auth-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .auth-card {
+      border: 2px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      padding: 16px 14px;
+      cursor: pointer;
+      transition: all var(--transition);
+      position: relative;
+      user-select: none;
+    }
+    .auth-card:hover { border-color: var(--c-brand); background: var(--c-brand-lt); }
+    .auth-card.selected {
+      border-color: var(--c-brand);
+      background: var(--c-brand-lt);
+    }
+    .auth-card.selected-oauth {
+      border-color: var(--c-oauth);
+      background: var(--c-oauth-lt);
+    }
+    .auth-card input[type="radio"] { position: absolute; opacity: 0; }
+    .auth-card-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 10px;
+      background: var(--c-border);
+      transition: background var(--transition);
+    }
+    .auth-card.selected .auth-card-icon { background: var(--c-brand); }
+    .auth-card.selected-oauth .auth-card-icon { background: var(--c-oauth); }
+    .auth-card-icon svg { color: #fff; }
+    .auth-card-title { font-size: 13px; font-weight: 700; color: var(--c-text); margin-bottom: 3px; }
+    .auth-card-desc  { font-size: 11px; color: var(--c-text-2); line-height: 1.4; }
+    .auth-card-badge {
+      position: absolute; top: 10px; right: 10px;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--c-warn-lt);
+      color: var(--c-warn);
+    }
+    .auth-card-badge.rec {
+      background: var(--c-success-lt);
+      color: var(--c-success);
+    }
+
+    /* ── Auto-detect strip ───────────────────────────────────── */
+    .autodetect-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--c-warn-lt);
+      border: 1px solid #FDE68A;
+      font-size: 12px;
+      color: #92400E;
+      margin-bottom: 18px;
+    }
+    .autodetect-strip.ok  { background: var(--c-success-lt); border-color: #6EE7B7; color: #065F46; }
+    .autodetect-strip.err { background: var(--c-error-lt);   border-color: #FCA5A5; color: #991B1B; }
+    .autodetect-strip svg { flex-shrink: 0; }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,.15);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Divider ─────────────────────────────────────────────── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0;
+      color: var(--c-text-3);
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1;
+      height: 1px; background: var(--c-border);
+    }
+
+    /* ── Panel (collapsible form sections) ───────────────────── */
+    .form-panel { display: none; }
+    .form-panel.visible { display: block; }
+
+    /* ── Info box ────────────────────────────────────────────── */
+    .info-box {
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      background: var(--c-brand-lt);
+      border: 1px solid #C7D2FE;
+      font-size: 12.5px;
+      color: #3730A3;
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+    .info-box a { color: inherit; text-decoration: underline; }
+
+    /* ── Buttons ─────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 20px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all var(--transition);
+      border: none;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--c-brand);
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--c-brand-dk); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      background: var(--c-surface);
+      color: var(--c-text-2);
+      border: 1.5px solid var(--c-border);
+    }
+    .btn-secondary:hover { background: var(--c-bg); }
+
+    .btn-full { width: 100%; }
+    .btn-loading .btn-label { opacity: 0; }
+    .btn-loading::after {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+
+    .card-footer {
+      display: flex;
+      gap: 12px;
+      padding: 0 28px 24px;
+      align-items: center;
+    }
+    .card-footer .spacer { flex: 1; }
+
+    /* ── Connection result ───────────────────────────────────── */
+    .connection-result {
+      padding: 20px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 18px;
+    }
+    .connection-result.success {
+      background: var(--c-success-lt);
+      border: 1px solid #6EE7B7;
+    }
+    .connection-result.error {
+      background: var(--c-error-lt);
+      border: 1px solid #FCA5A5;
+    }
+    .cr-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .cr-icon {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .connection-result.success .cr-icon { background: var(--c-success); }
+    .connection-result.error   .cr-icon { background: var(--c-error); }
+    .cr-icon svg { color: #fff; }
+    .cr-title  { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+    .connection-result.success .cr-title { color: #065F46; }
+    .connection-result.error   .cr-title { color: #991B1B; }
+    .cr-sub { font-size: 12.5px; color: var(--c-text-2); }
+
+    .vault-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .vault-detail {
+      background: rgba(255,255,255,.6);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+    .vd-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--c-text-3); margin-bottom: 2px; }
+    .vd-value { font-size: 13px; font-weight: 600; color: var(--c-text); }
+
+    .error-tip {
+      padding: 10px 12px;
+      background: rgba(255,255,255,.6);
+      border-radius: 6px;
+      font-size: 12.5px;
+      color: #7F1D1D;
+    }
+    .error-tip strong { display: block; margin-bottom: 4px; }
+    .error-tip code {
+      font-family: monospace; font-size: 11px;
+      background: rgba(255,255,255,.7); padding: 1px 4px; border-radius: 3px;
+    }
+
+    /* ── Session token box ───────────────────────────────────── */
+    .token-box {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,.8);
+      border-radius: 6px;
+      border: 1px solid #A7F3D0;
+    }
+    .token-box-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--c-text-2); margin-bottom: 6px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .token-value {
+      font-family: monospace;
+      font-size: 11px;
+      word-break: break-all;
+      color: var(--c-text);
+      max-height: 48px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .copy-btn {
+      background: none; border: none; cursor: pointer;
+      font-size: 11px; font-weight: 600;
+      color: var(--c-brand); padding: 2px 6px;
+      border-radius: 4px;
+      transition: background var(--transition);
+    }
+    .copy-btn:hover { background: var(--c-brand-lt); }
+
+    /* ── Saved connections list ──────────────────────────────── */
+    .saved-connections {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 20px;
+    }
+    .sc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .sc-title { font-size: 13px; font-weight: 700; color: var(--c-text-2); text-transform: uppercase; letter-spacing: .5px; }
+    .sc-add { font-size: 12px; color: var(--c-brand); font-weight: 600; background: none; border: none; cursor: pointer; }
+
+    .conn-item {
+      background: var(--c-surface);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+    .conn-item:hover { border-color: var(--c-brand); box-shadow: var(--shadow); }
+    .conn-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--c-border);
+      flex-shrink: 0;
+    }
+    .conn-dot.active { background: var(--c-success); box-shadow: 0 0 0 3px var(--c-success-lt); }
+    .conn-name { font-size: 13px; font-weight: 700; color: var(--c-text); }
+    .conn-url  { font-size: 12px; color: var(--c-text-3); font-family: monospace; }
+    .conn-auth { font-size: 11px; color: var(--c-text-2); background: var(--c-bg); padding: 2px 6px; border-radius: 4px; margin-left: auto; }
+    .conn-delete { background: none; border: none; cursor: pointer; color: var(--c-text-3); padding: 4px; border-radius: 4px; transition: color var(--transition); }
+    .conn-delete:hover { color: var(--c-error); }
+
+    /* ── Toast ───────────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--c-text);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all .25s;
+      pointer-events: none;
+      z-index: 9999;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: var(--c-success); }
+    .toast.error   { background: var(--c-error); }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 480px) {
+      .auth-cards { grid-template-columns: 1fr; }
+      .vault-details { grid-template-columns: 1fr; }
+      .card-body, .card-header, .card-footer { padding-left: 18px; padding-right: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+      </svg>
+    </div>
+    <span class="topbar-title">VaultSearch</span>
+    <span class="topbar-sub">Vault Connection Setup</span>
+  </div>
+
+  <!-- ── Quick Reconnect (shown when a saved connection exists) ── -->
+  <div id="quick-reconnect" style="display:none; width:100%; max-width:520px; margin-bottom:20px;">
+    <div class="card">
+      <div class="card-header">
+        <h1 id="qr-title">Welcome back</h1>
+        <p id="qr-subtitle">Reconnect to your Vault to continue.</p>
+      </div>
+      <div class="card-body" style="padding-top:16px;">
+        <!-- Password reconnect form -->
+        <div id="qr-password-form">
+          <div class="field" style="margin-bottom:14px;">
+            <label for="qr-password">Password for <span id="qr-username-label" style="color:var(--c-brand)"></span></label>
+            <div class="input-wrap">
+              <input type="password" id="qr-password" class="has-action" placeholder="••••••••" autocomplete="current-password" />
+              <button class="input-action-btn" type="button" onclick="toggleQrPwd()" title="Show/hide">
+                <svg id="qr-eye-show" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <svg id="qr-eye-hide" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:none"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+              </button>
+            </div>
+            <div class="hint error" id="qr-error" style="display:none;"></div>
+          </div>
+          <button class="btn btn-primary btn-full" id="qr-connect-btn" onclick="quickReconnectPassword()">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            Connect
+          </button>
+        </div>
+        <!-- OAuth reconnect form -->
+        <div id="qr-oauth-form" style="display:none;">
+          <div class="info-box" style="margin-bottom:14px;">
+            Signing in as <strong id="qr-oauth-username-label"></strong> via SSO.
+            You'll be redirected to your identity provider.
+          </div>
+          <button class="btn btn-primary btn-full" onclick="quickReconnectOAuth()">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            Sign in with SSO
+          </button>
+        </div>
+      </div>
+      <div class="card-footer" style="padding-top:0;">
+        <button class="btn btn-secondary" onclick="dismissQuickReconnect()" style="font-size:13px;">
+          Use a different account
+        </button>
+        <div class="spacer"></div>
+        <span style="font-size:12px; color:var(--c-text-3);" id="qr-vault-label"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step indicators -->
+  <div class="steps" id="steps" style="display:none;">
+    <div class="step active" id="step-indicator-1">
+      <div class="step-dot" id="step-dot-1">1</div>
+      <span class="step-label">Vault</span>
+    </div>
+    <div class="step" id="step-indicator-2">
+      <div class="step-dot" id="step-dot-2">2</div>
+      <span class="step-label">Auth</span>
+    </div>
+    <div class="step" id="step-indicator-3">
+      <div class="step-dot" id="step-dot-3">3</div>
+      <span class="step-label">Verify</span>
+    </div>
+  </div>
+
+  <!-- ── STEP 1: Vault Identity ─────────────────────────────── -->
+  <div class="card" id="step1">
+    <div class="card-header">
+      <h1>Connect your Vault</h1>
+      <p>Enter your Vault domain to get started. You only need the short domain name — we'll build the full URL.</p>
+    </div>
+    <div class="card-body">
+
+      <div class="field">
+        <label for="vault-domain">Vault domain <span class="opt">(required)</span></label>
+        <div class="input-wrap">
+          <span class="input-prefix">https://</span>
+          <input
+            type="text"
+            id="vault-domain"
+            class="has-prefix has-suffix"
+            placeholder="acme"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <span class="input-suffix">.veevavault.com</span>
+        </div>
+        <div class="domain-preview" id="domain-preview">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101"/><path stroke-linecap="round" stroke-linejoin="round" d="M14.828 14.828a4 4 0 015.656 0l4-4a4 4 0 01-5.656-5.656l-1.1 1.1"/></svg>
+          <span class="domain-preview-label">Will connect to</span>
+          <span class="domain-preview-url" id="domain-preview-url">—</span>
+        </div>
+        <div class="hint" id="domain-hint">e.g. <code>acme</code> for <code>acme.veevavault.com</code></div>
+      </div>
+
+      <div class="field">
+        <label for="conn-label">Connection label <span class="opt">(optional)</span></label>
+        <input type="text" id="conn-label" placeholder="e.g. Acme Production" />
+        <div class="hint">A friendly name shown in your connections list.</div>
+      </div>
+
+      <div class="field">
+        <label for="api-version">API version <span class="opt">(optional)</span></label>
+        <div class="input-wrap">
+          <span class="input-prefix">v</span>
+          <input type="text" id="api-version" class="has-prefix-sm" value="24.1" style="max-width:110px;" />
+        </div>
+        <div class="hint">Default: v24.1 · Check <a href="https://developer.veevavault.com/api/" target="_blank" style="color:var(--c-brand)">developer.veevavault.com</a> for latest.</div>
+      </div>
+
+      <div class="field">
+        <label for="proxy-url">Proxy URL <span class="opt">(required for live Vault; leave blank for demo)</span></label>
+        <input
+          type="text"
+          id="proxy-url"
+          placeholder="https://abc123.execute-api.us-east-1.amazonaws.com"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div class="hint">
+          The base URL of your deployed Lambda proxy. Run <code>proxy/deploy.sh</code> to get this URL.
+          Queries are forwarded server-side — your Vault token never leaves the proxy.
+        </div>
+      </div>
+
+    </div>
+    <div class="card-footer">
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="step1-next" disabled onclick="goStep2()">
+        Continue
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: Auth Method ────────────────────────────────── -->
+  <div class="card" id="step2" style="display:none;">
+    <div class="card-header">
+      <h1>Authentication method</h1>
+      <p>Choose how VaultSearch will authenticate with <strong id="step2-domain-label">your vault</strong>.</p>
+    </div>
+    <div class="card-body">
+
+      <!-- Auto-detect strip (shown while detecting) -->
+      <div class="autodetect-strip" id="autodetect-strip" style="display:none;">
+        <div class="spinner"></div>
+        <span id="autodetect-msg">Detecting auth type for this user…</span>
+      </div>
+
+      <!-- Auth method cards -->
+      <div class="auth-cards">
+        <label class="auth-card" id="card-password" onclick="selectAuth('password')">
+          <input type="radio" name="auth-method" value="password" checked />
+          <div class="auth-card-icon">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          </div>
+          <div class="auth-card-title">Username & Password</div>
+          <div class="auth-card-desc">Vault-native credentials. Quick setup, good for sandbox &amp; dev.</div>
+          <span class="auth-card-badge">Standard</span>
+        </label>
+        <label class="auth-card" id="card-oauth" onclick="selectAuth('oauth')">
+          <input type="radio" name="auth-method" value="oauth" />
+          <div class="auth-card-icon">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <div class="auth-card-title">OAuth 2.0 / SSO</div>
+          <div class="auth-card-desc">Enterprise SSO via your Identity Provider. Recommended for production.</div>
+          <span class="auth-card-badge rec">Recommended</span>
+        </label>
+      </div>
+
+      <!-- ── PASSWORD FORM ─── -->
+      <div class="form-panel visible" id="panel-password">
+        <div class="field">
+          <label for="username">Vault username</label>
+          <input type="email" id="username" placeholder="user@yourcompany.com" autocomplete="username" />
+          <div class="hint">The email address you use to log in to Vault.</div>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="password" class="has-action" placeholder="••••••••" autocomplete="current-password" />
+            <button class="input-action-btn" type="button" onclick="togglePwd()" title="Show/hide password" id="pwd-toggle-btn">
+              <svg id="eye-show" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              <svg id="eye-hide" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:none"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="info-box" id="pwd-autodetect-info" style="display:none;">
+          <strong>🔍 Auto-detected:</strong> This email uses <span id="autodetect-type-label">password</span> authentication on <span id="autodetect-vault-label">your vault</span>.
+        </div>
+      </div>
+
+      <!-- ── OAUTH FORM ─── -->
+      <div class="form-panel" id="panel-oauth">
+        <div class="info-box">
+          <strong>Before you start:</strong> OAuth requires an OAuth 2.0 profile configured in your Vault Admin.
+          Go to <strong>Admin → Settings → OAuth 2.0 / OpenID Connect Profiles</strong> and note your
+          <em>Application Client ID</em>. <a href="https://platform.veevavault.help/en/gr/43329/" target="_blank">Setup guide →</a>
+        </div>
+
+        <div class="field">
+          <label for="oauth-username">Vault username</label>
+          <input type="email" id="oauth-username" placeholder="user@yourcompany.com" autocomplete="username" />
+          <div class="hint">Used to discover your OAuth profile. Enter and press Tab to auto-detect.</div>
+        </div>
+
+        <div class="field">
+          <label for="oauth-client-id">Application Client ID</label>
+          <input type="text" id="oauth-client-id" placeholder="veepharm-clinical-it-client-int0" autocomplete="off" spellcheck="false" />
+          <div class="hint">Found in Vault Admin → OAuth Profiles → Application Client ID.</div>
+        </div>
+
+        <div class="field">
+          <label for="oauth-profile">OAuth Profile label <span class="opt">(optional)</span></label>
+          <input type="text" id="oauth-profile" placeholder="Auto-detected from username" autocomplete="off" />
+          <div class="hint">The profile label configured in Vault. Leave blank to auto-detect via discovery.</div>
+        </div>
+
+        <div class="field">
+          <label for="oauth-as-client-id">Auth Server Client ID <span class="opt">(optional)</span></label>
+          <input type="text" id="oauth-as-client-id" placeholder="e.g. 34524523452345..." autocomplete="off" spellcheck="false" />
+          <div class="hint">The client ID at your Identity Provider (Okta, Azure AD, etc.).</div>
+        </div>
+
+        <div class="field">
+          <label for="oauth-idp-discovery">IdP OpenID Connect Discovery URL</label>
+          <input type="text" id="oauth-idp-discovery" placeholder="https://company.okta.com/.well-known/openid-configuration" autocomplete="off" spellcheck="false" />
+          <div class="hint">
+            Your IdP's discovery document URL.<br>
+            Okta: <code>https://{domain}/.well-known/openid-configuration</code><br>
+            ADFS: <code>https://{server}/adfs/.well-known/openid-configuration</code><br>
+            PingFederate: <code>https://{server}/.well-known/openid-configuration</code>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="oauth-redirect-uri">Redirect URI <span class="opt">(register this in your OAuth app)</span></label>
+          <div class="input-wrap">
+            <input type="text" id="oauth-redirect-uri" readonly style="background:#F8FAFC; color:var(--c-text-2); cursor:default;" class="has-action" />
+            <button class="input-action-btn" type="button" onclick="copyRedirectUri()" title="Copy redirect URI">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="hint">Add this exact URL as an allowed redirect URI in your IdP's OAuth application settings.</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="card-footer">
+      <button class="btn btn-secondary" onclick="goStep1()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        Back
+      </button>
+      <div class="spacer"></div>
+      <!-- Label and action change when auth card is selected -->
+      <button class="btn btn-primary" id="step2-next" onclick="handleStep2Next()">
+        <span id="step2-btn-label">Test connection</span>
+        <svg id="step2-btn-icon-bolt" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <svg id="step2-btn-icon-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="display:none"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Verify & Save ──────────────────────────────── -->
+  <div class="card" id="step3" style="display:none;">
+    <div class="card-header">
+      <h1>Verify connection</h1>
+      <p>Testing your credentials against <strong id="step3-domain-label">vault</strong>…</p>
+    </div>
+    <div class="card-body">
+
+      <!-- Result panel (hidden until test runs) -->
+      <div id="result-panel"></div>
+
+      <!-- Testing spinner state -->
+      <div id="testing-state" style="text-align:center; padding: 28px 0;">
+        <div style="display:inline-flex; align-items:center; gap:12px; color:var(--c-text-2); font-size:14px;">
+          <div class="spinner" style="width:20px;height:20px;"></div>
+          Connecting to Vault…
+        </div>
+      </div>
+
+    </div>
+    <div class="card-footer" id="step3-footer" style="display:none;">
+      <button class="btn btn-secondary" onclick="goStep2()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        Back
+      </button>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary" id="btn-retest" onclick="runTest()" style="display:none;">Retry</button>
+      <button class="btn btn-primary" id="btn-save" onclick="saveConnection()" style="display:none;">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        Save connection
+      </button>
+      <button class="btn btn-primary" id="btn-open-search" onclick="openSearch()" style="display:none;">
+        <span id="btn-open-search-label">Open VaultSearch</span>
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Saved Connections ──────────────────────────────────── -->
+  <div class="saved-connections" id="saved-connections-section" style="display:none;">
+    <div class="sc-header">
+      <span class="sc-title">Saved Connections</span>
+      <button class="sc-add" onclick="resetToStep1()">+ Add new</button>
+    </div>
+    <div id="saved-connections-list"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ─────────────────────────────────────────────────────────
+    // STATE
+    // ─────────────────────────────────────────────────────────
+    const state = {
+      vaultDomain:     '',
+      vaultUrl:        '',
+      apiVersion:      'v24.1',
+      label:           '',
+      proxyUrl:        '',   // Lambda proxy base URL
+      authMethod:      'password',
+      username:        '',
+      password:        '',
+      clientId:        '',
+      oauthProfile:    '',
+      asClientId:      '',
+      idpDiscoveryUrl: '',
+      redirectUri:     '',
+      vaultSessionUrl: '', // Vault OAuth session exchange URL (from discovery)
+      sessionToken:    null,
+      testResult:      null,
+    };
+
+    // Load saved connections from localStorage
+    function loadConnections() {
+      try { return JSON.parse(localStorage.getItem('vault_connections') || '[]'); }
+      catch { return []; }
+    }
+    function saveConnections(conns) {
+      localStorage.setItem('vault_connections', JSON.stringify(conns));
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // DOMAIN INPUT HANDLING
+    // ─────────────────────────────────────────────────────────
+    const domainInput = document.getElementById('vault-domain');
+    const domainPreview = document.getElementById('domain-preview');
+    const domainPreviewUrl = document.getElementById('domain-preview-url');
+    const step1Next = document.getElementById('step1-next');
+
+    domainInput.addEventListener('input', () => {
+      const raw = domainInput.value.trim();
+      const resolved = resolveDomain(raw);
+      if (resolved) {
+        domainPreviewUrl.textContent = `https://${resolved}.veevavault.com`;
+        domainPreview.classList.add('visible');
+        step1Next.disabled = false;
+      } else {
+        domainPreview.classList.remove('visible');
+        step1Next.disabled = true;
+      }
+    });
+
+    domainInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !step1Next.disabled) goStep2();
+    });
+
+    function resolveDomain(raw) {
+      if (!raw) return null;
+      // Strip https://, http://
+      let s = raw.replace(/^https?:\/\//i, '');
+      // Strip .veevavault.com suffix if pasted in full
+      s = s.replace(/\.veevavault\.com.*$/i, '');
+      // Strip trailing slashes
+      s = s.replace(/\/$/, '').trim();
+      // Must be non-empty and look like a valid subdomain
+      if (!s || !/^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?$/.test(s)) return null;
+      return s;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // NAVIGATION
+    // ─────────────────────────────────────────────────────────
+    function setStep(n) {
+      // Show/hide main form and step indicators; hide quick reconnect
+      document.getElementById('quick-reconnect').style.display = 'none';
+      document.getElementById('steps').style.display           = 'flex';
+      ['step1','step2','step3'].forEach((id, i) => {
+        document.getElementById(id).style.display = (i + 1 === n) ? 'block' : 'none';
+      });
+      for (let i = 1; i <= 3; i++) {
+        const ind = document.getElementById(`step-indicator-${i}`);
+        const dot = document.getElementById(`step-dot-${i}`);
+        ind.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
+        dot.innerHTML = i < n
+          ? '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+          : i;
+      }
+    }
+
+    function goStep1() { setStep(1); }
+
+    function goStep2() {
+      const raw = domainInput.value.trim();
+      const resolved = resolveDomain(raw);
+      if (!resolved) return;
+
+      state.vaultDomain = resolved;
+      state.vaultUrl    = `https://${resolved}.veevavault.com`;
+      state.apiVersion  = `v${document.getElementById('api-version').value.replace(/^v/,'')}`;
+      state.label       = document.getElementById('conn-label').value.trim() || `${resolved} Vault`;
+      // Normalise proxy URL — strip trailing slash
+      state.proxyUrl    = document.getElementById('proxy-url').value.trim().replace(/\/$/, '');
+
+      document.getElementById('step2-domain-label').textContent = `${resolved}.veevavault.com`;
+      setStep(2);
+      populateRedirectUri();
+    }
+
+    // Dispatch step 2 "next" to the correct handler based on auth type
+    function handleStep2Next() {
+      if (state.authMethod === 'oauth') {
+        startOAuthFlow();
+      } else {
+        goStep3();
+      }
+    }
+
+    function goStep3() {
+      // Collect auth fields
+      state.authMethod = document.querySelector('input[name="auth-method"]:checked').value;
+      if (state.authMethod === 'password') {
+        state.username = document.getElementById('username').value.trim();
+        state.password = document.getElementById('password').value;
+        if (!state.username || !state.password) {
+          showToast('Enter your username and password first.', 'error');
+          return;
+        }
+      } else {
+        state.username    = document.getElementById('oauth-username').value.trim();
+        state.clientId    = document.getElementById('oauth-client-id').value.trim();
+        state.oauthProfile = document.getElementById('oauth-profile').value.trim();
+        state.asClientId  = document.getElementById('oauth-as-client-id').value.trim();
+        if (!state.username || !state.clientId) {
+          showToast('Enter your username and Application Client ID for OAuth.', 'error');
+          return;
+        }
+      }
+
+      document.getElementById('step3-domain-label').textContent = state.vaultUrl.replace('https://','');
+      setStep(3);
+
+      // Reset result panel
+      document.getElementById('result-panel').innerHTML = '';
+      document.getElementById('testing-state').style.display = 'block';
+      document.getElementById('step3-footer').style.display = 'none';
+
+      runTest();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // AUTH CARD SELECTION
+    // ─────────────────────────────────────────────────────────
+    function selectAuth(type) {
+      state.authMethod = type;
+      document.getElementById('card-password').className = 'auth-card' + (type === 'password' ? ' selected' : '');
+      document.getElementById('card-oauth').className    = 'auth-card' + (type === 'oauth' ? ' selected-oauth' : '');
+      document.getElementById('panel-password').className = 'form-panel' + (type === 'password' ? ' visible' : '');
+      document.getElementById('panel-oauth').className    = 'form-panel' + (type === 'oauth'    ? ' visible' : '');
+
+      // Update step 2 button label/icon based on auth type
+      const labelEl = document.getElementById('step2-btn-label');
+      const boltEl  = document.getElementById('step2-btn-icon-bolt');
+      const arrowEl = document.getElementById('step2-btn-icon-arrow');
+      if (type === 'oauth') {
+        labelEl.textContent = 'Authorize with SSO';
+        boltEl.style.display  = 'none';
+        arrowEl.style.display = '';
+      } else {
+        labelEl.textContent = 'Test connection';
+        boltEl.style.display  = '';
+        arrowEl.style.display = 'none';
+      }
+    }
+    selectAuth('password'); // default
+
+    // Auto-populate the redirect URI whenever step 2 is shown
+    function populateRedirectUri() {
+      const redirectUri = window.location.origin
+        + window.location.pathname.replace(/\/[^/]*$/, '/oauth-callback.html');
+      document.getElementById('oauth-redirect-uri').value = redirectUri;
+      state.redirectUri = redirectUri;
+    }
+
+    function copyRedirectUri() {
+      const val = document.getElementById('oauth-redirect-uri').value;
+      if (val) navigator.clipboard.writeText(val).then(() => showToast('Redirect URI copied!', 'success'));
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // PASSWORD SHOW / HIDE
+    // ─────────────────────────────────────────────────────────
+    function togglePwd() {
+      const inp = document.getElementById('password');
+      const isText = inp.type === 'text';
+      inp.type = isText ? 'password' : 'text';
+      document.getElementById('eye-show').style.display = isText ? '' : 'none';
+      document.getElementById('eye-hide').style.display = isText ? 'none' : '';
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // AUTH TYPE DISCOVERY (real API call to Vault)
+    // ─────────────────────────────────────────────────────────
+    const usernameInput = document.getElementById('username');
+    const oauthUsernameInput = document.getElementById('oauth-username');
+
+    usernameInput.addEventListener('blur', () => autoDetectAuthType(usernameInput.value.trim()));
+
+    async function autoDetectAuthType(email) {
+      if (!email || !state.vaultDomain) return;
+      const strip = document.getElementById('autodetect-strip');
+      const msg   = document.getElementById('autodetect-msg');
+      strip.style.display = 'flex';
+      strip.className = 'autodetect-strip';
+      msg.textContent = `Detecting auth type for ${email}…`;
+
+      try {
+        const discoveryUrl = `${state.vaultUrl}/auth/discovery?username=${encodeURIComponent(email)}&client_id=vaultsearch-connect`;
+        const resp = await fetchWithTimeout(discoveryUrl, { method: 'GET' }, 6000);
+
+        if (resp.ok) {
+          const data = await resp.json();
+          const authType = data.data?.auth_type || data.auth_type;
+          if (authType === 'sso') {
+            strip.className = 'autodetect-strip ok';
+            msg.textContent = `SSO detected — switching to OAuth 2.0 flow.`;
+            selectAuth('oauth');
+            document.getElementById('oauth-username').value = email;
+            // Populate profile label if returned
+            if (data.data?.auth_profiles?.length) {
+              const profiles = data.data.auth_profiles;
+              document.getElementById('oauth-profile').value = profiles[0].label || '';
+              document.getElementById('oauth-as-client-id').value = profiles[0].as_client_id || '';
+              // Capture the Vault session exchange URL for this profile
+              state.vaultSessionUrl = profiles[0].vault_session_id_url
+                || `${state.vaultUrl}/auth/oauth/session/${encodeURIComponent(profiles[0].label || '')}`;
+            }
+            document.getElementById('pwd-autodetect-info').style.display = 'none';
+          } else {
+            strip.className = 'autodetect-strip ok';
+            msg.textContent = `Password auth confirmed for this vault.`;
+            document.getElementById('pwd-autodetect-info').style.display = 'block';
+            document.getElementById('autodetect-type-label').textContent = 'password';
+            document.getElementById('autodetect-vault-label').textContent = state.vaultDomain;
+          }
+        } else {
+          strip.className = 'autodetect-strip err';
+          msg.textContent = `Could not auto-detect (${resp.status}). Select method manually.`;
+        }
+      } catch (err) {
+        strip.className = 'autodetect-strip err';
+        msg.textContent = `Auto-detect unavailable. Select auth method manually.`;
+      }
+
+      setTimeout(() => { strip.style.display = 'none'; }, 5000);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // OAUTH 2.0 PKCE FLOW
+    // ─────────────────────────────────────────────────────────
+
+    // Generate a cryptographically random code verifier (RFC 7636)
+    function generateCodeVerifier() {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      return btoa(String.fromCharCode(...array))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    // SHA-256 code challenge from verifier
+    async function generateCodeChallenge(verifier) {
+      const data   = new TextEncoder().encode(verifier);
+      const digest = await crypto.subtle.digest('SHA-256', data);
+      return btoa(String.fromCharCode(...new Uint8Array(digest)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    }
+
+    // Generate a random state nonce for CSRF protection
+    function generateState() {
+      const array = new Uint8Array(16);
+      crypto.getRandomValues(array);
+      return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function startOAuthFlow() {
+      // Collect OAuth fields
+      state.username        = document.getElementById('oauth-username').value.trim();
+      state.clientId        = document.getElementById('oauth-client-id').value.trim();
+      state.oauthProfile    = document.getElementById('oauth-profile').value.trim();
+      state.asClientId      = document.getElementById('oauth-as-client-id').value.trim();
+      state.idpDiscoveryUrl = document.getElementById('oauth-idp-discovery').value.trim();
+      state.redirectUri     = document.getElementById('oauth-redirect-uri').value.trim();
+
+      if (!state.username)        { showToast('Enter your Vault username.', 'error'); return; }
+      if (!state.clientId)        { showToast('Enter the Application Client ID.', 'error'); return; }
+      if (!state.idpDiscoveryUrl) { showToast('Enter your IdP OpenID Connect Discovery URL.', 'error'); return; }
+
+      // ── Fetch IdP discovery document ──────────────────────────────────
+      let idpMeta;
+      try {
+        const resp = await fetchWithTimeout(state.idpDiscoveryUrl, { method: 'GET' }, 8000);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        idpMeta = await resp.json();
+      } catch (err) {
+        showToast(`Could not fetch IdP discovery document: ${err.message}`, 'error');
+        return;
+      }
+
+      const authEndpoint  = idpMeta.authorization_endpoint;
+      const tokenEndpoint = idpMeta.token_endpoint;
+
+      if (!authEndpoint || !tokenEndpoint) {
+        showToast('IdP discovery document is missing authorization_endpoint or token_endpoint.', 'error');
+        return;
+      }
+
+      // ── Build PKCE parameters ─────────────────────────────────────────
+      const codeVerifier    = generateCodeVerifier();
+      const codeChallenge   = await generateCodeChallenge(codeVerifier);
+      const oauthState      = generateState();
+
+      // Derive vault session URL if not already captured from discovery
+      if (!state.vaultSessionUrl && state.oauthProfile) {
+        state.vaultSessionUrl = `${state.vaultUrl}/auth/oauth/session/${encodeURIComponent(state.oauthProfile)}`;
+      }
+
+      // ── Store OAuth context in sessionStorage (single use) ─────────────
+      sessionStorage.setItem('oauth_state',             oauthState);
+      sessionStorage.setItem('oauth_code_verifier',     codeVerifier);
+      sessionStorage.setItem('oauth_token_endpoint',    tokenEndpoint);
+      sessionStorage.setItem('oauth_client_id',         state.clientId);
+      sessionStorage.setItem('oauth_vault_session_url', state.vaultSessionUrl);
+      sessionStorage.setItem('oauth_proxy_url',         state.proxyUrl);
+      sessionStorage.setItem('oauth_vault_url',         state.vaultUrl);
+      sessionStorage.setItem('oauth_api_version',       state.apiVersion);
+      sessionStorage.setItem('oauth_redirect_uri',      state.redirectUri);
+
+      // ── Build authorization URL and redirect ──────────────────────────
+      const authUrl = new URL(authEndpoint);
+      authUrl.searchParams.set('response_type',          'code');
+      authUrl.searchParams.set('client_id',              state.clientId);
+      authUrl.searchParams.set('redirect_uri',           state.redirectUri);
+      authUrl.searchParams.set('scope',                  'openid email profile');
+      authUrl.searchParams.set('state',                  oauthState);
+      authUrl.searchParams.set('code_challenge',         codeChallenge);
+      authUrl.searchParams.set('code_challenge_method',  'S256');
+      if (state.username) authUrl.searchParams.set('login_hint', state.username);
+
+      window.location.href = authUrl.toString();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // CONNECTION TEST
+    // ─────────────────────────────────────────────────────────
+    async function runTest() {
+      document.getElementById('result-panel').innerHTML = '';
+      document.getElementById('testing-state').style.display = 'block';
+      document.getElementById('step3-footer').style.display = 'none';
+      document.getElementById('btn-save').style.display = 'none';
+      document.getElementById('btn-retest').style.display = 'none';
+      document.getElementById('btn-open-search').style.display = 'none';
+
+      try {
+        let result;
+        if (state.authMethod === 'password') {
+          result = await testPasswordAuth();
+        } else {
+          result = await testOAuthAuth();
+        }
+        renderResult(result);
+      } catch (err) {
+        renderResult({ success: false, error: 'NETWORK_ERROR', message: err.message });
+      }
+    }
+
+    async function testPasswordAuth() {
+      // ── Route through Lambda proxy (production) ───────────────
+      // When a proxy URL is configured, POST JSON to {proxy}/auth
+      // with X-Vault-URL header.  The proxy handles CORS and
+      // forwards form-encoded credentials to Vault server-side.
+      //
+      // Without a proxy URL (demo / local dev), call Vault directly —
+      // this only works if Vault allows CORS from this origin (rare)
+      // or if running on the same domain.
+      const useProxy = !!state.proxyUrl;
+
+      let endpoint, requestHeaders, requestBody;
+
+      if (useProxy) {
+        endpoint = `${state.proxyUrl}/auth`;
+        requestHeaders = {
+          'Content-Type':          'application/json',
+          'Accept':                'application/json',
+          'X-Vault-URL':           state.vaultUrl,
+          'X-Vault-API-Version':   state.apiVersion,
+        };
+        requestBody = JSON.stringify({
+          username:   state.username,
+          password:   state.password,
+          apiVersion: state.apiVersion,
+        });
+      } else {
+        // Direct call — demo / dev only
+        endpoint = `${state.vaultUrl}/api/${state.apiVersion}/auth`;
+        requestHeaders = {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept':       'application/json',
+        };
+        requestBody = new URLSearchParams({
+          username: state.username,
+          password: state.password,
+        }).toString();
+      }
+
+      try {
+        const resp = await fetchWithTimeout(endpoint, {
+          method:  'POST',
+          headers: requestHeaders,
+          body:    requestBody,
+        }, 10000);
+
+        const data = await resp.json();
+
+        if (data.responseStatus === 'SUCCESS' && data.sessionId) {
+          state.sessionToken = data.sessionId;
+          return {
+            success: true,
+            sessionId: data.sessionId,
+            userId:   data.userId,
+            vaultId:  data.vaultId,
+            vaultIds: data.vaultIds || [],
+          };
+        } else {
+          const errType = data.errors?.[0]?.type || data.error || 'AUTH_ERROR';
+          const errMsg  = data.errors?.[0]?.message || data.error || data.responseStatus || 'Authentication failed';
+          return { success: false, error: errType, message: errMsg, rawStatus: resp.status };
+        }
+      } catch (networkErr) {
+        // Could not reach endpoint — fall back to simulation for demo domains
+        if (isSimulatedDomain()) return simulateSuccess();
+        throw networkErr;
+      }
+    }
+
+    async function testOAuthAuth() {
+      // Step 1: Call discovery endpoint to get OAuth profile
+      const discoveryUrl = `${state.vaultUrl}/auth/discovery?username=${encodeURIComponent(state.username)}&client_id=${encodeURIComponent(state.clientId)}`;
+      try {
+        const resp = await fetchWithTimeout(discoveryUrl, { method: 'GET', headers: { Accept: 'application/json' }}, 8000);
+        const data = await resp.json();
+
+        if (resp.ok && (data.data?.auth_type === 'sso' || data.auth_type === 'sso')) {
+          const profiles = data.data?.auth_profiles || [];
+          return {
+            success: true,
+            oauthReady: true,
+            profiles,
+            note: 'OAuth profile discovered. Token exchange requires browser redirect — use the "Open VaultSearch" button to complete sign-in.',
+            sessionId: null,
+          };
+        } else if (resp.ok) {
+          return { success: false, error: 'OAUTH_NOT_CONFIGURED', message: 'This user does not have an SSO/OAuth profile configured in Vault. Check Admin → OAuth Profiles.' };
+        } else {
+          return { success: false, error: `HTTP_${resp.status}`, message: data.errors?.[0]?.message || 'Discovery failed' };
+        }
+      } catch (networkErr) {
+        if (isSimulatedDomain()) return simulateOAuthSuccess();
+        throw networkErr;
+      }
+    }
+
+    function isSimulatedDomain() {
+      // Allow demo/simulation for non-reachable domains (e.g. localhost demo)
+      return ['demo', 'test', 'sandbox', 'localhost', 'example'].some(d =>
+        state.vaultDomain.toLowerCase().includes(d)
+      );
+    }
+
+    function simulateSuccess() {
+      state.sessionToken = 'DEMO_' + Math.random().toString(36).slice(2).toUpperCase().repeat(3).slice(0, 60);
+      return {
+        success: true,
+        simulated: true,
+        sessionId: state.sessionToken,
+        userId: 'demo.user@example.com',
+        vaultId: '100001',
+        vaultIds: [{ id: '100001', name: `${state.vaultDomain} (Demo)` }],
+      };
+    }
+
+    function simulateOAuthSuccess() {
+      return {
+        success: true,
+        oauthReady: true,
+        simulated: true,
+        profiles: [{ label: 'Demo SSO', as_client_id: state.asClientId || 'demo-as-client-id' }],
+        note: 'Demo mode: OAuth discovery simulated. In production, a browser redirect to your IdP would follow.',
+        sessionId: null,
+      };
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // RENDER RESULT
+    // ─────────────────────────────────────────────────────────
+    function renderResult(result) {
+      document.getElementById('testing-state').style.display = 'none';
+      document.getElementById('step3-footer').style.display = 'flex';
+
+      const panel = document.getElementById('result-panel');
+      state.testResult = result;
+
+      if (result.success) {
+        const vaultName = result.vaultIds?.[0]?.name || `${state.vaultDomain} Vault`;
+        const tokenMasked = result.sessionId
+          ? result.sessionId.slice(0, 12) + '…' + result.sessionId.slice(-8)
+          : null;
+
+        panel.innerHTML = `
+          <div class="connection-result success">
+            <div class="cr-header">
+              <div class="cr-icon">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+              </div>
+              <div>
+                <div class="cr-title">Connection successful${result.simulated ? ' (Demo)' : ''}</div>
+                <div class="cr-sub">${result.oauthReady ? result.note : `Authenticated as ${state.username}`}</div>
+              </div>
+            </div>
+            <div class="vault-details">
+              <div class="vault-detail">
+                <div class="vd-label">Vault</div>
+                <div class="vd-value">${escHtml(vaultName)}</div>
+              </div>
+              <div class="vault-detail">
+                <div class="vd-label">Auth method</div>
+                <div class="vd-value">${state.authMethod === 'oauth' ? 'OAuth 2.0' : 'Password'}</div>
+              </div>
+              <div class="vault-detail">
+                <div class="vd-label">API version</div>
+                <div class="vd-value">${escHtml(state.apiVersion)}</div>
+              </div>
+              <div class="vault-detail">
+                <div class="vd-label">User ID</div>
+                <div class="vd-value">${escHtml(result.userId || state.username)}</div>
+              </div>
+            </div>
+            ${tokenMasked ? `
+            <div class="token-box">
+              <div class="token-box-label">
+                Session Token
+                <button class="copy-btn" onclick="copyToken()">Copy</button>
+              </div>
+              <div class="token-value" id="token-display">${escHtml(tokenMasked)}</div>
+            </div>` : ''}
+          </div>`;
+
+        document.getElementById('btn-save').style.display = '';
+        document.getElementById('btn-open-search').style.display = '';
+        document.getElementById('btn-open-search-label').textContent = result.sessionId ? 'Open VaultSearch' : 'Try Demo';
+
+      } else {
+        const tips = errorTips(result.error, result.message);
+        panel.innerHTML = `
+          <div class="connection-result error">
+            <div class="cr-header">
+              <div class="cr-icon">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </div>
+              <div>
+                <div class="cr-title">Connection failed</div>
+                <div class="cr-sub">${escHtml(result.message || 'Unknown error')}</div>
+              </div>
+            </div>
+            <div class="error-tip">
+              <strong>What to check</strong>
+              ${tips}
+            </div>
+          </div>`;
+
+        document.getElementById('btn-retest').style.display = '';
+      }
+    }
+
+    function errorTips(errorCode, message) {
+      const code = (errorCode || '').toUpperCase();
+      const msg  = (message || '').toLowerCase();
+
+      if (code === 'NETWORK_ERROR' || msg.includes('fetch') || msg.includes('network')) {
+        return `Vault URL <code>${state.vaultUrl}</code> is unreachable. Check:<br>
+          1. The domain spelling is correct<br>
+          2. You're connected to VPN if Vault is on a private network<br>
+          3. Try opening the URL in your browser`;
+      }
+      if (code.includes('AUTH') || msg.includes('invalid') || msg.includes('credential') || msg.includes('password')) {
+        return `Username or password is incorrect.<br>
+          1. Try logging into <a href="${state.vaultUrl}" target="_blank">Vault directly</a> to verify<br>
+          2. Check your account hasn't been locked<br>
+          3. If using SSO, switch to <strong>OAuth 2.0</strong> auth method`;
+      }
+      if (code === 'OAUTH_NOT_CONFIGURED') {
+        return `OAuth profile not found for this user.<br>
+          1. Ask your Vault Admin to configure an OAuth 2.0 profile<br>
+          2. Or switch to <strong>Username &amp; Password</strong> auth<br>
+          3. <a href="https://platform.veevavault.help/en/gr/43329/" target="_blank">OAuth setup guide →</a>`;
+      }
+      if (code.startsWith('HTTP_4')) {
+        return `HTTP ${code.replace('HTTP_', '')} — check your Application Client ID and vault domain.`;
+      }
+      return `Error code: <code>${escHtml(errorCode || 'UNKNOWN')}</code><br>${escHtml(message || '')}`;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // SAVE CONNECTION
+    // ─────────────────────────────────────────────────────────
+    function saveConnection() {
+      const conn = {
+        id:          crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
+        label:       state.label,
+        vaultDomain: state.vaultDomain,
+        vaultUrl:    state.vaultUrl,
+        apiVersion:  state.apiVersion,
+        proxyUrl:        state.proxyUrl,
+        authMethod:      state.authMethod,
+        username:        state.username,
+        clientId:        state.clientId,
+        oauthProfile:    state.oauthProfile,
+        asClientId:      state.asClientId,
+        idpDiscoveryUrl: state.idpDiscoveryUrl,
+        vaultSessionUrl: state.vaultSessionUrl,
+        savedAt:         new Date().toISOString(),
+        // Never persist the session token or password
+      };
+
+      const conns = loadConnections();
+      // Replace if same domain already saved
+      const idx = conns.findIndex(c => c.vaultDomain === conn.vaultDomain);
+      if (idx >= 0) conns[idx] = conn; else conns.push(conn);
+      saveConnections(conns);
+
+      showToast('Connection saved!', 'success');
+      document.getElementById('btn-save').style.display = 'none';
+      renderSavedConnections();
+    }
+
+    function openSearch() {
+      if (state.sessionToken) {
+        // Live: pass credentials via sessionStorage (tab-scoped, cleared on close)
+        sessionStorage.setItem('vault_session_token', state.sessionToken);
+        sessionStorage.setItem('vault_base_url',      state.vaultUrl);
+        sessionStorage.setItem('vault_api_version',   state.apiVersion);
+        // Proxy URL — search-panel.html routes all VQL through this
+        if (state.proxyUrl) {
+          sessionStorage.setItem('vault_proxy_url', state.proxyUrl);
+        } else {
+          sessionStorage.removeItem('vault_proxy_url');
+        }
+        window.open('search-panel.html', '_blank');
+      } else {
+        // No token (OAuth not yet exchanged, or demo): open demo route
+        window.open('demo.html', '_blank');
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // SAVED CONNECTIONS LIST
+    // ─────────────────────────────────────────────────────────
+    function renderSavedConnections() {
+      const conns = loadConnections();
+      const section = document.getElementById('saved-connections-section');
+      const list    = document.getElementById('saved-connections-list');
+
+      if (conns.length === 0) { section.style.display = 'none'; return; }
+
+      section.style.display = 'block';
+      list.innerHTML = conns.map(c => `
+        <div class="conn-item" onclick="loadConnection('${escHtml(c.id)}')">
+          <div class="conn-dot"></div>
+          <div>
+            <div class="conn-name">${escHtml(c.label)}</div>
+            <div class="conn-url">${escHtml(c.vaultUrl)}</div>
+          </div>
+          <span class="conn-auth">${c.authMethod === 'oauth' ? 'OAuth 2.0' : 'Password'}</span>
+          <button class="conn-delete" title="Remove" onclick="event.stopPropagation(); deleteConnection('${escHtml(c.id)}')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function loadConnection(id) {
+      const conn = loadConnections().find(c => c.id === id);
+      if (!conn) return;
+      // Pre-fill step 1
+      document.getElementById('vault-domain').value = conn.vaultDomain;
+      document.getElementById('conn-label').value   = conn.label;
+      document.getElementById('api-version').value  = conn.apiVersion.replace(/^v/,'');
+      domainInput.dispatchEvent(new Event('input'));
+
+      state.vaultDomain = conn.vaultDomain;
+      state.vaultUrl    = conn.vaultUrl;
+      state.apiVersion  = conn.apiVersion;
+      state.label       = conn.label;
+
+      // Restore proxy URL
+      document.getElementById('proxy-url').value = conn.proxyUrl || '';
+      state.proxyUrl = conn.proxyUrl || '';
+
+      // Pre-fill step 2
+      selectAuth(conn.authMethod);
+      document.getElementById('username').value           = conn.username        || '';
+      document.getElementById('oauth-username').value     = conn.username        || '';
+      document.getElementById('oauth-client-id').value    = conn.clientId        || '';
+      document.getElementById('oauth-profile').value      = conn.oauthProfile    || '';
+      document.getElementById('oauth-as-client-id').value = conn.asClientId      || '';
+      document.getElementById('oauth-idp-discovery').value = conn.idpDiscoveryUrl || '';
+      document.querySelector(`input[name="auth-method"][value="${conn.authMethod}"]`).checked = true;
+      state.vaultSessionUrl  = conn.vaultSessionUrl  || '';
+      state.idpDiscoveryUrl  = conn.idpDiscoveryUrl  || '';
+      state.asClientId       = conn.asClientId       || '';
+
+      setStep(2);
+      document.getElementById('step2-domain-label').textContent = conn.vaultDomain + '.veevavault.com';
+      showToast(`Loaded: ${conn.label}`, 'success');
+    }
+
+    function deleteConnection(id) {
+      const conns = loadConnections().filter(c => c.id !== id);
+      saveConnections(conns);
+      renderSavedConnections();
+      showToast('Connection removed.', '');
+    }
+
+    function resetToStep1() {
+      setStep(1);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // UTILITIES
+    // ─────────────────────────────────────────────────────────
+    async function fetchWithTimeout(url, options, timeoutMs) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await fetch(url, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function copyToken() {
+      if (state.sessionToken) {
+        navigator.clipboard.writeText(state.sessionToken).then(() => showToast('Token copied!', 'success'));
+      }
+    }
+
+    let toastTimer;
+    function showToast(msg, type) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast show' + (type ? ` ${type}` : '');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.className = 'toast', 3000);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // QUICK RECONNECT
+    // ─────────────────────────────────────────────────────────
+
+    // The most-recently-saved connection, loaded on page init
+    let quickConn = null;
+
+    function initQuickReconnect() {
+      const conns = loadConnections();
+      if (!conns.length) return;
+
+      // Use the most recently saved connection
+      quickConn = conns.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt))[0];
+
+      const qrEl = document.getElementById('quick-reconnect');
+      document.getElementById('qr-title').textContent    = `Welcome back`;
+      document.getElementById('qr-subtitle').textContent = `Reconnect to ${quickConn.label || quickConn.vaultDomain}`;
+      document.getElementById('qr-vault-label').textContent = quickConn.vaultUrl?.replace('https://','') || '';
+
+      if (quickConn.authMethod === 'oauth') {
+        document.getElementById('qr-password-form').style.display = 'none';
+        document.getElementById('qr-oauth-form').style.display    = '';
+        document.getElementById('qr-oauth-username-label').textContent = quickConn.username || quickConn.vaultDomain;
+      } else {
+        document.getElementById('qr-password-form').style.display = '';
+        document.getElementById('qr-oauth-form').style.display    = 'none';
+        document.getElementById('qr-username-label').textContent  = quickConn.username || '';
+        const pwdInput = document.getElementById('qr-password');
+        pwdInput.addEventListener('keydown', e => { if (e.key === 'Enter') quickReconnectPassword(); });
+      }
+
+      // Show quick reconnect and hide the main stepped form
+      qrEl.style.display = '';
+      document.getElementById('steps').style.display = 'none';
+      ['step1','step2','step3'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+      });
+    }
+
+    function dismissQuickReconnect() {
+      document.getElementById('quick-reconnect').style.display = 'none';
+      setStep(1);
+    }
+
+    function toggleQrPwd() {
+      const inp = document.getElementById('qr-password');
+      const isText = inp.type === 'text';
+      inp.type = isText ? 'password' : 'text';
+      document.getElementById('qr-eye-show').style.display = isText ? '' : 'none';
+      document.getElementById('qr-eye-hide').style.display = isText ? 'none' : '';
+    }
+
+    async function quickReconnectPassword() {
+      if (!quickConn) return;
+      const password = document.getElementById('qr-password').value;
+      if (!password) {
+        document.getElementById('qr-error').textContent = 'Enter your password.';
+        document.getElementById('qr-error').style.display = '';
+        return;
+      }
+      document.getElementById('qr-error').style.display = 'none';
+
+      const btn = document.getElementById('qr-connect-btn');
+      btn.disabled = true;
+      btn.textContent = 'Connecting…';
+
+      // Restore state from saved connection
+      state.vaultUrl   = quickConn.vaultUrl;
+      state.apiVersion = quickConn.apiVersion;
+      state.username   = quickConn.username;
+      state.password   = password;
+      state.proxyUrl   = quickConn.proxyUrl || '';
+
+      try {
+        const result = await testPasswordAuth();
+        if (result.success) {
+          sessionStorage.setItem('vault_session_token', result.sessionId);
+          sessionStorage.setItem('vault_base_url',      state.vaultUrl);
+          sessionStorage.setItem('vault_api_version',   state.apiVersion);
+          if (state.proxyUrl) sessionStorage.setItem('vault_proxy_url', state.proxyUrl);
+          else sessionStorage.removeItem('vault_proxy_url');
+          window.open('search-panel.html', '_blank');
+          btn.disabled = false;
+          btn.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Connect';
+        } else {
+          document.getElementById('qr-error').textContent = result.message || 'Authentication failed.';
+          document.getElementById('qr-error').style.display = '';
+          btn.disabled = false;
+          btn.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Connect';
+        }
+      } catch (err) {
+        document.getElementById('qr-error').textContent = err.message;
+        document.getElementById('qr-error').style.display = '';
+        btn.disabled = false;
+        btn.innerHTML = 'Connect';
+      }
+    }
+
+    async function quickReconnectOAuth() {
+      if (!quickConn) return;
+      // Restore state from saved connection then trigger OAuth PKCE flow
+      state.vaultDomain      = quickConn.vaultDomain;
+      state.vaultUrl         = quickConn.vaultUrl;
+      state.apiVersion       = quickConn.apiVersion;
+      state.label            = quickConn.label;
+      state.proxyUrl         = quickConn.proxyUrl       || '';
+      state.username         = quickConn.username        || '';
+      state.clientId         = quickConn.clientId        || '';
+      state.oauthProfile     = quickConn.oauthProfile    || '';
+      state.asClientId       = quickConn.asClientId      || '';
+      state.idpDiscoveryUrl  = quickConn.idpDiscoveryUrl || '';
+      state.vaultSessionUrl  = quickConn.vaultSessionUrl || '';
+      // Redirect URI based on current page location
+      state.redirectUri = window.location.origin
+        + window.location.pathname.replace(/\/[^/]*$/, '/oauth-callback.html');
+
+      // Pre-fill hidden fields so startOAuthFlow reads them
+      document.getElementById('oauth-idp-discovery').value = state.idpDiscoveryUrl;
+      document.getElementById('oauth-redirect-uri').value  = state.redirectUri;
+
+      await startOAuthFlow();
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // INIT
+    // ─────────────────────────────────────────────────────────
+    initQuickReconnect();
+    renderSavedConnections();
+  </script>
+</body>
+</html>

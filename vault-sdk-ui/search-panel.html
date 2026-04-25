@@ -1,0 +1,1932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartSearch — Vault Document Retrieval</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       VAULT SMARTSEARCH — PREMIUM DESIGN SYSTEM
+       Veeva-aligned enterprise pharma UI
+    ═══════════════════════════════════════════════════════ */
+    :root {
+      /* Core Brand */
+      --v-blue:          #0060B9;
+      --v-blue-mid:      #004F9E;
+      --v-blue-dark:     #003D7A;
+      --v-blue-10:       #E5EFF8;
+      --v-blue-20:       #C2D9F0;
+
+      /* Semantic */
+      --v-green:         #1E7E45;
+      --v-green-10:      #E8F5EE;
+      --v-red:           #C8001E;
+      --v-red-10:        #FCEAED;
+      --v-orange:        #D95800;
+      --v-orange-10:     #FDF0E8;
+      --v-amber:         #8A6200;
+      --v-amber-10:      #FDF5E0;
+      --v-purple:        #5B3FA6;
+      --v-purple-10:     #EEE9F9;
+
+      /* Neutrals */
+      --v-ink:           #111827;
+      --v-ink-80:        #374151;
+      --v-ink-60:        #6B7280;
+      --v-ink-40:        #9CA3AF;
+      --v-ink-20:        #D1D5DB;
+      --v-ink-10:        #F3F4F6;
+      --v-ink-05:        #F9FAFB;
+      --v-white:         #FFFFFF;
+
+      /* Borders */
+      --v-border:        #E5E7EB;
+      --v-border-mid:    #D1D5DB;
+
+      /* Shadows */
+      --v-shadow-xs:     0 1px 2px rgba(0,0,0,0.05);
+      --v-shadow-sm:     0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+      --v-shadow-md:     0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+      --v-shadow-lg:     0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.05);
+
+      /* Radius */
+      --v-r-sm:    4px;
+      --v-r-md:    6px;
+      --v-r-lg:    10px;
+      --v-r-xl:    14px;
+      --v-r-full:  9999px;
+
+      /* Typography */
+      --v-font:    'Inter', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+
+      /* Transitions */
+      --v-ease:    cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+    body {
+      font-family: var(--v-font);
+      font-size: 13px;
+      color: var(--v-ink);
+      background: #EEF1F5;
+      line-height: 1.5;
+    }
+
+    /* ═══════════════ LAYOUT ═══════════════════════════════ */
+    .app-shell {
+      display: grid;
+      grid-template-rows: 52px 1fr;
+      grid-template-columns: 252px 1fr;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ═══════════════ HEADER ═══════════════════════════════ */
+    .app-header {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, var(--v-blue-mid) 0%, var(--v-blue-dark) 100%);
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      gap: 14px;
+      z-index: 200;
+      box-shadow: 0 2px 8px rgba(0,40,100,0.25);
+    }
+
+    .header-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(255,255,255,0.2);
+      flex-shrink: 0;
+    }
+
+    .vault-logo {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-shrink: 0;
+      text-decoration: none;
+    }
+
+    .vault-logo-mark {
+      width: 30px; height: 30px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: var(--v-r-md);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .vault-logo-mark svg { width: 16px; height: 16px; }
+
+    .vault-logo-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+
+    .vault-logo-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.2px;
+    }
+
+    .vault-logo-sub {
+      font-size: 10px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    /* Search bar */
+    .header-search-wrap {
+      flex: 1;
+      max-width: 580px;
+      position: relative;
+    }
+
+    .search-icon-wrap {
+      position: absolute;
+      left: 11px; top: 50%;
+      transform: translateY(-50%);
+      display: flex; align-items: center;
+      pointer-events: none;
+    }
+
+    .search-icon-wrap svg { width: 15px; height: 15px; color: rgba(255,255,255,0.55); }
+
+    .header-search-input {
+      width: 100%;
+      height: 34px;
+      padding: 0 36px 0 36px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: var(--v-r-full);
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      font-family: var(--v-font);
+      font-size: 13px;
+      font-weight: 400;
+      outline: none;
+      transition: background 0.18s var(--v-ease), border-color 0.18s var(--v-ease);
+      letter-spacing: 0.1px;
+    }
+
+    .header-search-input::placeholder { color: rgba(255,255,255,0.5); }
+
+    .header-search-input:focus {
+      background: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.4);
+    }
+
+    .search-clear-btn {
+      position: absolute;
+      right: 10px; top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255,255,255,0.15);
+      border: none;
+      border-radius: 50%;
+      width: 18px; height: 18px;
+      display: none;
+      align-items: center; justify-content: center;
+      cursor: pointer;
+      color: rgba(255,255,255,0.8);
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .search-clear-btn:hover { background: rgba(255,255,255,0.25); }
+
+    /* Role switcher */
+    .role-switcher {
+      display: flex;
+      gap: 4px;
+      background: rgba(0,0,0,0.15);
+      border-radius: var(--v-r-full);
+      padding: 3px;
+    }
+
+    .role-btn {
+      padding: 3px 11px;
+      border: none;
+      border-radius: var(--v-r-full);
+      background: transparent;
+      color: rgba(255,255,255,0.7);
+      font-family: var(--v-font);
+      font-size: 11.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.14s var(--v-ease);
+      white-space: nowrap;
+    }
+
+    .role-btn:hover { color: rgba(255,255,255,0.95); background: rgba(255,255,255,0.1); }
+
+    .role-btn.active {
+      background: rgba(255,255,255,0.92);
+      color: var(--v-blue-dark);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+
+    /* User */
+    .header-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: 4px;
+      flex-shrink: 0;
+    }
+
+    .user-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.35), rgba(255,255,255,0.15));
+      border: 1.5px solid rgba(255,255,255,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600;
+      font-size: 11px;
+      color: #fff;
+      letter-spacing: 0.3px;
+    }
+
+    .user-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.9);
+    }
+
+    /* ═══════════════ SIDEBAR ══════════════════════════════ */
+    .filter-sidebar {
+      background: var(--v-white);
+      border-right: 1px solid var(--v-border);
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--v-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-header-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--v-ink-80);
+      letter-spacing: 0.2px;
+    }
+
+    .clear-filters-btn {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--v-blue);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: var(--v-r-sm);
+      transition: background 0.12s;
+    }
+
+    .clear-filters-btn:hover { background: var(--v-blue-10); }
+
+    .filter-section {
+      border-bottom: 1px solid var(--v-border);
+      padding: 0;
+    }
+
+    .filter-section-toggle {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .filter-section-toggle:hover { background: var(--v-ink-05); }
+
+    .filter-section-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--v-ink-60);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .filter-chevron {
+      font-size: 10px;
+      color: var(--v-ink-40);
+      transition: transform 0.18s var(--v-ease);
+    }
+
+    .filter-chevron.open { transform: rotate(180deg); }
+
+    .filter-body {
+      padding: 4px 16px 12px;
+    }
+
+    .filter-body.collapsed { display: none; }
+
+    .filter-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 6px;
+      border-radius: var(--v-r-sm);
+      cursor: pointer;
+      font-size: 12.5px;
+      color: var(--v-ink-80);
+      user-select: none;
+      transition: background 0.1s;
+      margin: 1px 0;
+    }
+
+    .filter-option:hover { background: var(--v-ink-05); color: var(--v-blue); }
+
+    .filter-option input[type="checkbox"],
+    .filter-option input[type="radio"] {
+      width: 13px; height: 13px;
+      accent-color: var(--v-blue);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .filter-option-label { flex: 1; }
+
+    .filter-count {
+      font-size: 10.5px;
+      color: var(--v-ink-40);
+      font-weight: 500;
+      background: var(--v-ink-10);
+      padding: 1px 5px;
+      border-radius: var(--v-r-full);
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .filter-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════ MAIN CONTENT ═════════════════════════ */
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      background: #EEF1F5;
+    }
+
+    /* ═══════════════ TOOLBAR ══════════════════════════════ */
+    .search-toolbar {
+      padding: 10px 18px 8px;
+      background: var(--v-white);
+      border-bottom: 1px solid var(--v-border);
+      box-shadow: var(--v-shadow-xs);
+    }
+
+    .chips-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--v-ink-40);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      margin-bottom: 7px;
+    }
+
+    .rec-chips-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .rec-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 11px;
+      border: 1px solid var(--v-border-mid);
+      border-radius: var(--v-r-full);
+      font-family: var(--v-font);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--v-ink-60);
+      background: var(--v-white);
+      cursor: pointer;
+      transition: all 0.14s var(--v-ease);
+      white-space: nowrap;
+      user-select: none;
+      box-shadow: var(--v-shadow-xs);
+    }
+
+    .rec-chip:hover {
+      border-color: var(--v-blue);
+      color: var(--v-blue);
+      background: var(--v-blue-10);
+      box-shadow: 0 0 0 2px rgba(0,96,185,0.08);
+    }
+
+    .rec-chip.active {
+      background: var(--v-blue);
+      border-color: var(--v-blue);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(0,96,185,0.3);
+    }
+
+    .chip-icon { font-size: 12px; line-height: 1; }
+
+    /* Category accent line */
+    .rec-chip.cat-sop       { border-left: 2.5px solid #0060B9; }
+    .rec-chip.cat-deviation { border-left: 2.5px solid #C8001E; }
+    .rec-chip.cat-capa      { border-left: 2.5px solid #D95800; }
+    .rec-chip.cat-audit     { border-left: 2.5px solid #1E7E45; }
+    .rec-chip.cat-time      { border-left: 2.5px solid #5B3FA6; }
+    .rec-chip.active { border-left-color: transparent; }
+
+    /* ═══════════════ QUERY INFO BAR ═══════════════════════ */
+    .query-info-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 18px;
+      background: var(--v-blue-10);
+      border-bottom: 1px solid var(--v-blue-20);
+      font-size: 11.5px;
+      color: var(--v-blue-mid);
+    }
+
+    .query-info-bar.visible { display: flex; }
+
+    .qib-label { color: var(--v-ink-60); font-weight: 400; }
+
+    .qib-badge {
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--v-blue);
+      color: #fff;
+      padding: 2px 9px;
+      border-radius: var(--v-r-full);
+      letter-spacing: 0.1px;
+    }
+
+    .qib-rule {
+      font-size: 11px;
+      color: var(--v-ink-40);
+      background: var(--v-white);
+      border: 1px solid var(--v-border);
+      padding: 1px 7px;
+      border-radius: var(--v-r-full);
+    }
+
+    .qib-spacer { flex: 1; }
+
+    .vql-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--v-blue);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: var(--v-r-sm);
+      transition: background 0.12s;
+      font-family: var(--v-font);
+    }
+
+    .vql-toggle-btn:hover { background: var(--v-blue-10); }
+    .vql-toggle-btn svg { width: 12px; height: 12px; transition: transform 0.2s; }
+    .vql-toggle-btn.open svg { transform: rotate(180deg); }
+
+    /* ═══════════════ VQL PREVIEW ══════════════════════════ */
+    /* FIX: padding is INSIDE .open — zero padding when collapsed */
+    .vql-preview {
+      background: #1A1E2E;
+      border-bottom: 1px solid #0D1117;
+      font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+      font-size: 11.5px;
+      line-height: 1.65;
+      overflow: hidden;
+      max-height: 0;
+      padding: 0 18px;          /* zero top/bottom padding when closed */
+      transition: max-height 0.22s var(--v-ease), padding 0.22s var(--v-ease);
+    }
+
+    .vql-preview.open {
+      max-height: 220px;
+      padding: 12px 18px;       /* padding only when open */
+      overflow-y: auto;
+    }
+
+    .vql-kw  { color: #79B8FF; font-weight: 600; }
+    .vql-str { color: #9ECE6A; }
+    .vql-fn  { color: #E5C07B; }
+    .vql-op  { color: #C678DD; }
+    .vql-cmt { color: #5C6370; font-style: italic; }
+    .vql-lit { color: #D19A66; }
+
+    /* ═══════════════ AMBIGUITY ═════════════════════════════ */
+    .ambiguity-bar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 18px;
+      background: var(--v-amber-10);
+      border-bottom: 1px solid #E8D5A0;
+      font-size: 12px;
+      color: var(--v-amber);
+    }
+
+    .ambiguity-bar.visible { display: flex; }
+    .ambiguity-bar svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ═══════════════ RESULTS AREA ═════════════════════════ */
+    .results-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 18px 20px;
+    }
+
+    .results-meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      padding: 0 2px;
+    }
+
+    .results-left { display: flex; align-items: baseline; gap: 8px; }
+
+    .results-count {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--v-ink);
+    }
+
+    .results-sublabel {
+      font-size: 12px;
+      color: var(--v-ink-60);
+    }
+
+    .results-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .exec-time {
+      font-size: 11px;
+      color: var(--v-ink-40);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .exec-time svg { width: 11px; height: 11px; }
+
+    .view-toggle {
+      display: flex;
+      border: 1px solid var(--v-border);
+      border-radius: var(--v-r-md);
+      overflow: hidden;
+      box-shadow: var(--v-shadow-xs);
+    }
+
+    .view-btn {
+      padding: 4px 10px;
+      border: none;
+      background: var(--v-white);
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--v-ink-40);
+      font-family: var(--v-font);
+      transition: all 0.12s;
+      border-right: 1px solid var(--v-border);
+    }
+
+    .view-btn:last-child { border-right: none; }
+    .view-btn:hover { background: var(--v-ink-05); color: var(--v-ink-60); }
+
+    .view-btn.active {
+      background: var(--v-ink-10);
+      color: var(--v-ink);
+      font-weight: 600;
+    }
+
+    /* ═══════════════ DOCUMENT CARDS ════════════════════════ */
+    .doc-card {
+      background: var(--v-white);
+      border: 1px solid var(--v-border);
+      border-radius: var(--v-r-lg);
+      margin-bottom: 6px;
+      transition: box-shadow 0.15s var(--v-ease), border-color 0.15s var(--v-ease);
+      overflow: hidden;
+    }
+
+    .doc-card:hover {
+      box-shadow: var(--v-shadow-md);
+      border-color: var(--v-border-mid);
+    }
+
+    .doc-card-primary {
+      padding: 12px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    /* Type icon */
+    .doc-icon {
+      width: 34px; height: 34px;
+      border-radius: var(--v-r-md);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 15px;
+    }
+
+    .doc-icon.t-sop       { background: var(--v-blue-10);   }
+    .doc-icon.t-deviation { background: var(--v-red-10);    }
+    .doc-icon.t-capa      { background: var(--v-orange-10); }
+    .doc-icon.t-protocol  { background: var(--v-green-10);  }
+    .doc-icon.t-report    { background: var(--v-purple-10); }
+    .doc-icon.t-policy    { background: var(--v-ink-10);    }
+
+    .doc-main { flex: 1; min-width: 0; }
+
+    .doc-name {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--v-blue);
+      text-decoration: none;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+      margin-bottom: 5px;
+      transition: color 0.1s;
+    }
+
+    .doc-name:hover { color: var(--v-blue-dark); text-decoration: underline; }
+
+    .doc-pills {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    /* Status pill */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: var(--v-r-full);
+      letter-spacing: 0.1px;
+      white-space: nowrap;
+    }
+
+    .pill-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .pill-state-approved, .pill-state-effective {
+      background: var(--v-green-10);
+      color: var(--v-green);
+    }
+    .pill-state-approved .pill-dot,
+    .pill-state-effective .pill-dot { background: var(--v-green); }
+
+    .pill-state-draft, .pill-state-inreview {
+      background: var(--v-blue-10);
+      color: var(--v-blue-mid);
+    }
+    .pill-state-draft .pill-dot,
+    .pill-state-inreview .pill-dot { background: var(--v-blue); }
+
+    .pill-state-open, .pill-state-inprogress {
+      background: var(--v-orange-10);
+      color: var(--v-orange);
+    }
+    .pill-state-open .pill-dot,
+    .pill-state-inprogress .pill-dot { background: var(--v-orange); }
+
+    .pill-state-closed {
+      background: var(--v-ink-10);
+      color: var(--v-ink-60);
+    }
+    .pill-state-closed .pill-dot { background: var(--v-ink-40); }
+
+    .pill-state-obsolete {
+      background: var(--v-ink-10);
+      color: var(--v-ink-40);
+      text-decoration: line-through;
+    }
+
+    /* Type pill */
+    .pill-type {
+      background: var(--v-ink-05);
+      border: 1px solid var(--v-border);
+      color: var(--v-ink-60);
+      font-weight: 500;
+    }
+
+    /* Version pill */
+    .pill-ver {
+      background: var(--v-ink-10);
+      color: var(--v-ink-60);
+      font-size: 10.5px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Severity pill */
+    .pill-sev-critical { background: var(--v-red-10);    color: var(--v-red);    }
+    .pill-sev-major    { background: var(--v-orange-10); color: var(--v-orange); }
+    .pill-sev-minor    { background: var(--v-amber-10);  color: var(--v-amber);  }
+
+    /* Link pill (CAPA reference) */
+    .pill-link {
+      background: var(--v-blue-10);
+      color: var(--v-blue);
+      font-size: 10.5px;
+      font-weight: 500;
+      border: 1px solid var(--v-blue-20);
+    }
+
+    /* GxP pill */
+    .pill-gxp {
+      background: var(--v-green-10);
+      color: var(--v-green);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Card right side */
+    .doc-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .doc-date {
+      font-size: 11.5px;
+      color: var(--v-ink-40);
+      font-weight: 400;
+      white-space: nowrap;
+    }
+
+    .ver-expand-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--v-font);
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--v-ink-60);
+      background: var(--v-ink-05);
+      border: 1px solid var(--v-border);
+      border-radius: var(--v-r-full);
+      padding: 3px 10px;
+      cursor: pointer;
+      transition: all 0.12s;
+      white-space: nowrap;
+    }
+
+    .ver-expand-btn:hover {
+      background: var(--v-blue-10);
+      border-color: var(--v-blue-20);
+      color: var(--v-blue);
+    }
+
+    .ver-expand-btn svg {
+      width: 10px; height: 10px;
+      transition: transform 0.18s var(--v-ease);
+    }
+
+    .ver-expand-btn.open svg { transform: rotate(180deg); }
+
+    /* ═══════════════ VERSION HISTORY ══════════════════════ */
+    .ver-history {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.22s var(--v-ease);
+      background: var(--v-ink-05);
+      border-top: 0px solid var(--v-border);
+    }
+
+    .ver-history.open {
+      max-height: 400px;
+      border-top-width: 1px;
+    }
+
+    .ver-history-head {
+      display: grid;
+      grid-template-columns: 1fr 70px 110px 100px;
+      padding: 6px 14px 4px 60px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--v-ink-40);
+      border-bottom: 1px solid var(--v-border);
+    }
+
+    .ver-row {
+      display: grid;
+      grid-template-columns: 1fr 70px 110px 100px;
+      padding: 7px 14px 7px 60px;
+      border-bottom: 1px solid var(--v-border);
+      align-items: center;
+      transition: background 0.1s;
+    }
+
+    .ver-row:last-child { border-bottom: none; }
+    .ver-row:hover { background: var(--v-white); }
+
+    .ver-row-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--v-blue);
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-right: 12px;
+    }
+
+    .ver-row-name:hover { text-decoration: underline; }
+
+    .ver-row-num {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--v-ink-60);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ver-row-date {
+      font-size: 11px;
+      color: var(--v-ink-40);
+    }
+
+    /* ═══════════════ EMPTY & LOADING STATES ════════════════ */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 64px 24px;
+      text-align: center;
+    }
+
+    .empty-icon {
+      width: 56px; height: 56px;
+      background: var(--v-ink-10);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .empty-icon svg { width: 26px; height: 26px; color: var(--v-ink-40); }
+
+    .empty-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--v-ink-80);
+      margin-bottom: 6px;
+    }
+
+    .empty-body {
+      font-size: 13px;
+      color: var(--v-ink-60);
+      max-width: 300px;
+      line-height: 1.55;
+    }
+
+    /* Loading skeleton */
+    .loading-overlay {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(238,241,245,0.7);
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 60px;
+      z-index: 50;
+      backdrop-filter: blur(1px);
+    }
+
+    .loading-overlay.active { display: flex; }
+
+    .loading-card {
+      background: var(--v-white);
+      border: 1px solid var(--v-border);
+      border-radius: var(--v-r-lg);
+      padding: 14px;
+      width: calc(100% - 36px);
+      max-width: 760px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .skel {
+      background: linear-gradient(90deg, var(--v-ink-10) 25%, var(--v-ink-05) 50%, var(--v-ink-10) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: var(--v-r-sm);
+    }
+
+    .skel-icon { width: 34px; height: 34px; border-radius: var(--v-r-md); flex-shrink: 0; }
+    .skel-lines { flex: 1; display: flex; flex-direction: column; gap: 8px; padding-top: 3px; }
+    .skel-line-a { height: 13px; width: 65%; }
+    .skel-line-b { height: 11px; width: 40%; }
+
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* ═══════════════ PAGINATION ════════════════════════════ */
+    .pagination-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      padding: 16px 0 4px;
+    }
+
+    .page-btn {
+      min-width: 32px; height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--v-border);
+      border-radius: var(--v-r-md);
+      background: var(--v-white);
+      cursor: pointer;
+      font-family: var(--v-font);
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--v-ink-60);
+      box-shadow: var(--v-shadow-xs);
+      transition: all 0.12s;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      background: var(--v-ink-05);
+      border-color: var(--v-border-mid);
+      color: var(--v-ink);
+    }
+
+    .page-btn.current {
+      background: var(--v-blue);
+      color: #fff;
+      border-color: var(--v-blue);
+      box-shadow: 0 2px 6px rgba(0,96,185,0.3);
+    }
+
+    .page-btn:disabled { opacity: 0.38; cursor: default; }
+
+    .page-sep {
+      font-size: 12px;
+      color: var(--v-ink-40);
+      padding: 0 2px;
+    }
+
+    /* ═══════════════ SCROLLBAR ═════════════════════════════ */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--v-ink-20); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--v-ink-40); }
+
+    /* ═══════════════ FOCUS VISIBLE ═════════════════════════ */
+    :focus-visible { outline: 2px solid var(--v-blue); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ══════════ HEADER ══════════════════════════════════════ -->
+  <header class="app-header">
+
+    <div class="vault-logo">
+      <div class="vault-logo-mark">
+        <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 1.5L13.5 4.5V11.5L8 14.5L2.5 11.5V4.5L8 1.5Z" stroke="white" stroke-width="1.4" stroke-linejoin="round"/>
+          <circle cx="8" cy="8" r="2.2" fill="white"/>
+        </svg>
+      </div>
+      <div class="vault-logo-text">
+        <span class="vault-logo-name">SmartSearch</span>
+        <span class="vault-logo-sub">Vault DMS</span>
+      </div>
+    </div>
+
+    <div class="header-divider"></div>
+
+    <div class="header-search-wrap">
+      <div class="search-icon-wrap">
+        <svg viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd"/>
+        </svg>
+      </div>
+      <input type="text" id="mainSearchInput" class="header-search-input"
+        placeholder="Search documents… (e.g. open CAPAs, approved SOPs, audit package)"
+        autocomplete="off" spellcheck="false">
+      <button class="search-clear-btn" id="clearSearchBtn" aria-label="Clear">✕</button>
+    </div>
+
+    <div class="header-divider"></div>
+
+    <div class="role-switcher" role="group" aria-label="Switch role">
+      <button class="role-btn active" data-role="QA_ADMIN">QA Admin</button>
+      <button class="role-btn" data-role="QA_USER">QA</button>
+      <button class="role-btn" data-role="CLINICAL_USER">Clinical</button>
+      <button class="role-btn" data-role="REGULATORY_USER">Regulatory</button>
+    </div>
+
+    <div class="header-user">
+      <div class="user-avatar">JS</div>
+      <span class="user-name">J. Smith</span>
+    </div>
+
+  </header>
+
+  <!-- ══════════ FILTER SIDEBAR ══════════════════════════════ -->
+  <aside class="filter-sidebar" aria-label="Filters">
+
+    <div class="sidebar-header">
+      <span class="sidebar-header-title">Filters</span>
+      <button class="clear-filters-btn" id="clearFiltersBtn">Reset</button>
+    </div>
+
+    <!-- Document Type -->
+    <div class="filter-section">
+      <button class="filter-section-toggle" onclick="toggleSection(this)">
+        <span class="filter-section-label">Document Type</span>
+        <span class="filter-chevron open">▼</span>
+      </button>
+      <div class="filter-body">
+        <label class="filter-option">
+          <input type="checkbox" name="type" value="sop">
+          <span class="filter-dot" style="background:#0060B9"></span>
+          <span class="filter-option-label">SOP</span>
+          <span class="filter-count">42</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="type" value="deviation">
+          <span class="filter-dot" style="background:#C8001E"></span>
+          <span class="filter-option-label">Deviation</span>
+          <span class="filter-count">18</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="type" value="capa">
+          <span class="filter-dot" style="background:#D95800"></span>
+          <span class="filter-option-label">CAPA</span>
+          <span class="filter-count">9</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="type" value="protocol">
+          <span class="filter-dot" style="background:#1E7E45"></span>
+          <span class="filter-option-label">Protocol</span>
+          <span class="filter-count">15</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="type" value="report">
+          <span class="filter-dot" style="background:#5B3FA6"></span>
+          <span class="filter-option-label">Report</span>
+          <span class="filter-count">33</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="type" value="policy">
+          <span class="filter-dot" style="background:#6B7280"></span>
+          <span class="filter-option-label">Policy</span>
+          <span class="filter-count">7</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="filter-section">
+      <button class="filter-section-toggle" onclick="toggleSection(this)">
+        <span class="filter-section-label">Status</span>
+        <span class="filter-chevron open">▼</span>
+      </button>
+      <div class="filter-body">
+        <label class="filter-option">
+          <input type="checkbox" name="state" value="Approved__v" checked>
+          <span class="filter-dot" style="background:#1E7E45"></span>
+          <span class="filter-option-label">Approved</span>
+          <span class="filter-count">48</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="state" value="Effective__v" checked>
+          <span class="filter-dot" style="background:#1E7E45"></span>
+          <span class="filter-option-label">Effective</span>
+          <span class="filter-count">31</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="state" value="Open__v">
+          <span class="filter-dot" style="background:#D95800"></span>
+          <span class="filter-option-label">Open</span>
+          <span class="filter-count">12</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="state" value="In Progress__v">
+          <span class="filter-dot" style="background:#D95800"></span>
+          <span class="filter-option-label">In Progress</span>
+          <span class="filter-count">6</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="state" value="Closed__v">
+          <span class="filter-dot" style="background:#9CA3AF"></span>
+          <span class="filter-option-label">Closed</span>
+          <span class="filter-count">8</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="state" value="Draft__v" id="draftOpt">
+          <span class="filter-dot" style="background:#0060B9"></span>
+          <span class="filter-option-label">Draft</span>
+          <span class="filter-count">5</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Last Modified -->
+    <div class="filter-section">
+      <button class="filter-section-toggle" onclick="toggleSection(this)">
+        <span class="filter-section-label">Last Modified</span>
+        <span class="filter-chevron open">▼</span>
+      </button>
+      <div class="filter-body">
+        <label class="filter-option"><input type="radio" name="dateRange" value="7"> <span class="filter-option-label">Last 7 days</span></label>
+        <label class="filter-option"><input type="radio" name="dateRange" value="30" checked> <span class="filter-option-label">Last 30 days</span></label>
+        <label class="filter-option"><input type="radio" name="dateRange" value="90"> <span class="filter-option-label">Last 90 days</span></label>
+        <label class="filter-option"><input type="radio" name="dateRange" value="365"> <span class="filter-option-label">This year</span></label>
+        <label class="filter-option"><input type="radio" name="dateRange" value="all"> <span class="filter-option-label">All time</span></label>
+      </div>
+    </div>
+
+    <!-- Severity -->
+    <div class="filter-section">
+      <button class="filter-section-toggle" onclick="toggleSection(this)">
+        <span class="filter-section-label">Severity</span>
+        <span class="filter-chevron open">▼</span>
+      </button>
+      <div class="filter-body">
+        <label class="filter-option">
+          <input type="checkbox" name="severity" value="Critical__v">
+          <span class="filter-dot" style="background:#C8001E"></span>
+          <span class="filter-option-label">Critical</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="severity" value="Major__v">
+          <span class="filter-dot" style="background:#D95800"></span>
+          <span class="filter-option-label">Major</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="severity" value="Minor__v">
+          <span class="filter-dot" style="background:#8A6200"></span>
+          <span class="filter-option-label">Minor</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Version Display -->
+    <div class="filter-section">
+      <button class="filter-section-toggle" onclick="toggleSection(this)">
+        <span class="filter-section-label">Version Display</span>
+        <span class="filter-chevron open">▼</span>
+      </button>
+      <div class="filter-body">
+        <label class="filter-option"><input type="radio" name="versionDisplay" value="latest" checked> <span class="filter-option-label">Latest only</span></label>
+        <label class="filter-option"><input type="radio" name="versionDisplay" value="all"> <span class="filter-option-label">All versions</span></label>
+      </div>
+    </div>
+
+    <!-- GxP -->
+    <div class="filter-section" style="border-bottom:none;">
+      <button class="filter-section-toggle" onclick="toggleSection(this)">
+        <span class="filter-section-label">Compliance</span>
+        <span class="filter-chevron open">▼</span>
+      </button>
+      <div class="filter-body">
+        <label class="filter-option">
+          <input type="checkbox" name="gxp" id="gxpFilter">
+          <span class="filter-option-label">GxP Relevant only</span>
+        </label>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ══════════ MAIN CONTENT ════════════════════════════════ -->
+  <main class="main-content" aria-label="Search results">
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+      <div class="loading-card">
+        <div class="skel skel-icon"></div>
+        <div class="skel-lines">
+          <div class="skel skel-line-a"></div>
+          <div class="skel skel-line-b"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connection status banner (injected by JS when live session present) -->
+    <div id="connectionBanner" style="display:none; align-items:center; gap:10px; padding:8px 16px; font-size:12.5px; font-weight:500; border-radius:8px; margin-bottom:12px; border:1px solid;">
+      <span id="connectionBannerDot" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;"></span>
+      <span id="connectionBannerText"></span>
+      <a id="connectionBannerLink" href="connect.html" style="margin-left:auto; color:inherit; opacity:.7; font-size:11px; text-decoration:underline;">Reconnect</a>
+    </div>
+
+    <!-- Chips toolbar -->
+    <div class="search-toolbar">
+      <div class="chips-label">Suggested</div>
+      <div class="rec-chips-row" id="recChipsRow"></div>
+    </div>
+
+    <!-- Query info bar -->
+    <div class="query-info-bar" id="queryInfoBar">
+      <span class="qib-label">Template</span>
+      <span class="qib-badge" id="qibTemplate">—</span>
+      <span class="qib-rule" id="qibRule"></span>
+      <span class="qib-spacer"></span>
+      <button class="vql-toggle-btn" id="vqlToggleBtn">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="4,6 8,10 12,6"/>
+        </svg>
+        Show VQL
+      </button>
+    </div>
+
+    <!-- VQL Preview (FIXED: padding inside .open only) -->
+    <div class="vql-preview" id="vqlPreview" aria-hidden="true">
+      <div id="vqlContent"></div>
+    </div>
+
+    <!-- Ambiguity bar -->
+    <div class="ambiguity-bar" id="ambiguityBar">
+      <svg viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+      </svg>
+      <span id="ambiguityText"></span>
+    </div>
+
+    <!-- Results -->
+    <div class="results-area" id="resultsArea">
+
+      <div class="results-meta-bar" id="resultsMetaBar">
+        <div class="results-left">
+          <span class="results-count" id="resultsCount">—</span>
+          <span class="results-sublabel" id="resultsSublabel"></span>
+        </div>
+        <div class="results-right">
+          <span class="exec-time" id="execTime">
+            <svg viewBox="0 0 16 16" fill="currentColor">
+              <path fill-rule="evenodd" d="M8 15A7 7 0 108 1a7 7 0 000 14zm.75-10.25a.75.75 0 00-1.5 0v3.5c0 .414.336.75.75.75h2.5a.75.75 0 000-1.5H8.75v-2.75z" clip-rule="evenodd"/>
+            </svg>
+          </span>
+          <div class="view-toggle">
+            <button class="view-btn active" id="viewList">List</button>
+            <button class="view-btn" id="viewCompact">Compact</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="resultsList">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+          </div>
+          <p class="empty-title">Start a search</p>
+          <p class="empty-body">Type a query above or click a suggested chip to find documents across your Vault.</p>
+        </div>
+      </div>
+
+      <div class="pagination-bar" id="paginationBar" style="display:none">
+        <button class="page-btn" id="prevPage" disabled>← Prev</button>
+        <button class="page-btn current">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <span class="page-sep">…</span>
+        <button class="page-btn" id="nextPage">Next →</button>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ── MOCK DATA ─────────────────────────────────────────────── */
+const MOCK_DOCS = [
+  { id:'100001', name__v:'SOP-MFG-001: Raw Material Handling Procedure',        type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2025-03-15', owner:'Alice Chen',    severity:null,       gxp:true,  capa:null                    },
+  { id:'100002', name__v:'SOP-QC-042: In-Process Sampling & Testing',           type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:2, minor:1, modified:'2025-04-02', owner:'Bob Martinez',  severity:null,       gxp:true,  capa:null                    },
+  { id:'100003', name__v:'DEV-2024-089: Particulate Contamination — Batch 7734',type__v:'Deviation__c',                    lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2025-04-10', owner:'Carol Kim',     severity:'Critical__v', gxp:true,  capa:'CAPA-2024-031'     },
+  { id:'100004', name__v:'CAPA-2024-031: Particulate Control Enhancement Plan', type__v:'CAPA__c',                         lifecycle_state__v:'In Progress__v',  major:1, minor:0, modified:'2025-04-12', owner:'David Lee',     severity:'Critical__v', gxp:true,  capa:null                },
+  { id:'100005', name__v:'SOP-LAB-017: HPLC Method Validation Protocol',        type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Draft__v',        major:0, minor:1, modified:'2025-04-18', owner:'Emma Wilson',   severity:null,       gxp:true,  capa:null                    },
+  { id:'100006', name__v:'CAPA-2024-028: Equipment Qualification Gap',          type__v:'CAPA__c',                         lifecycle_state__v:'Open__v',          major:1, minor:0, modified:'2024-12-20', owner:'Frank Zhao',    severity:'Major__v', gxp:true,  capa:null, expiry:'2025-01-15'},
+  { id:'100007', name__v:'RPT-AUD-2025-001: Annual GMP Compliance Audit',       type__v:'Report__c',                       lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-02-28', owner:'Grace Patel',   severity:null,       gxp:true,  capa:null                    },
+  { id:'100008', name__v:'SOP-REG-005: CTD Module Preparation & Submission',    type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2025-01-10', owner:'Henry Brown',   severity:null,       gxp:true,  capa:null, expiry:'2025-07-10'},
+  { id:'100009', name__v:'DEV-2025-004: Dissolution OOS — Product X Lot 2210', type__v:'Deviation__c',                    lifecycle_state__v:'In Progress__v',  major:1, minor:0, modified:'2025-04-20', owner:'Irene Santos',  severity:'Major__v', gxp:true,  capa:null                    },
+  { id:'100010', name__v:'CAPA-2024-019: SOP Training Compliance Program',      type__v:'CAPA__c',                         lifecycle_state__v:'Closed__v',       major:2, minor:0, modified:'2025-03-01', owner:'James Park',    severity:'Minor__v', gxp:false, capa:null                    },
+  { id:'100011', name__v:'POL-QMS-001: Quality Management System Policy',       type__v:'Policy__c',                       lifecycle_state__v:'Effective__v',   major:5, minor:0, modified:'2024-11-01', owner:'Karen Liu',     severity:null,       gxp:true,  capa:null                    },
+  { id:'100012', name__v:'SOP-QA-033: Document Control & Change Management',    type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:6, minor:2, modified:'2025-04-15', owner:'Leo Nguyen',    severity:null,       gxp:true,  capa:null                    },
+];
+
+const MOCK_VERSIONS = {
+  '100001': [
+    { ver:'v3.0', state:'Effective__v',   date:'Mar 15, 2025', by:'Alice Chen'   },
+    { ver:'v2.1', state:'Superseded__v',  date:'Sep 10, 2024', by:'Alice Chen'   },
+    { ver:'v2.0', state:'Superseded__v',  date:'Mar 22, 2024', by:'Tom Harris'   },
+    { ver:'v1.0', state:'Superseded__v',  date:'Jun 01, 2023', by:'Tom Harris'   },
+  ],
+  '100008': [
+    { ver:'v4.0', state:'Effective__v',   date:'Jan 10, 2025', by:'Henry Brown'  },
+    { ver:'v3.0', state:'Superseded__v',  date:'Jul 01, 2023', by:'Sarah Jones'  },
+  ],
+  '100012': [
+    { ver:'v6.2', state:'Effective__v',   date:'Apr 15, 2025', by:'Leo Nguyen'   },
+    { ver:'v6.1', state:'Superseded__v',  date:'Jan 20, 2025', by:'Leo Nguyen'   },
+    { ver:'v6.0', state:'Superseded__v',  date:'Oct 05, 2024', by:'Leo Nguyen'   },
+  ],
+};
+
+/* ── QUERY TEMPLATES ───────────────────────────────────────── */
+const QT = {
+  sop_approved:            d => d.type__v.includes('Operating') && ['Approved__v','Effective__v'].includes(d.lifecycle_state__v),
+  sop_expiring_soon:       d => d.type__v.includes('Operating') && !!d.expiry,
+  deviation_all_open:      d => d.type__v === 'Deviation__c' && ['Open__v','In Progress__v'].includes(d.lifecycle_state__v),
+  deviation_high_severity: d => d.type__v === 'Deviation__c' && ['Critical__v','Major__v'].includes(d.severity),
+  capa_open:               d => d.type__v === 'CAPA__c' && ['Open__v','In Progress__v'].includes(d.lifecycle_state__v),
+  capa_closed:             d => d.type__v === 'CAPA__c' && d.lifecycle_state__v === 'Closed__v',
+  capa_high_severity:      d => d.type__v === 'CAPA__c' && ['Critical__v','Major__v'].includes(d.severity),
+  capa_overdue:            d => d.type__v === 'CAPA__c' && ['Open__v','In Progress__v'].includes(d.lifecycle_state__v) && !!d.expiry,
+  audit_ready_docs:        d => ['Approved__v','Effective__v'].includes(d.lifecycle_state__v) && d.gxp,
+  time_last_30_days_changes: d => true,
+  doc_all_accessible:      d => true,
+};
+
+const TNAMES = {
+  sop_approved: 'Approved SOPs', sop_expiring_soon: 'SOPs Expiring Soon',
+  deviation_all_open: 'Open Deviations', deviation_high_severity: 'High Severity Deviations',
+  capa_open: 'Open CAPAs', capa_closed: 'Closed CAPAs', capa_high_severity: 'High Severity CAPAs',
+  capa_overdue: 'Overdue CAPAs', audit_ready_docs: 'Audit-Ready Docs',
+  time_last_30_days_changes: 'Recent Changes', doc_all_accessible: 'All Documents',
+};
+
+/* ── VQL DISPLAY STRINGS ───────────────────────────────────── */
+const VQLS = {
+  sop_approved: `<span class="vql-kw">SELECT</span> id, name__v, lifecycle_state__v, major_version_number__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'Standard Operating Procedure__c'</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Approved__v'</span>, <span class="vql-str">'Effective__v'</span>)\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">ORDER BY</span> name__v <span class="vql-kw">ASC</span>`,
+  deviation_all_open: `<span class="vql-kw">SELECT</span> id, name__v, severity__v, deviation_type__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'Deviation__c'</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Open__v'</span>, <span class="vql-str">'In Progress__v'</span>)\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">ORDER BY</span> severity__v <span class="vql-kw">ASC</span>`,
+  capa_open: `<span class="vql-kw">SELECT</span> id, name__v, severity__v, priority__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'CAPA__c'</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Open__v'</span>, <span class="vql-str">'In Progress__v'</span>)\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>`,
+  audit_ready_docs: `<span class="vql-kw">SELECT</span> id, name__v, type__v, effective_date__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Approved__v'</span>, <span class="vql-str">'Effective__v'</span>)\n  <span class="vql-kw">AND</span> gxp_relevant__c <span class="vql-op">=</span> <span class="vql-lit">true</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">ORDER BY</span> type__v <span class="vql-kw">ASC</span>`,
+  doc_all_accessible: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n<span class="vql-kw">ORDER BY</span> last_modified_date__v <span class="vql-kw">DESC</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">100</span>`,
+};
+VQLS.capa_closed = VQLS.capa_open.replace("'Open__v', 'In Progress__v'", "'Closed__v'").replace('IN (', '= ').replace(')', '');
+VQLS.capa_high_severity = VQLS.capa_open.replace("lifecycle_state__v IN ('Open__v', 'In Progress__v')\n  AND","severity__v IN ('Critical__v', 'Major__v')\n  AND lifecycle_state__v IN ('Open__v', 'In Progress__v')\n  AND");
+VQLS.capa_overdue = VQLS.capa_open + `\n  <span class="vql-kw">AND</span> expiration_date__v <span class="vql-op">&lt;</span> <span class="vql-fn">now()</span>`;
+VQLS.deviation_high_severity = VQLS.deviation_all_open.replace("lifecycle_state__v IN ('Open__v', 'In Progress__v')\n  AND", "severity__v IN ('Critical__v', 'Major__v')\n  AND lifecycle_state__v IN ('Open__v', 'In Progress__v')\n  AND");
+VQLS.sop_expiring_soon = VQLS.sop_approved + `\n  <span class="vql-kw">AND</span> expiration_date__v <span class="vql-op">&lt;=</span> <span class="vql-fn">dateadd(now(), 90, 'day')</span>`;
+VQLS.time_last_30_days_changes = VQLS.doc_all_accessible.replace("WHERE is_latest_version__v = true\n  AND lifecycle_state__v != 'Obsolete__v'", "WHERE last_modified_date__v >= dateadd(now(), -30, 'day')");
+
+/* ── LIVE CONNECTION ───────────────────────────────────────── */
+const LIVE = (() => {
+  const token    = sessionStorage.getItem('vault_session_token');
+  const baseUrl  = sessionStorage.getItem('vault_base_url');
+  const apiVer   = sessionStorage.getItem('vault_api_version') || 'v24.1';
+  // Lambda proxy URL — set by connect.html when a proxy is configured.
+  // When present, all VQL queries are forwarded through it instead of
+  // calling Vault directly (which would be blocked by CORS).
+  const proxyUrl = (sessionStorage.getItem('vault_proxy_url') || '').replace(/\/$/, '');
+  return token && baseUrl ? { token, baseUrl, apiVer, proxyUrl } : null;
+})();
+
+// Plain VQL strings (no HTML) used for real API calls
+const VQL_RAW = {
+  sop_approved:            `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, minor_version_number__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'Standard Operating Procedure__c' AND lifecycle_state__v IN ('Approved__v','Effective__v') AND is_latest_version__v = true ORDER BY name__v ASC LIMIT 50`,
+  sop_expiring_soon:       `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, expiration_date__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'Standard Operating Procedure__c' AND lifecycle_state__v IN ('Approved__v','Effective__v') AND is_latest_version__v = true AND expiration_date__v <= dateadd(now(), 90, 'day') ORDER BY expiration_date__v ASC LIMIT 50`,
+  deviation_all_open:      `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, deviation_type__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'Deviation__c' AND lifecycle_state__v IN ('Open__v','In Progress__v') AND is_latest_version__v = true ORDER BY severity__v ASC LIMIT 50`,
+  deviation_high_severity: `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, deviation_type__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'Deviation__c' AND severity__v IN ('Critical__v','Major__v') AND lifecycle_state__v IN ('Open__v','In Progress__v') AND is_latest_version__v = true ORDER BY severity__v ASC LIMIT 50`,
+  capa_open:               `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, priority__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'CAPA__c' AND lifecycle_state__v IN ('Open__v','In Progress__v') AND is_latest_version__v = true LIMIT 50`,
+  capa_closed:             `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'CAPA__c' AND lifecycle_state__v = 'Closed__v' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT 50`,
+  capa_high_severity:      `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, priority__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'CAPA__c' AND severity__v IN ('Critical__v','Major__v') AND lifecycle_state__v IN ('Open__v','In Progress__v') AND is_latest_version__v = true LIMIT 50`,
+  capa_overdue:            `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, expiration_date__v, owner__v FROM documents WHERE type__v = 'CAPA__c' AND lifecycle_state__v IN ('Open__v','In Progress__v') AND expiration_date__v < now() AND is_latest_version__v = true LIMIT 50`,
+  audit_ready_docs:        `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, effective_date__v, last_modified_date__v, owner__v FROM documents WHERE lifecycle_state__v IN ('Approved__v','Effective__v') AND gxp_relevant__c = true AND is_latest_version__v = true ORDER BY type__v ASC LIMIT 50`,
+  time_last_30_days_changes:`SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, minor_version_number__v, last_modified_date__v, owner__v FROM documents WHERE last_modified_date__v >= dateadd(now(), -30, 'day') AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT 50`,
+  doc_all_accessible:      `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, minor_version_number__v, last_modified_date__v, owner__v FROM documents WHERE is_latest_version__v = true AND lifecycle_state__v != 'Obsolete__v' ORDER BY last_modified_date__v DESC LIMIT 100`,
+};
+
+// Normalize a Vault API document record into the shape renderResults expects
+function normalizeVaultDoc(d) {
+  return {
+    id:               d.id,
+    name__v:          d.name__v || d.title__v || '(Untitled)',
+    type__v:          d.type__v || 'Unknown__c',
+    lifecycle_state__v: d.lifecycle_state__v || '',
+    major:            d.major_version_number__v ?? 1,
+    minor:            d.minor_version_number__v ?? 0,
+    modified:         (d.last_modified_date__v || '').slice(0, 10),
+    owner:            d.owner__v || '',
+    severity:         d.severity__v || null,
+    gxp:              d.gxp_relevant__c === true || d.gxp_relevant__c === 'true',
+    capa:             d.capa_id__c || null,
+    expiry:           d.expiration_date__v || null,
+  };
+}
+
+// Execute a VQL string — routes through Lambda proxy when configured,
+// falls back to direct Vault API call in demo mode.
+async function executeVQL(vql) {
+  let endpoint, requestHeaders, requestBody;
+
+  if (LIVE.proxyUrl) {
+    // ── Proxy path (production) ──────────────────────────────
+    // Browser → Lambda (HTTPS, your domain) → Vault (HTTPS, any tenant)
+    // The proxy adds CORS headers and forwards server-side.
+    endpoint      = `${LIVE.proxyUrl}/query`;
+    requestHeaders = {
+      'Content-Type':          'application/json',
+      'Accept':                'application/json',
+      'X-Vault-URL':           LIVE.baseUrl,
+      'X-Vault-Token':         LIVE.token,
+      'X-Vault-API-Version':   LIVE.apiVer,
+    };
+    requestBody = JSON.stringify({ vql, apiVersion: LIVE.apiVer });
+  } else {
+    // ── Direct path (demo / local dev) ───────────────────────
+    // Only works if Vault allows CORS from this origin (uncommon).
+    endpoint      = `${LIVE.baseUrl}/api/${LIVE.apiVer}/query`;
+    requestHeaders = {
+      'Authorization': LIVE.token,
+      'Content-Type':  'application/x-www-form-urlencoded',
+      'Accept':        'application/json',
+    };
+    requestBody = `q=${encodeURIComponent(vql)}`;
+  }
+
+  const resp = await fetch(endpoint, {
+    method:  'POST',
+    headers: requestHeaders,
+    body:    requestBody,
+  });
+
+  const data = await resp.json();
+
+  // Normalise error shape from both proxy and direct paths
+  if (data.responseStatus !== 'SUCCESS') {
+    const msg = data.errors?.[0]?.message || data.error || data.responseStatus || 'VQL error';
+    throw new Error(msg);
+  }
+  return (data.data || []).map(normalizeVaultDoc);
+}
+
+// Show connection status banner
+function initConnectionBanner() {
+  const banner = document.getElementById('connectionBanner');
+  const dot    = document.getElementById('connectionBannerDot');
+  const text   = document.getElementById('connectionBannerText');
+  if (!banner) return;
+  if (LIVE) {
+    const host = LIVE.baseUrl.replace('https://','');
+    banner.style.display      = 'flex';
+    banner.style.background   = '#F0FDF4';
+    banner.style.borderColor  = '#86EFAC';
+    banner.style.color        = '#166534';
+    dot.style.background      = '#22C55E';
+    text.textContent          = `Live — connected to ${host} (${LIVE.apiVer})`;
+  } else {
+    banner.style.display      = 'flex';
+    banner.style.background   = '#FEFCE8';
+    banner.style.borderColor  = '#FDE047';
+    banner.style.color        = '#854D0E';
+    dot.style.background      = '#EAB308';
+    text.textContent          = 'Demo mode — showing sample data. Connect a Vault to search real documents.';
+    document.getElementById('connectionBannerLink').textContent = 'Connect Vault →';
+  }
+}
+
+/* ── RULE-BASED PARSER ─────────────────────────────────────── */
+function parseToTemplate(raw) {
+  const q = (raw || '').toLowerCase().trim();
+  if (!q || q.length < 2 || /^(the|a|an|show|me|find|get|list|all|any)\s*$/.test(q))
+    return { tid: 'doc_all_accessible', rule: 'RULE-099' };
+  if ((q.includes('overdue')||q.includes('past due')) && (q.includes('capa')||q.includes('capas')))   return { tid: 'capa_overdue',            rule: 'RULE-004' };
+  if (q.includes('expir') && (q.includes('sop')||q.includes('sops')))                                 return { tid: 'sop_expiring_soon',        rule: 'RULE-005' };
+  if (q.includes('inspection') && (q.includes('package')||q.includes('ready')||q.includes('audit'))) return { tid: 'audit_ready_docs',          rule: 'RULE-001' };
+  if ((q.includes('critical')||q.includes('major')||q.includes('high')) && q.includes('deviati'))    return { tid: 'deviation_high_severity',   rule: 'RULE-002' };
+  if ((q.includes('critical')||q.includes('major')||q.includes('high')) && (q.includes('capa')||q.includes('capas'))) return { tid: 'capa_high_severity', rule: 'RULE-015' };
+  if ((q.includes('sop')||q.includes('sops')) && (q.includes('approv')||q.includes('effectiv')||q.includes('current'))) return { tid: 'sop_approved', rule: 'RULE-010' };
+  if (q.includes('deviati') && (q.includes('open')||q.includes('active')))                           return { tid: 'deviation_all_open',        rule: 'RULE-012' };
+  if ((q.includes('capa')||q.includes('capas')) && (q.includes('close')||q.includes('resolv')))      return { tid: 'capa_closed',               rule: 'RULE-014' };
+  if ((q.includes('capa')||q.includes('capas')) && (q.includes('open')||q.includes('active')))       return { tid: 'capa_open',                 rule: 'RULE-013' };
+  if (q.includes('audit')||q.includes('inspect')||q.includes('gxp')||q.includes('compli'))           return { tid: 'audit_ready_docs',          rule: 'RULE-016' };
+  if (q.includes('sop')||q.includes('sops')||q.includes('procedure'))                                return { tid: 'sop_approved',              rule: 'RULE-020' };
+  if (q.includes('deviati')||q.includes('incident')||q.includes('oos'))                              return { tid: 'deviation_all_open',        rule: 'RULE-021' };
+  if (q.includes('capa')||q.includes('capas')||q.includes('corrective'))                             return { tid: 'capa_open',                 rule: 'RULE-022' };
+  if (q.includes('recent')||q.includes('change')||q.includes('modif'))                               return { tid: 'time_last_30_days_changes', rule: 'RULE-023' };
+  return { tid: 'doc_all_accessible', rule: 'RULE-099' };
+}
+
+/* ── ROLE ACL ──────────────────────────────────────────────── */
+const ROLE_ACL = {
+  QA_ADMIN:        { drafts: true,  types: ['ALL'] },
+  QA_USER:         { drafts: false, types: ['SOP','Deviation','CAPA','Report'] },
+  CLINICAL_USER:   { drafts: false, types: ['Protocol','Report','SOP'] },
+  REGULATORY_USER: { drafts: false, types: ['SOP','Policy','Report','Protocol'] },
+};
+const TYPE_KEY = {
+  'Standard Operating Procedure__c':'SOP', 'Deviation__c':'Deviation',
+  'CAPA__c':'CAPA', 'Protocol__c':'Protocol', 'Report__c':'Report', 'Policy__c':'Policy',
+};
+
+function applyACL(docs, role) {
+  const acl = ROLE_ACL[role] || ROLE_ACL.QA_USER;
+  return docs.filter(d => {
+    if (!acl.drafts && d.lifecycle_state__v === 'Draft__v') return false;
+    if (acl.types.includes('ALL')) return true;
+    return acl.types.includes(TYPE_KEY[d.type__v] || '');
+  });
+}
+
+function applySidebarFilters(docs) {
+  const types   = [...document.querySelectorAll('input[name="type"]:checked')].map(i=>i.value);
+  const states  = [...document.querySelectorAll('input[name="state"]:checked')].map(i=>i.value);
+  const sevs    = [...document.querySelectorAll('input[name="severity"]:checked')].map(i=>i.value);
+  const gxpOnly = document.getElementById('gxpFilter').checked;
+  return docs.filter(d => {
+    const tk = (TYPE_KEY[d.type__v]||'').toLowerCase();
+    if (types.length  && !types.includes(tk))      return false;
+    if (states.length && !states.includes(d.lifecycle_state__v)) return false;
+    if (sevs.length   && !sevs.includes(d.severity)) return false;
+    if (gxpOnly && !d.gxp) return false;
+    return true;
+  });
+}
+
+/* ── CHIPS ─────────────────────────────────────────────────── */
+const CHIPS = {
+  QA_ADMIN: [
+    { label:'Approved SOPs',           tid:'sop_approved',            cat:'sop',       icon:'📋' },
+    { label:'Open Deviations',         tid:'deviation_all_open',      cat:'deviation', icon:'⚠️' },
+    { label:'Overdue CAPAs',           tid:'capa_overdue',            cat:'capa',      icon:'🔴' },
+    { label:'Audit-Ready Docs',        tid:'audit_ready_docs',        cat:'audit',     icon:'🏛️' },
+    { label:'Open CAPAs',              tid:'capa_open',               cat:'capa',      icon:'🔧' },
+    { label:'SOPs Expiring Soon',      tid:'sop_expiring_soon',       cat:'sop',       icon:'⏰' },
+    { label:'High Severity Deviations',tid:'deviation_high_severity', cat:'deviation', icon:'🚨' },
+  ],
+  QA_USER: [
+    { label:'Approved SOPs',    tid:'sop_approved',       cat:'sop',       icon:'📋' },
+    { label:'Open Deviations',  tid:'deviation_all_open', cat:'deviation', icon:'⚠️' },
+    { label:'Open CAPAs',       tid:'capa_open',          cat:'capa',      icon:'🔧' },
+    { label:'SOPs Expiring',    tid:'sop_expiring_soon',  cat:'sop',       icon:'⏰' },
+  ],
+  CLINICAL_USER: [
+    { label:'Approved SOPs',    tid:'sop_approved',      cat:'sop',   icon:'📋' },
+    { label:'Audit-Ready Docs', tid:'audit_ready_docs',  cat:'audit', icon:'🏛️' },
+  ],
+  REGULATORY_USER: [
+    { label:'Approved SOPs',     tid:'sop_approved',     cat:'sop',   icon:'📋' },
+    { label:'Inspection Package',tid:'audit_ready_docs', cat:'audit', icon:'📦' },
+  ],
+};
+
+/* ── STATE ─────────────────────────────────────────────────── */
+const S = { role:'QA_ADMIN', currentTid:null, vqlOpen:false, activeChip:null };
+
+/* ── DOM ───────────────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const E = {
+  input:       $('mainSearchInput'),
+  clearBtn:    $('clearSearchBtn'),
+  loading:     $('loadingOverlay'),
+  chipsRow:    $('recChipsRow'),
+  qib:         $('queryInfoBar'),
+  qibTemplate: $('qibTemplate'),
+  qibRule:     $('qibRule'),
+  vqlToggle:   $('vqlToggleBtn'),
+  vqlPreview:  $('vqlPreview'),
+  vqlContent:  $('vqlContent'),
+  ambiguity:   $('ambiguityBar'),
+  ambiguityTxt:$('ambiguityText'),
+  resultsList: $('resultsList'),
+  resultsCount:$('resultsCount'),
+  resultsSub:  $('resultsSublabel'),
+  execTime:    $('execTime'),
+};
+
+/* ── RENDER CHIPS ──────────────────────────────────────────── */
+function renderChips(role) {
+  const list = CHIPS[role] || CHIPS.QA_ADMIN;
+  E.chipsRow.innerHTML = '';
+  list.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = `rec-chip cat-${c.cat}`;
+    btn.innerHTML = `<span class="chip-icon">${c.icon}</span>${c.label}`;
+    btn.onclick = () => {
+      if (S.activeChip === c.tid) {
+        btn.classList.remove('active');
+        S.activeChip = null;
+        runQuery('doc_all_accessible');
+        return;
+      }
+      E.chipsRow.querySelectorAll('.rec-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      S.activeChip = c.tid;
+      E.input.value = '';
+      E.clearBtn.style.display = 'none';
+      runQuery(c.tid);
+    };
+    E.chipsRow.appendChild(btn);
+  });
+}
+
+/* ── QUERY RUNNER ──────────────────────────────────────────── */
+async function runQuery(tid) {
+  const t0 = Date.now();
+  S.currentTid = tid;
+  E.loading.classList.add('active');
+
+  let raw = [];
+  let liveError = null;
+
+  if (LIVE) {
+    // ── Live path: execute real VQL against Vault ──────────────
+    const vql = VQL_RAW[tid] || VQL_RAW.doc_all_accessible;
+    try {
+      raw = await executeVQL(vql);
+    } catch (err) {
+      liveError = err.message;
+      // Session may have expired — fall back to mock and show warning
+      raw = MOCK_DOCS.filter(QT[tid] || QT.doc_all_accessible);
+    }
+  } else {
+    // ── Demo path: filter mock data ────────────────────────────
+    await new Promise(r => setTimeout(r, 120 + Math.random() * 100));
+    raw = MOCK_DOCS.filter(QT[tid] || QT.doc_all_accessible);
+  }
+
+  const acl   = applyACL(raw, S.role);
+  const final = applySidebarFilters(acl);
+  const ms    = Date.now() - t0;
+
+  /* Update query info bar */
+  E.qibTemplate.textContent = tid;
+  E.qibRule.textContent     = LIVE ? (liveError ? '⚠ fell back to demo' : '● live') : '';
+  E.qib.classList.add('visible');
+
+  /* Update VQL preview */
+  E.vqlContent.innerHTML = VQLS[tid] || VQLS.doc_all_accessible;
+
+  /* Update counts */
+  const name = TNAMES[tid] || 'Documents';
+  E.resultsCount.textContent = `${final.length} document${final.length !== 1 ? 's' : ''}`;
+  E.resultsSub.textContent   = `• ${name}${LIVE && !liveError ? '' : ' (demo)'}`;
+  E.execTime.innerHTML       = `<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 15A7 7 0 108 1a7 7 0 000 14zm.75-10.25a.75.75 0 00-1.5 0v3.5c0 .414.336.75.75.75h2.5a.75.75 0 000-1.5H8.75v-2.75z" clip-rule="evenodd"/></svg>${ms}ms`;
+
+  /* Show session-expired warning inline */
+  if (liveError) {
+    const warn = document.createElement('div');
+    warn.style.cssText = 'margin-bottom:10px;padding:9px 12px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;font-size:12.5px;color:#92400E;';
+    warn.innerHTML = `<strong>Vault query failed:</strong> ${liveError} — showing demo data. <a href="connect.html" style="color:inherit;font-weight:600;text-decoration:underline;">Reconnect →</a>`;
+    E.resultsList.before ? E.resultsList.before(warn) : E.resultsList.parentNode.insertBefore(warn, E.resultsList);
+    setTimeout(() => warn.remove(), 8000);
+  }
+
+  renderResults(final);
+  E.loading.classList.remove('active');
+}
+
+/* ── RENDER RESULTS ────────────────────────────────────────── */
+const TYPE_META = {
+  'Standard Operating Procedure__c': { icon:'📋', cls:'t-sop',       label:'SOP'       },
+  'Deviation__c':                     { icon:'⚠️',  cls:'t-deviation', label:'Deviation' },
+  'CAPA__c':                          { icon:'🔧', cls:'t-capa',      label:'CAPA'      },
+  'Protocol__c':                      { icon:'🧪', cls:'t-protocol',  label:'Protocol'  },
+  'Report__c':                        { icon:'📊', cls:'t-report',    label:'Report'    },
+  'Policy__c':                        { icon:'📜', cls:'t-policy',    label:'Policy'    },
+};
+
+const STATE_META = {
+  'Approved__v':    { cls:'pill-state-approved',   label:'Approved'     },
+  'Effective__v':   { cls:'pill-state-effective',  label:'Effective'    },
+  'Draft__v':       { cls:'pill-state-draft',      label:'Draft'        },
+  'In Review__v':   { cls:'pill-state-inreview',   label:'In Review'    },
+  'Open__v':        { cls:'pill-state-open',       label:'Open'         },
+  'In Progress__v': { cls:'pill-state-inprogress', label:'In Progress'  },
+  'Closed__v':      { cls:'pill-state-closed',     label:'Closed'       },
+  'Obsolete__v':    { cls:'pill-state-obsolete',   label:'Obsolete'     },
+  'Superseded__v':  { cls:'pill-state-closed',     label:'Superseded'   },
+};
+
+const SEV_META = {
+  'Critical__v': { cls:'pill-sev-critical', label:'Critical' },
+  'Major__v':    { cls:'pill-sev-major',    label:'Major'    },
+  'Minor__v':    { cls:'pill-sev-minor',    label:'Minor'    },
+};
+
+function fmtDate(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+function renderResults(docs) {
+  if (!docs.length) {
+    E.resultsList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+        </div>
+        <p class="empty-title">No results found</p>
+        <p class="empty-body">Try adjusting your filters or search terms. Your role may also restrict certain document types.</p>
+      </div>`;
+    return;
+  }
+
+  E.resultsList.innerHTML = docs.map(doc => {
+    const tm   = TYPE_META[doc.type__v]         || { icon:'📄', cls:'t-policy', label:'Doc' };
+    const sm   = STATE_META[doc.lifecycle_state__v] || { cls:'pill-state-closed', label:doc.lifecycle_state__v };
+    const sevm = doc.severity ? SEV_META[doc.severity] : null;
+    const vers = MOCK_VERSIONS[doc.id];
+    const vLabel = `v${doc.major}.${doc.minor}`;
+    const dateStr = fmtDate(doc.modified);
+
+    const expandBtn = vers ? `
+      <button class="ver-expand-btn" onclick="toggleVer('${doc.id}',this)">
+        ${vers.length} versions
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4,6 8,10 12,6"/></svg>
+      </button>` : '';
+
+    const verRows = vers ? vers.map(v => {
+      const vsm = STATE_META[v.state] || { cls:'pill-state-closed', label:v.state };
+      return `<div class="ver-row">
+        <span class="ver-row-name">${doc.name__v}</span>
+        <span class="ver-row-num">${v.ver}</span>
+        <span class="pill ${vsm.cls}" style="font-size:10px;"><span class="pill-dot"></span>${vsm.label}</span>
+        <span class="ver-row-date">${v.date}</span>
+      </div>`;
+    }).join('') : '';
+
+    const verSection = vers ? `
+      <div class="ver-history" id="vh-${doc.id}">
+        <div class="ver-history-head">
+          <span>Document</span><span>Version</span><span>Status</span><span>Date</span>
+        </div>
+        ${verRows}
+      </div>` : '';
+
+    return `
+      <div class="doc-card">
+        <div class="doc-card-primary">
+          <div class="doc-icon ${tm.cls}">${tm.icon}</div>
+          <div class="doc-main">
+            <a class="doc-name" href="#" title="${doc.name__v}" onclick="return false">${doc.name__v}</a>
+            <div class="doc-pills">
+              <span class="pill pill-type">${tm.label}</span>
+              <span class="pill pill-ver">${vLabel}</span>
+              <span class="pill ${sm.cls}"><span class="pill-dot"></span>${sm.label}</span>
+              ${sevm ? `<span class="pill ${sevm.cls}">${sevm.label}</span>` : ''}
+              ${doc.capa ? `<span class="pill pill-link">↗ ${doc.capa}</span>` : ''}
+              ${doc.gxp ? `<span class="pill pill-gxp">GxP</span>` : ''}
+              ${doc.expiry ? `<span class="pill pill-sev-minor">Expires ${fmtDate(doc.expiry)}</span>` : ''}
+            </div>
+          </div>
+          <div class="doc-right">
+            <span class="doc-date">${dateStr}</span>
+            ${expandBtn}
+          </div>
+        </div>
+        ${verSection}
+      </div>`;
+  }).join('');
+}
+
+/* ── VERSION TOGGLE ────────────────────────────────────────── */
+function toggleVer(id, btn) {
+  const panel = document.getElementById(`vh-${id}`);
+  if (!panel) return;
+  const open = panel.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+
+/* ── VQL TOGGLE (FIXED) ─────────────────────────────────────── */
+E.vqlToggle.addEventListener('click', () => {
+  S.vqlOpen = !S.vqlOpen;
+  E.vqlPreview.classList.toggle('open', S.vqlOpen);
+  E.vqlToggle.classList.toggle('open', S.vqlOpen);
+  E.vqlToggle.innerHTML = `
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="4,6 8,10 12,6"/>
+    </svg>
+    ${S.vqlOpen ? 'Hide VQL' : 'Show VQL'}`;
+});
+
+/* ── SEARCH INPUT ──────────────────────────────────────────── */
+let debounce;
+E.input.addEventListener('input', () => {
+  const v = E.input.value;
+  E.clearBtn.style.display = v ? 'flex' : 'none';
+  E.chipsRow.querySelectorAll('.rec-chip').forEach(b => b.classList.remove('active'));
+  S.activeChip = null;
+  clearTimeout(debounce);
+  debounce = setTimeout(() => {
+    if (!v.trim()) { runQuery('doc_all_accessible'); return; }
+    const { tid } = parseToTemplate(v);
+    runQuery(tid);
+  }, 320);
+});
+
+E.clearBtn.addEventListener('click', () => {
+  E.input.value = '';
+  E.clearBtn.style.display = 'none';
+  runQuery('doc_all_accessible');
+});
+
+/* ── ROLE SWITCHER ─────────────────────────────────────────── */
+document.querySelectorAll('.role-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    S.role = btn.dataset.role;
+
+    const draftLabel = document.getElementById('draftOpt')?.closest('label');
+    if (draftLabel) {
+      const canDraft = ROLE_ACL[S.role]?.drafts;
+      draftLabel.style.opacity = canDraft ? '1' : '0.4';
+      if (!canDraft) document.getElementById('draftOpt').checked = false;
+    }
+
+    renderChips(S.role);
+    if (S.currentTid) runQuery(S.currentTid);
+  });
+});
+
+/* ── SIDEBAR FILTER CHANGES ─────────────────────────────────── */
+document.querySelectorAll('.filter-sidebar input').forEach(inp => {
+  inp.addEventListener('change', () => { if (S.currentTid) runQuery(S.currentTid); });
+});
+
+/* ── CLEAR FILTERS ─────────────────────────────────────────── */
+$('clearFiltersBtn').addEventListener('click', () => {
+  document.querySelectorAll('input[name="type"], input[name="severity"], input[name="gxp"]')
+    .forEach(i => i.checked = false);
+  document.querySelectorAll('input[name="state"]')
+    .forEach(i => i.checked = ['Approved__v','Effective__v'].includes(i.value));
+  document.querySelectorAll('input[name="dateRange"]')
+    .forEach(r => r.checked = r.value === '30');
+  document.querySelectorAll('input[name="versionDisplay"]')
+    .forEach(r => r.checked = r.value === 'latest');
+  if (S.currentTid) runQuery(S.currentTid);
+});
+
+/* ── SIDEBAR SECTION TOGGLE ─────────────────────────────────── */
+function toggleSection(btn) {
+  const body    = btn.nextElementSibling;
+  const chevron = btn.querySelector('.filter-chevron');
+  const open    = body.classList.toggle('collapsed');
+  chevron.classList.toggle('open', !open);
+}
+
+/* ── INIT ───────────────────────────────────────────────────── */
+renderChips(S.role);
+initConnectionBanner();
+runQuery('sop_approved');
+</script>
+</body>
+</html>

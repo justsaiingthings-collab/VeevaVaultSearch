@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signing in… — VaultSearch</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand:    #4A6CF7;
+      --brand-dk: #3A58D9;
+      --success:  #10B981;
+      --error:    #EF4444;
+      --text:     #0F172A;
+      --text-2:   #475569;
+      --text-3:   #94A3B8;
+      --bg:       #F5F6FA;
+      --surface:  #FFFFFF;
+      --border:   #E2E5EE;
+      --font:     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text);
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 40px 48px;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+    }
+    .icon {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .icon.spinning { background: var(--brand); }
+    .icon.success  { background: var(--success); }
+    .icon.error    { background: var(--error); }
+    .icon svg { color: #fff; }
+
+    /* Spinning ring for the brand icon */
+    .spin-ring {
+      width: 56px; height: 56px;
+      border: 3px solid rgba(74,108,247,.2);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    p  { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+
+    .step-list {
+      list-style: none;
+      text-align: left;
+      margin: 24px 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .step-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-3);
+    }
+    .step-list li.done  { color: var(--text-2); }
+    .step-list li.active { color: var(--text); font-weight: 600; }
+    .step-list li.fail  { color: var(--error); }
+    .step-dot {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px;
+    }
+    .step-list li.done  .step-dot { background: var(--success); border-color: var(--success); color: #fff; }
+    .step-list li.active .step-dot { border-color: var(--brand); }
+    .step-list li.active .step-dot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
+    .step-list li.fail  .step-dot { background: var(--error); border-color: var(--error); color: #fff; }
+
+    .error-box {
+      margin-top: 20px;
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 13px;
+      color: #991B1B;
+      line-height: 1.5;
+    }
+    .error-box strong { display: block; margin-bottom: 4px; }
+    .error-box code {
+      font-family: monospace; font-size: 11px;
+      background: rgba(239,68,68,.1); padding: 1px 4px; border-radius: 3px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+      height: 42px;
+      padding: 0 20px;
+      background: var(--brand);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .15s;
+    }
+    .btn:hover { background: var(--brand-dk); }
+    .btn.secondary {
+      background: #fff;
+      color: var(--text-2);
+      border: 1.5px solid var(--border);
+      margin-left: 8px;
+    }
+    .btn.secondary:hover { background: var(--bg); }
+    .btn-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+  </style>
+</head>
+<body>
+
+  <div class="card" id="card">
+    <!-- Content injected by JS -->
+  </div>
+
+  <script>
+  // ─────────────────────────────────────────────────────────────────────────
+  // OAUTH CALLBACK HANDLER
+  //
+  // This page is the redirect_uri registered in your OAuth application.
+  // It receives the authorization code from the IdP, exchanges it for
+  // an id_token, then exchanges that for a Vault session token via the proxy.
+  //
+  // State stored in sessionStorage by connect.html before the redirect:
+  //   oauth_state           — random nonce for CSRF protection
+  //   oauth_code_verifier   — PKCE verifier
+  //   oauth_token_endpoint  — IdP token endpoint URL
+  //   oauth_client_id       — OAuth application client ID
+  //   oauth_vault_session_url — full Vault OAuth session URL
+  //   oauth_proxy_url       — Lambda proxy base URL
+  //   oauth_vault_url       — Vault base URL (for X-Vault-URL header)
+  //   oauth_api_version     — Vault API version
+  //   oauth_redirect_uri    — The redirect URI we sent to the IdP
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const card = document.getElementById('card');
+
+  // ── Step rendering helpers ────────────────────────────────────────────────
+
+  const STEPS = [
+    { id: 'validate',  label: 'Validating authorization response' },
+    { id: 'exchange',  label: 'Exchanging code for identity token' },
+    { id: 'session',   label: 'Creating Vault session' },
+    { id: 'redirect',  label: 'Opening VaultSearch' },
+  ];
+
+  let stepStates = { validate: 'pending', exchange: 'pending', session: 'pending', redirect: 'pending' };
+
+  function renderProgress(title, subtitle) {
+    card.innerHTML = `
+      <div class="spin-ring"></div>
+      <h1>${title}</h1>
+      <p>${subtitle}</p>
+      <ul class="step-list" id="steps">
+        ${STEPS.map(s => `
+          <li id="step-${s.id}" class="${stepStates[s.id]}">
+            <div class="step-dot">
+              ${stepStates[s.id] === 'done' ? checkSvg() : ''}
+              ${stepStates[s.id] === 'fail' ? xSvg() : ''}
+            </div>
+            ${esc(s.label)}
+          </li>
+        `).join('')}
+      </ul>`;
+  }
+
+  function setStep(id, state) {
+    stepStates[id] = state;
+    const el = document.getElementById(`step-${id}`);
+    if (!el) return;
+    el.className = state;
+    const dot = el.querySelector('.step-dot');
+    if (state === 'done') dot.innerHTML = checkSvg();
+    else if (state === 'fail') dot.innerHTML = xSvg();
+    else dot.innerHTML = '';
+  }
+
+  function renderError(title, detail, hint, showRetry = true) {
+    card.innerHTML = `
+      <div class="icon error">
+        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </div>
+      <h1>${esc(title)}</h1>
+      <p>${esc(detail)}</p>
+      ${hint ? `<div class="error-box"><strong>What to check</strong>${hint}</div>` : ''}
+      <div class="btn-row">
+        ${showRetry ? `<a class="btn" href="connect.html">Back to connect</a>` : ''}
+      </div>`;
+  }
+
+  function renderSuccess(vaultHost) {
+    card.innerHTML = `
+      <div class="icon success">
+        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <h1>Signed in</h1>
+      <p>Connected to <strong>${esc(vaultHost)}</strong>.<br>Opening VaultSearch…</p>`;
+  }
+
+  function checkSvg() {
+    return `<svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`;
+  }
+  function xSvg() {
+    return `<svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>`;
+  }
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Main flow ─────────────────────────────────────────────────────────────
+
+  async function run() {
+    renderProgress('Completing sign-in…', 'Exchanging your identity token with Vault.');
+
+    // ── 1. Parse URL params ───────────────────────────────────────────────
+    const params = new URLSearchParams(window.location.search);
+    const code   = params.get('code');
+    const state  = params.get('state');
+    const idpError = params.get('error');
+    const idpErrorDesc = params.get('error_description');
+
+    if (idpError) {
+      return renderError(
+        'Sign-in refused by your identity provider',
+        idpErrorDesc || idpError,
+        `The IdP returned error <code>${esc(idpError)}</code>. Common causes: the user cancelled, the session expired, or the OAuth application is misconfigured.`
+      );
+    }
+
+    if (!code || !state) {
+      return renderError(
+        'Invalid callback',
+        'No authorization code in the URL.',
+        'This page should only be accessed via an OAuth redirect. <a href="connect.html">Go back to connect</a>.'
+      );
+    }
+
+    // ── 2. Validate state (CSRF check) ────────────────────────────────────
+    setStep('validate', 'active');
+
+    const savedState        = sessionStorage.getItem('oauth_state');
+    const codeVerifier      = sessionStorage.getItem('oauth_code_verifier');
+    const tokenEndpoint     = sessionStorage.getItem('oauth_token_endpoint');
+    const clientId          = sessionStorage.getItem('oauth_client_id');
+    const vaultSessionUrl   = sessionStorage.getItem('oauth_vault_session_url');
+    const proxyUrl          = (sessionStorage.getItem('oauth_proxy_url') || '').replace(/\/$/, '');
+    const vaultUrl          = sessionStorage.getItem('oauth_vault_url');
+    const apiVersion        = sessionStorage.getItem('oauth_api_version') || 'v24.1';
+    const redirectUri       = sessionStorage.getItem('oauth_redirect_uri');
+
+    // Clear sensitive state immediately (one-time use)
+    ['oauth_state','oauth_code_verifier','oauth_token_endpoint','oauth_client_id',
+     'oauth_vault_session_url','oauth_proxy_url','oauth_vault_url','oauth_api_version',
+     'oauth_redirect_uri'].forEach(k => sessionStorage.removeItem(k));
+
+    if (!savedState || state !== savedState) {
+      setStep('validate', 'fail');
+      return renderError(
+        'State mismatch — possible CSRF attack',
+        'The state parameter returned by the IdP does not match what was sent. Do not proceed.',
+        'If this keeps happening, clear your browser cookies and try again from connect.html.'
+      );
+    }
+
+    if (!codeVerifier || !tokenEndpoint || !clientId || !vaultSessionUrl) {
+      setStep('validate', 'fail');
+      return renderError(
+        'Session expired',
+        'OAuth session data is missing. This can happen if the browser tab was closed mid-flow.',
+        null
+      );
+    }
+
+    setStep('validate', 'done');
+
+    // ── 3. Exchange code for id_token at IdP ─────────────────────────────
+    setStep('exchange', 'active');
+
+    let idpToken;
+    try {
+      const tokenResp = await fetchWithTimeout(tokenEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          grant_type:    'authorization_code',
+          code,
+          redirect_uri:  redirectUri,
+          client_id:     clientId,
+          code_verifier: codeVerifier,
+        }).toString(),
+      }, 15000);
+
+      const tokenData = await tokenResp.json();
+
+      if (!tokenResp.ok || tokenData.error) {
+        setStep('exchange', 'fail');
+        return renderError(
+          'Token exchange failed',
+          tokenData.error_description || tokenData.error || `HTTP ${tokenResp.status}`,
+          `The IdP rejected the code exchange. Check that:<br>
+           1. The redirect URI <code>${esc(redirectUri)}</code> is registered in your OAuth app<br>
+           2. The Application Client ID is correct<br>
+           3. The authorization code hasn't expired (they are single-use)`
+        );
+      }
+
+      // Prefer id_token; fall back to access_token
+      idpToken = tokenData.id_token || tokenData.access_token;
+
+      if (!idpToken) {
+        setStep('exchange', 'fail');
+        return renderError(
+          'No identity token in response',
+          'The IdP returned a token response but neither id_token nor access_token was present.',
+          'Check your OAuth application scope includes <code>openid</code>.'
+        );
+      }
+
+      setStep('exchange', 'done');
+
+    } catch (err) {
+      setStep('exchange', 'fail');
+      return renderError(
+        'Could not reach identity provider',
+        err.message,
+        `Network error contacting <code>${esc(tokenEndpoint)}</code>. Check your connection.`
+      );
+    }
+
+    // ── 4. Exchange id_token for Vault session token via proxy ────────────
+    setStep('session', 'active');
+
+    const sessionEndpoint = proxyUrl
+      ? `${proxyUrl}/oauth/session`
+      : vaultSessionUrl; // fallback: call Vault directly (will fail with CORS in most cases)
+
+    try {
+      const sessionResp = await fetchWithTimeout(sessionEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept':        'application/json',
+          ...(proxyUrl ? { 'X-Vault-URL': vaultUrl } : {}),
+        },
+        body: JSON.stringify({
+          vaultSessionUrl,
+          idpToken,
+          clientId,
+        }),
+      }, 15000);
+
+      const sessionData = await sessionResp.json();
+
+      if (sessionData.responseStatus !== 'SUCCESS' || !sessionData.sessionId) {
+        setStep('session', 'fail');
+        const msg = sessionData.errors?.[0]?.message || sessionData.error || sessionData.responseStatus || 'Unknown error';
+        return renderError(
+          'Vault rejected the identity token',
+          msg,
+          `Vault could not validate the token issued by your IdP. Check:<br>
+           1. The OAuth 2.0 / OpenID Connect profile is configured in Vault Admin<br>
+           2. The audience (<code>aud</code> claim) in the token matches the Vault Session ID URL<br>
+           3. The profile label matches <code>${esc(vaultSessionUrl.split('/').pop())}</code>`
+        );
+      }
+
+      setStep('session', 'done');
+
+      // ── 5. Store session and redirect ─────────────────────────────────
+      setStep('redirect', 'active');
+
+      sessionStorage.setItem('vault_session_token', sessionData.sessionId);
+      sessionStorage.setItem('vault_base_url',      vaultUrl);
+      sessionStorage.setItem('vault_api_version',   apiVersion);
+      if (proxyUrl) sessionStorage.setItem('vault_proxy_url', proxyUrl);
+
+      const vaultHost = vaultUrl ? new URL(vaultUrl).hostname : 'vault';
+      renderSuccess(vaultHost);
+
+      setTimeout(() => {
+        window.location.replace('search-panel.html');
+      }, 1000);
+
+    } catch (err) {
+      setStep('session', 'fail');
+      return renderError(
+        'Could not reach Vault session endpoint',
+        err.message,
+        proxyUrl
+          ? `Network error contacting proxy at <code>${esc(proxyUrl)}/oauth/session</code>.`
+          : `No proxy URL configured. Direct Vault calls from the browser are blocked by CORS.`
+      );
+    }
+  }
+
+  // ── Utility ───────────────────────────────────────────────────────────────
+
+  function fetchWithTimeout(url, options, timeoutMs) {
+    const ac    = new AbortController();
+    const timer = setTimeout(() => ac.abort(), timeoutMs);
+    return fetch(url, { ...options, signal: ac.signal }).finally(() => clearTimeout(timer));
+  }
+
+  // ── Run ───────────────────────────────────────────────────────────────────
+  run().catch(err => {
+    renderError('Unexpected error', err.message, null);
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "veeva-vault-search",
+  "version": "1.0.0",
+  "description": "P0 Structured Search & Guided Retrieval Layer for Veeva Vault",
+  "main": "backend-services/query-service.js",
+  "scripts": {
+    "start": "node backend-services/query-service.js",
+    "test": "node test/run-tests.js",
+    "lint": "eslint . --ext .js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["veeva", "vault", "vql", "search", "pharma", "gmp", "compliance"],
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {}
+}

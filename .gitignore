@@ -1,0 +1,14 @@
+# AWS SAM build output
+proxy/.aws-sam/
+
+# Node
+node_modules/
+npm-debug.log
+
+# macOS
+.DS_Store
+
+# Credentials — never commit
+.env
+*.env.local
+vault-credentials*
