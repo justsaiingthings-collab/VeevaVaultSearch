@@ -22,7 +22,7 @@ set -euo pipefail
 
 # ── Defaults ─────────────────────────────────────────────────────────────────
 STACK_NAME="vault-search-proxy"
-REGION="${AWS_DEFAULT_REGION:-us-east-1}"
+REGION="${AWS_DEFAULT_REGION:-us-west-1}"
 S3_BUCKET=""           # SAM will create a managed bucket if left empty
 ALLOWED_ORIGIN="*"     # Override with --origin for production
 ALLOW_ANY_HOST="0"
@@ -126,6 +126,7 @@ PROXY_URL=$(aws cloudformation describe-stacks \
   --stack-name "$STACK_NAME" \
   --region "$REGION" \
   --query "Stacks[0].Outputs[?OutputKey=='ProxyBaseUrl'].OutputValue" \
+  --region "$REGION" \
   --output text 2>/dev/null || echo "(unavailable)")
 
 echo -e "  Proxy Base URL : ${GREEN}${PROXY_URL}${NC}"

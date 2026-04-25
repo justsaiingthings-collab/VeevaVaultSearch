@@ -129,22 +129,22 @@ Outputs:
   ProxyBaseUrl:
     Description: >
       Base URL for the proxy. Paste this into VaultSearch connect.html as the
-      "Proxy URL" field. Example: https://abc123.execute-api.us-east-1.amazonaws.com
+      "Proxy URL" field. Example: https://abc123.execute-api.${AWS::Region}.amazonaws.com
     Value: !Sub 'https://${VaultProxyApi}.execute-api.${AWS::Region}.amazonaws.com'
     Export:
       Name: VaultProxyBaseUrl
 
   QueryEndpoint:
     Description: Full URL for VQL query forwarding
-    Value: !Sub 'https://${VaultProxyApi}.execute-api.us-east-1.amazonaws.com/query'
+    Value: !Sub 'https://${VaultProxyApi}.execute-api.${AWS::Region}.amazonaws.com/query'
 
   AuthEndpoint:
     Description: Full URL for Vault authentication
-    Value: !Sub 'https://${VaultProxyApi}.execute-api.us-east-1.amazonaws.com/auth'
+    Value: !Sub 'https://${VaultProxyApi}.execute-api.${AWS::Region}.amazonaws.com/auth'
 
   HealthEndpoint:
     Description: Health check URL
-    Value: !Sub 'https://${VaultProxyApi}.execute-api.us-east-1.amazonaws.com/health'
+    Value: !Sub 'https://${VaultProxyApi}.execute-api.${AWS::Region}.amazonaws.com/health'
 
   FunctionArn:
     Description: Lambda function ARN
