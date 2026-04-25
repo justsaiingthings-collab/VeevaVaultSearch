@@ -284,11 +284,12 @@
     const vaultUrl          = sessionStorage.getItem('oauth_vault_url');
     const apiVersion        = sessionStorage.getItem('oauth_api_version') || 'v24.1';
     const redirectUri       = sessionStorage.getItem('oauth_redirect_uri');
+    const userRole          = sessionStorage.getItem('oauth_user_role')   || 'QA_ADMIN';
 
     // Clear sensitive state immediately (one-time use)
     ['oauth_state','oauth_code_verifier','oauth_token_endpoint','oauth_client_id',
      'oauth_vault_session_url','oauth_proxy_url','oauth_vault_url','oauth_api_version',
-     'oauth_redirect_uri'].forEach(k => sessionStorage.removeItem(k));
+     'oauth_redirect_uri','oauth_user_role'].forEach(k => sessionStorage.removeItem(k));
 
     if (!savedState || state !== savedState) {
       setStep('validate', 'fail');
@@ -343,6 +344,13 @@
 
       // Prefer id_token; fall back to access_token
       idpToken = tokenData.id_token || tokenData.access_token;
+
+      // Extract display name / email from id_token JWT payload (best-effort, no verification needed here)
+      try {
+        const payload = JSON.parse(atob(idpToken.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+        const oauthUsername = payload.email || payload.preferred_username || payload.name || payload.sub || '';
+        if (oauthUsername) sessionStorage.setItem('vault_username', oauthUsername);
+      } catch { /* JWT parse failure is non-fatal */ }
 
       if (!idpToken) {
         setStep('exchange', 'fail');
@@ -409,6 +417,7 @@
       sessionStorage.setItem('vault_session_token', sessionData.sessionId);
       sessionStorage.setItem('vault_base_url',      vaultUrl);
       sessionStorage.setItem('vault_api_version',   apiVersion);
+      sessionStorage.setItem('vault_user_role',     userRole);
       if (proxyUrl) sessionStorage.setItem('vault_proxy_url', proxyUrl);
 
       const vaultHost = vaultUrl ? new URL(vaultUrl).hostname : 'vault';

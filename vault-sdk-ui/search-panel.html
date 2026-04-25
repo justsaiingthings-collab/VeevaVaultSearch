@@ -241,7 +241,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-left: 4px;
+      margin-left: auto;   /* always push to far right */
       flex-shrink: 0;
     }
 
@@ -1026,6 +1026,51 @@
 
     /* ═══════════════ FOCUS VISIBLE ═════════════════════════ */
     :focus-visible { outline: 2px solid var(--v-blue); outline-offset: 2px; }
+
+    /* ═══════════════ HISTORY / SAVED ITEMS ══════════════════ */
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 6px;
+      border-radius: var(--v-r-sm);
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--v-ink-80);
+      transition: background 0.1s;
+      user-select: none;
+    }
+    .history-item:hover { background: var(--v-blue-10); color: var(--v-blue); }
+    .history-item svg   { flex-shrink: 0; opacity: 0.45; }
+    .history-del {
+      background: none; border: none; cursor: pointer;
+      color: var(--v-ink-40); font-size: 15px; line-height: 1;
+      padding: 0 3px; border-radius: 3px; flex-shrink: 0;
+    }
+    .history-del:hover { color: var(--v-red); background: var(--v-red-10); }
+
+    /* ═══════════════ ACTION BUTTONS ═════════════════════════ */
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border: 1px solid var(--v-border-mid);
+      border-radius: var(--v-r-md);
+      background: var(--v-white);
+      color: var(--v-ink-60);
+      font-family: var(--v-font);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: var(--v-shadow-xs);
+      transition: all 0.12s;
+      white-space: nowrap;
+    }
+    .action-btn:hover { background: var(--v-ink-05); color: var(--v-ink); border-color: var(--v-border-mid); }
+    .action-btn:disabled { opacity: 0.35; cursor: default; }
+    .action-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+    .action-btn.saved { color: var(--v-green); border-color: var(--v-green); background: var(--v-green-10); }
   </style>
 </head>
 <body>
@@ -1072,8 +1117,8 @@
     </div>
 
     <div class="header-user">
-      <div class="user-avatar">JS</div>
-      <span class="user-name">J. Smith</span>
+      <div class="user-avatar" id="userAvatar">—</div>
+      <span class="user-name" id="userName"></span>
     </div>
 
   </header>
@@ -1231,7 +1276,7 @@
     </div>
 
     <!-- GxP -->
-    <div class="filter-section" style="border-bottom:none;">
+    <div class="filter-section">
       <button class="filter-section-toggle" onclick="toggleSection(this)">
         <span class="filter-section-label">Compliance</span>
         <span class="filter-chevron open">▼</span>
@@ -1242,6 +1287,24 @@
           <span class="filter-option-label">GxP Relevant only</span>
         </label>
       </div>
+    </div>
+
+    <!-- Recent Searches (sessionStorage) — shown dynamically -->
+    <div class="filter-section" id="history-section" style="display:none">
+      <button class="filter-section-toggle" onclick="toggleSection(this)">
+        <span class="filter-section-label">Recent</span>
+        <span class="filter-chevron open">▼</span>
+      </button>
+      <div class="filter-body" id="history-list"></div>
+    </div>
+
+    <!-- Saved Searches (localStorage) — shown dynamically -->
+    <div class="filter-section" id="saved-section" style="display:none; border-bottom:none;">
+      <button class="filter-section-toggle" onclick="toggleSection(this)">
+        <span class="filter-section-label">Saved Searches</span>
+        <span class="filter-chevron open">▼</span>
+      </button>
+      <div class="filter-body" id="saved-list"></div>
     </div>
 
   </aside>
@@ -1314,6 +1377,14 @@
               <path fill-rule="evenodd" d="M8 15A7 7 0 108 1a7 7 0 000 14zm.75-10.25a.75.75 0 00-1.5 0v3.5c0 .414.336.75.75.75h2.5a.75.75 0 000-1.5H8.75v-2.75z" clip-rule="evenodd"/>
             </svg>
           </span>
+          <button class="action-btn" id="saveSearchBtn" onclick="saveCurrentSearch()" title="Save this search" style="display:none">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.655 2.23c.19-.28.51-.448.845-.448s.656.168.845.449l1.56 2.277 2.644.594c.344.077.626.304.783.617.157.312.15.677-.02.984l-1.716 2.994.18 2.738c.023.35-.127.69-.395.905-.268.214-.62.283-.944.183l-2.661-.779-2.66.779c-.324.1-.676.03-.944-.183-.268-.214-.418-.555-.395-.905l.18-2.738-1.716-2.994c-.17-.307-.176-.672-.02-.984.158-.313.44-.54.783-.617l2.645-.594L7.655 2.23z"/></svg>
+            Save
+          </button>
+          <button class="action-btn" id="exportCsvBtn" onclick="exportCSV()" title="Export results as CSV" style="display:none">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+            CSV
+          </button>
           <div class="view-toggle">
             <button class="view-btn active" id="viewList">List</button>
             <button class="view-btn" id="viewCompact">Compact</button>
@@ -1329,7 +1400,7 @@
             </svg>
           </div>
           <p class="empty-title">Start a search</p>
-          <p class="empty-body">Type a query above or click a suggested chip to find documents across your Vault.</p>
+          <p class="empty-body">Type a query above or click a suggested chip to find documents. Save searches for quick access, or export any result set to CSV.</p>
         </div>
       </div>
 
@@ -1535,7 +1606,7 @@ function initConnectionBanner() {
     banner.style.borderColor  = '#FDE047';
     banner.style.color        = '#854D0E';
     dot.style.background      = '#EAB308';
-    text.textContent          = 'Demo mode — showing sample data. Connect a Vault to search real documents.';
+    text.textContent          = 'Demo mode — sample data · Connect a real Vault to enable Open-in-Vault links, live VQL, and full CSV export.';
     document.getElementById('connectionBannerLink').textContent = 'Connect Vault →';
   }
 }
@@ -1627,6 +1698,9 @@ const CHIPS = {
 
 /* ── STATE ─────────────────────────────────────────────────── */
 const S = { role:'QA_ADMIN', currentTid:null, vqlOpen:false, activeChip:null };
+
+/* ── CURRENT RESULTS (for CSV export) ─────────────────────── */
+let currentResults = [];
 
 /* ── DOM ───────────────────────────────────────────────────── */
 const $ = id => document.getElementById(id);
@@ -1727,7 +1801,15 @@ async function runQuery(tid) {
     setTimeout(() => warn.remove(), 8000);
   }
 
+  addToHistory(tid);
   renderResults(final);
+
+  // Show action buttons once there are results
+  const saveBtn   = document.getElementById('saveSearchBtn');
+  const exportBtn = document.getElementById('exportCsvBtn');
+  if (saveBtn)   saveBtn.style.display   = 'inline-flex';
+  if (exportBtn) exportBtn.style.display = final.length ? 'inline-flex' : 'none';
+
   E.loading.classList.remove('active');
 }
 
@@ -1765,6 +1847,7 @@ function fmtDate(d) {
 }
 
 function renderResults(docs) {
+  currentResults = docs;   // keep reference for CSV export
   if (!docs.length) {
     E.resultsList.innerHTML = `
       <div class="empty-state">
@@ -1816,7 +1899,9 @@ function renderResults(docs) {
         <div class="doc-card-primary">
           <div class="doc-icon ${tm.cls}">${tm.icon}</div>
           <div class="doc-main">
-            <a class="doc-name" href="#" title="${doc.name__v}" onclick="return false">${doc.name__v}</a>
+            <a class="doc-name"
+               ${LIVE ? `href="${LIVE.baseUrl}/ui/#doc:${doc.id}" target="_blank" rel="noopener noreferrer"` : `href="#" onclick="return false"`}
+               title="${LIVE ? 'Open in Vault' : doc.name__v}">${doc.name__v}${LIVE ? ` <svg style="display:inline-block;vertical-align:middle;margin-left:3px;opacity:.5" width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3H3a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1v-3M10 2h4v4M14 2L7 9"/></svg>` : ''}</a>
             <div class="doc-pills">
               <span class="pill pill-type">${tm.label}</span>
               <span class="pill pill-ver">${vLabel}</span>
@@ -1923,9 +2008,175 @@ function toggleSection(btn) {
   chevron.classList.toggle('open', !open);
 }
 
+/* ── SEARCH HISTORY (sessionStorage, 10 entries) ──────────── */
+function addToHistory(tid) {
+  const KEY = 'vault_search_history';
+  let hist = [];
+  try { hist = JSON.parse(sessionStorage.getItem(KEY) || '[]'); } catch {}
+  hist = hist.filter(h => h.tid !== tid);
+  hist.unshift({ tid, label: TNAMES[tid] || tid, ts: Date.now() });
+  hist = hist.slice(0, 10);
+  sessionStorage.setItem(KEY, JSON.stringify(hist));
+  renderHistory();
+}
+
+function renderHistory() {
+  const KEY = 'vault_search_history';
+  let hist = [];
+  try { hist = JSON.parse(sessionStorage.getItem(KEY) || '[]'); } catch {}
+  const section = document.getElementById('history-section');
+  const list    = document.getElementById('history-list');
+  if (!section || !list) return;
+  if (!hist.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  list.innerHTML = hist.map(h => `
+    <div class="history-item" onclick="replayQuery('${h.tid}')">
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+        <path fill-rule="evenodd" d="M8 15A7 7 0 108 1a7 7 0 000 14zm.75-10.25a.75.75 0 00-1.5 0v3.5c0 .414.336.75.75.75h2.5a.75.75 0 000-1.5H8.75v-2.75z" clip-rule="evenodd"/>
+      </svg>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.label}</span>
+    </div>`).join('');
+}
+
+function replayQuery(tid) {
+  S.activeChip = null;
+  E.chipsRow.querySelectorAll('.rec-chip').forEach(b => b.classList.remove('active'));
+  E.input.value = '';
+  E.clearBtn.style.display = 'none';
+  runQuery(tid);
+}
+
+/* ── SAVED SEARCHES (localStorage, 20 entries) ─────────────── */
+function loadSavedSearches() {
+  try { return JSON.parse(localStorage.getItem('vault_saved_searches') || '[]'); } catch { return []; }
+}
+function storeSavedSearches(arr) {
+  localStorage.setItem('vault_saved_searches', JSON.stringify(arr));
+}
+
+function saveCurrentSearch() {
+  if (!S.currentTid) return;
+  const btn = document.getElementById('saveSearchBtn');
+  const suggested = TNAMES[S.currentTid] || S.currentTid;
+  const name = prompt('Name this search:', suggested);
+  if (!name || !name.trim()) return;
+  const saved = loadSavedSearches();
+  // Prevent exact-name duplicates
+  if (saved.some(s => s.name === name.trim())) {
+    alert(`A saved search named "${name.trim()}" already exists.`);
+    return;
+  }
+  saved.unshift({ id: Date.now().toString(), name: name.trim(), tid: S.currentTid, savedAt: new Date().toISOString() });
+  storeSavedSearches(saved.slice(0, 20));
+  renderSavedSearches();
+  // Brief visual feedback
+  if (btn) {
+    btn.classList.add('saved');
+    btn.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor" style="width:13px;height:13px"><path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 01-1.06 0L2.22 9.28a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z" clip-rule="evenodd"/></svg> Saved`;
+    setTimeout(() => {
+      btn.classList.remove('saved');
+      btn.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor" style="width:13px;height:13px"><path d="M7.655 2.23c.19-.28.51-.448.845-.448s.656.168.845.449l1.56 2.277 2.644.594c.344.077.626.304.783.617.157.312.15.677-.02.984l-1.716 2.994.18 2.738c.023.35-.127.69-.395.905-.268.214-.62.283-.944.183l-2.661-.779-2.66.779c-.324.1-.676.03-.944-.183-.268-.214-.418-.555-.395-.905l.18-2.738-1.716-2.994c-.17-.307-.176-.672-.02-.984.158-.313.44-.54.783-.617l2.645-.594L7.655 2.23z"/></svg> Save`;
+    }, 1800);
+  }
+}
+
+function deleteSavedSearch(id, e) {
+  e.stopPropagation();
+  storeSavedSearches(loadSavedSearches().filter(s => s.id !== id));
+  renderSavedSearches();
+}
+
+function renderSavedSearches() {
+  const saved   = loadSavedSearches();
+  const section = document.getElementById('saved-section');
+  const list    = document.getElementById('saved-list');
+  if (!section || !list) return;
+  if (!saved.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  section.style.borderBottom = 'none';
+  list.innerHTML = saved.map(s => `
+    <div class="history-item" onclick="replayQuery('${s.tid}')">
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M7.655 2.23c.19-.28.51-.448.845-.448s.656.168.845.449l1.56 2.277 2.644.594c.344.077.626.304.783.617.157.312.15.677-.02.984l-1.716 2.994.18 2.738c.023.35-.127.69-.395.905-.268.214-.62.283-.944.183l-2.661-.779-2.66.779c-.324.1-.676.03-.944-.183-.268-.214-.418-.555-.395-.905l.18-2.738-1.716-2.994c-.17-.307-.176-.672-.02-.984.158-.313.44-.54.783-.617l2.645-.594L7.655 2.23z"/>
+      </svg>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.name}</span>
+      <button class="history-del" onclick="deleteSavedSearch('${s.id}',event)" title="Remove">×</button>
+    </div>`).join('');
+}
+
+/* ── CSV EXPORT ─────────────────────────────────────────────── */
+function exportCSV() {
+  if (!currentResults.length) return;
+  const headers = ['ID','Name','Type','Status','Version','Modified','Owner','Severity','GxP'];
+  const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = currentResults.map(d => [
+    d.id,
+    d.name__v,
+    (TYPE_META[d.type__v] || {}).label || d.type__v,
+    (STATE_META[d.lifecycle_state__v] || {}).label || d.lifecycle_state__v,
+    `v${d.major}.${d.minor}`,
+    d.modified,
+    d.owner,
+    d.severity ? (SEV_META[d.severity] || {}).label || d.severity : '',
+    d.gxp ? 'Yes' : 'No',
+  ].map(esc).join(','));
+  const csv  = [headers.map(esc).join(','), ...rows].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `vault-search-${S.currentTid || 'results'}-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 /* ── INIT ───────────────────────────────────────────────────── */
+// Restore role from connect.html if set
+const _savedRole = sessionStorage.getItem('vault_user_role');
+if (_savedRole && ROLE_ACL[_savedRole]) {
+  S.role = _savedRole;
+  document.querySelectorAll('.role-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.role === _savedRole);
+  });
+  // Apply draft visibility for restored role
+  const draftLabel = document.getElementById('draftOpt')?.closest('label');
+  if (draftLabel) {
+    const canDraft = ROLE_ACL[_savedRole]?.drafts;
+    draftLabel.style.opacity = canDraft ? '1' : '0.4';
+    if (!canDraft) document.getElementById('draftOpt').checked = false;
+  }
+}
+
+// ── Populate user avatar/name ────────────────────────────────
+(function initUser() {
+  const raw = sessionStorage.getItem('vault_username') || '';
+  const avatarEl = document.getElementById('userAvatar');
+  const nameEl   = document.getElementById('userName');
+  if (!avatarEl || !nameEl) return;
+
+  if (raw) {
+    // Build initials: take first letter of first two whitespace/@ tokens
+    const parts = raw.replace(/@.*/, '').trim().split(/[\s._-]+/).filter(Boolean);
+    const initials = parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : raw.slice(0, 2).toUpperCase();
+    // Display name: email → drop domain; otherwise use as-is (max 18 chars)
+    const display = raw.includes('@') ? raw.split('@')[0] : raw;
+    avatarEl.textContent = initials;
+    nameEl.textContent   = display.length > 18 ? display.slice(0, 17) + '…' : display;
+  } else {
+    // Demo fallback
+    avatarEl.textContent = 'VS';
+    nameEl.textContent   = 'Demo';
+  }
+})();
+
 renderChips(S.role);
 initConnectionBanner();
+renderHistory();       // render any history from previous session actions
+renderSavedSearches(); // render saved searches from localStorage
 runQuery('sop_approved');
 </script>
 </body>
