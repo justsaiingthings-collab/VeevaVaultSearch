@@ -665,12 +665,13 @@
       font-size: 15px;
     }
 
-    .doc-icon.t-sop       { background: var(--v-blue-10);   }
-    .doc-icon.t-deviation { background: var(--v-red-10);    }
-    .doc-icon.t-capa      { background: var(--v-orange-10); }
-    .doc-icon.t-protocol  { background: var(--v-green-10);  }
-    .doc-icon.t-report    { background: var(--v-purple-10); }
-    .doc-icon.t-policy    { background: var(--v-ink-10);    }
+    .doc-icon.t-sop        { background: var(--v-blue-10);   }
+    .doc-icon.t-deviation  { background: var(--v-red-10);    }
+    .doc-icon.t-capa       { background: var(--v-orange-10); }
+    .doc-icon.t-protocol   { background: var(--v-green-10);  }
+    .doc-icon.t-report     { background: var(--v-purple-10); }
+    .doc-icon.t-policy     { background: var(--v-ink-10);    }
+    .doc-icon.t-regulatory { background: #FFF7ED;            }
 
     .doc-main { flex: 1; min-width: 0; }
 
@@ -788,6 +789,22 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+    }
+
+    /* Product pill */
+    .pill-product {
+      background: #EDE9FE;
+      color: #5B21B6;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    /* Study pill */
+    .pill-study {
+      background: #FFF7ED;
+      color: #9A3412;
+      font-size: 10px;
+      font-weight: 500;
     }
 
     /* Card right side */
@@ -1142,37 +1159,43 @@
           <input type="checkbox" name="type" value="sop">
           <span class="filter-dot" style="background:#0060B9"></span>
           <span class="filter-option-label">SOP</span>
-          <span class="filter-count">42</span>
+          <span class="filter-count">25</span>
         </label>
         <label class="filter-option">
           <input type="checkbox" name="type" value="deviation">
           <span class="filter-dot" style="background:#C8001E"></span>
           <span class="filter-option-label">Deviation</span>
-          <span class="filter-count">18</span>
+          <span class="filter-count">15</span>
         </label>
         <label class="filter-option">
           <input type="checkbox" name="type" value="capa">
           <span class="filter-dot" style="background:#D95800"></span>
           <span class="filter-option-label">CAPA</span>
-          <span class="filter-count">9</span>
+          <span class="filter-count">15</span>
         </label>
         <label class="filter-option">
           <input type="checkbox" name="type" value="protocol">
           <span class="filter-dot" style="background:#1E7E45"></span>
           <span class="filter-option-label">Protocol</span>
-          <span class="filter-count">15</span>
+          <span class="filter-count">12</span>
         </label>
         <label class="filter-option">
           <input type="checkbox" name="type" value="report">
           <span class="filter-dot" style="background:#5B3FA6"></span>
           <span class="filter-option-label">Report</span>
-          <span class="filter-count">33</span>
+          <span class="filter-count">12</span>
         </label>
         <label class="filter-option">
           <input type="checkbox" name="type" value="policy">
           <span class="filter-dot" style="background:#6B7280"></span>
           <span class="filter-option-label">Policy</span>
-          <span class="filter-count">7</span>
+          <span class="filter-count">6</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="type" value="regulatory">
+          <span class="filter-dot" style="background:#D95800"></span>
+          <span class="filter-option-label">Regulatory</span>
+          <span class="filter-count">10</span>
         </label>
       </div>
     </div>
@@ -1425,35 +1448,192 @@
 
 /* ── MOCK DATA ─────────────────────────────────────────────── */
 const MOCK_DOCS = [
-  { id:'100001', name__v:'SOP-MFG-001: Raw Material Handling Procedure',        type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2025-03-15', owner:'Alice Chen',    severity:null,       gxp:true,  capa:null                    },
-  { id:'100002', name__v:'SOP-QC-042: In-Process Sampling & Testing',           type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:2, minor:1, modified:'2025-04-02', owner:'Bob Martinez',  severity:null,       gxp:true,  capa:null                    },
-  { id:'100003', name__v:'DEV-2024-089: Particulate Contamination — Batch 7734',type__v:'Deviation__c',                    lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2025-04-10', owner:'Carol Kim',     severity:'Critical__v', gxp:true,  capa:'CAPA-2024-031'     },
-  { id:'100004', name__v:'CAPA-2024-031: Particulate Control Enhancement Plan', type__v:'CAPA__c',                         lifecycle_state__v:'In Progress__v',  major:1, minor:0, modified:'2025-04-12', owner:'David Lee',     severity:'Critical__v', gxp:true,  capa:null                },
-  { id:'100005', name__v:'SOP-LAB-017: HPLC Method Validation Protocol',        type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Draft__v',        major:0, minor:1, modified:'2025-04-18', owner:'Emma Wilson',   severity:null,       gxp:true,  capa:null                    },
-  { id:'100006', name__v:'CAPA-2024-028: Equipment Qualification Gap',          type__v:'CAPA__c',                         lifecycle_state__v:'Open__v',          major:1, minor:0, modified:'2024-12-20', owner:'Frank Zhao',    severity:'Major__v', gxp:true,  capa:null, expiry:'2025-01-15'},
-  { id:'100007', name__v:'RPT-AUD-2025-001: Annual GMP Compliance Audit',       type__v:'Report__c',                       lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-02-28', owner:'Grace Patel',   severity:null,       gxp:true,  capa:null                    },
-  { id:'100008', name__v:'SOP-REG-005: CTD Module Preparation & Submission',    type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2025-01-10', owner:'Henry Brown',   severity:null,       gxp:true,  capa:null, expiry:'2025-07-10'},
-  { id:'100009', name__v:'DEV-2025-004: Dissolution OOS — Product X Lot 2210', type__v:'Deviation__c',                    lifecycle_state__v:'In Progress__v',  major:1, minor:0, modified:'2025-04-20', owner:'Irene Santos',  severity:'Major__v', gxp:true,  capa:null                    },
-  { id:'100010', name__v:'CAPA-2024-019: SOP Training Compliance Program',      type__v:'CAPA__c',                         lifecycle_state__v:'Closed__v',       major:2, minor:0, modified:'2025-03-01', owner:'James Park',    severity:'Minor__v', gxp:false, capa:null                    },
-  { id:'100011', name__v:'POL-QMS-001: Quality Management System Policy',       type__v:'Policy__c',                       lifecycle_state__v:'Effective__v',   major:5, minor:0, modified:'2024-11-01', owner:'Karen Liu',     severity:null,       gxp:true,  capa:null                    },
-  { id:'100012', name__v:'SOP-QA-033: Document Control & Change Management',    type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:6, minor:2, modified:'2025-04-15', owner:'Leo Nguyen',    severity:null,       gxp:true,  capa:null                    },
+  /* ── SOPs (25) ── */
+  { id:'100001', name__v:'SOP-MFG-001: Raw Material Handling Procedure',             type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2025-03-15', owner:'Sarah Chen',       severity:null,         gxp:true,  capa:null,             product:'Vexatrol'                        },
+  { id:'100002', name__v:'SOP-MFG-003: Granulation Process Control',                 type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-01-20', owner:'Carlos Rivera',    severity:null,         gxp:true,  capa:null,             product:'Vexatrol'                        },
+  { id:'100003', name__v:'SOP-MFG-007: Tablet Compression Standards',                type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:4, minor:1, modified:'2025-02-10', owner:'Carlos Rivera',    severity:null,         gxp:true,  capa:null,             product:'Vexatrol'                        },
+  { id:'100004', name__v:'SOP-MFG-009: Sterile Fill-Finish Operations',              type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-04-01', owner:'James Murphy',     severity:null,         gxp:true,  capa:null,             product:'Lumivance',  expiry:'2026-06-15'  },
+  { id:'100005', name__v:'SOP-MFG-012: Lyophilization Cycle Validation',             type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Draft__v',        major:0, minor:2, modified:'2026-04-10', owner:'James Murphy',     severity:null,         gxp:true,  capa:null,             product:'Lumivance'                       },
+  { id:'100006', name__v:'SOP-MFG-015: Equipment Cleaning Validation',               type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:5, minor:0, modified:'2024-09-15', owner:'Patricia Olsen',   severity:null,         gxp:true,  capa:null                                              },
+  { id:'100007', name__v:'SOP-MFG-018: Batch Record Review Procedure',               type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2026-02-01', owner:'Patricia Olsen',   severity:null,         gxp:true,  capa:null,             expiry:'2026-05-20'                       },
+  { id:'100008', name__v:'SOP-MFG-022: Packaging Line Qualification',                type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2024-11-20', owner:'Carlos Rivera',    severity:null,         gxp:true,  capa:null,             product:'Cardiplex'                       },
+  { id:'100009', name__v:'SOP-QC-042: In-Process Sampling & Testing',                type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:2, minor:1, modified:'2025-04-02', owner:'Ahmed Hassan',     severity:null,         gxp:true,  capa:null                                              },
+  { id:'100010', name__v:'SOP-QC-056: Analytical Method Validation',                 type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2025-01-15', owner:'Ahmed Hassan',     severity:null,         gxp:true,  capa:null,             product:'Vexatrol'                        },
+  { id:'100011', name__v:'SOP-QC-061: Out-of-Specification Investigation',           type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2024-12-10', owner:'Lisa Nakamura',    severity:null,         gxp:true,  capa:null                                              },
+  { id:'100012', name__v:'SOP-QC-067: Stability Sample Management',                  type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-06-01', owner:'Lisa Nakamura',    severity:null,         gxp:true,  capa:null,             expiry:'2026-07-01'                       },
+  { id:'100013', name__v:'SOP-QC-073: Environmental Monitoring Program',             type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2026-01-10', owner:'Robert Patel',     severity:null,         gxp:true,  capa:null                                              },
+  { id:'100014', name__v:'SOP-QC-079: Microbial Limit Testing',                      type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-08-20', owner:'Robert Patel',     severity:null,         gxp:true,  capa:null,             product:'Lumivance'                       },
+  { id:'100015', name__v:'SOP-LAB-017: HPLC Method Validation Protocol',             type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Draft__v',        major:0, minor:1, modified:'2026-04-18', owner:'Ben Okafor',       severity:null,         gxp:true,  capa:null                                              },
+  { id:'100016', name__v:'SOP-LAB-023: GC/MS Analytical Protocol',                   type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-03-30', owner:'Alexandra Novak',  severity:null,         gxp:true,  capa:null                                              },
+  { id:'100017', name__v:'SOP-LAB-031: Reference Standard Management',               type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2024-10-15', owner:'Ben Okafor',       severity:null,         gxp:true,  capa:null                                              },
+  { id:'100018', name__v:'SOP-LAB-038: Laboratory Notebook Management',              type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2024-07-22', owner:'Alexandra Novak',  severity:null,         gxp:false, capa:null                                              },
+  { id:'100019', name__v:'SOP-QA-033: Document Control & Change Management',         type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:6, minor:2, modified:'2026-01-15', owner:'Michael Torres',   severity:null,         gxp:true,  capa:null                                              },
+  { id:'100020', name__v:'SOP-QA-041: Internal Audit Procedure',                     type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2025-09-05', owner:'Jennifer Walsh',   severity:null,         gxp:true,  capa:null                                              },
+  { id:'100021', name__v:'SOP-QA-055: Change Control Management',                    type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:2, minor:0, modified:'2026-01-30', owner:'David Kim',        severity:null,         gxp:true,  capa:null,             expiry:'2026-06-01'                       },
+  { id:'100022', name__v:'SOP-QA-062: CAPA Management Procedure',                    type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2025-11-10', owner:'David Kim',        severity:null,         gxp:true,  capa:null                                              },
+  { id:'100023', name__v:'SOP-REG-005: CTD Module Preparation & Submission',         type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2025-01-10', owner:'Thomas Berger',    severity:null,         gxp:true,  capa:null                                              },
+  { id:'100024', name__v:'SOP-REG-011: Regulatory Submission Management',            type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-05-12', owner:'Nicole Laurent',   severity:null,         gxp:true,  capa:null                                              },
+  { id:'100025', name__v:'SOP-REG-019: Labelling Review & Approval',                 type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2026-02-28', owner:'Yuki Tanaka',      severity:null,         gxp:true,  capa:null                                              },
+  /* ── Deviations (15) ── */
+  { id:'100026', name__v:'DEV-2024-089: Particulate Contamination — Batch 7734',     type__v:'Deviation__c',  lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2025-04-10', owner:'Sarah Chen',       severity:'Critical__v', gxp:true,  capa:'CAPA-2024-031', product:'Vexatrol'   },
+  { id:'100027', name__v:'DEV-2025-001: API Yield Below Spec — Batch 2201',          type__v:'Deviation__c',  lifecycle_state__v:'Closed__v',       major:1, minor:0, modified:'2025-06-15', owner:'Michael Torres',   severity:'Major__v',    gxp:true,  capa:'CAPA-2025-002', product:'Vexatrol'   },
+  { id:'100028', name__v:'DEV-2025-003: Dissolution Failure Lot VXT-3310',           type__v:'Deviation__c',  lifecycle_state__v:'In Progress__v',  major:1, minor:1, modified:'2026-01-20', owner:'Ahmed Hassan',     severity:'Major__v',    gxp:true,  capa:'CAPA-2025-021', product:'Vexatrol'   },
+  { id:'100029', name__v:'DEV-2025-006: Temperature Excursion — Cold Storage Unit 4',type__v:'Deviation__c',  lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2025-09-08', owner:'Lisa Nakamura',    severity:'Critical__v', gxp:true,  capa:'CAPA-2025-008', product:'Lumivance'  },
+  { id:'100030', name__v:'DEV-2025-009: Bioburden OOS — Filling Line 2',             type__v:'Deviation__c',  lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2025-11-15', owner:'James Murphy',     severity:'Critical__v', gxp:true,  capa:'CAPA-2025-024', product:'Lumivance'  },
+  { id:'100031', name__v:'DEV-2025-011: Label Misprint — Lot CDP-0891',              type__v:'Deviation__c',  lifecycle_state__v:'Closed__v',       major:1, minor:0, modified:'2025-07-20', owner:'Carlos Rivera',    severity:'Minor__v',    gxp:true,  capa:null,            product:'Cardiplex'  },
+  { id:'100032', name__v:'DEV-2025-014: Granulation Moisture Content OOS',           type__v:'Deviation__c',  lifecycle_state__v:'In Progress__v',  major:1, minor:0, modified:'2026-02-05', owner:'Robert Patel',     severity:'Major__v',    gxp:true,  capa:null,            product:'Vexatrol'   },
+  { id:'100033', name__v:'DEV-2025-017: Sterilization Cycle Parameter Deviation',    type__v:'Deviation__c',  lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2026-01-10', owner:'Patricia Olsen',   severity:'Major__v',    gxp:true,  capa:'CAPA-2025-012', product:'Lumivance'  },
+  { id:'100034', name__v:'DEV-2024-071: Cleaning Validation Failure — Line 3',       type__v:'Deviation__c',  lifecycle_state__v:'Closed__v',       major:1, minor:0, modified:'2024-10-30', owner:'Jennifer Walsh',   severity:'Major__v',    gxp:true,  capa:null                                            },
+  { id:'100035', name__v:'DEV-2024-079: Equipment Calibration OOT — Mixer 5',        type__v:'Deviation__c',  lifecycle_state__v:'Closed__v',       major:1, minor:0, modified:'2024-11-25', owner:'David Kim',        severity:'Minor__v',    gxp:false, capa:null                                            },
+  { id:'100036', name__v:'DEV-2024-083: Raw Material CoA Non-Conformance',           type__v:'Deviation__c',  lifecycle_state__v:'Closed__v',       major:1, minor:0, modified:'2024-12-14', owner:'Michael Torres',   severity:'Minor__v',    gxp:true,  capa:null,            product:'Cardiplex'  },
+  { id:'100037', name__v:'DEV-2025-022: Tablet Hardness OOS — Batch 4412',           type__v:'Deviation__c',  lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2026-03-01', owner:'Ahmed Hassan',     severity:'Minor__v',    gxp:true,  capa:null,            product:'Vexatrol'   },
+  { id:'100038', name__v:'DEV-2025-025: Sterility Test Failure — Investigational Lot',type__v:'Deviation__c', lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2026-03-18', owner:'Lisa Nakamura',    severity:'Critical__v', gxp:true,  capa:'CAPA-2025-030', product:'Lumivance'  },
+  { id:'100039', name__v:'DEV-2025-028: Packaging Seal Integrity Failure',           type__v:'Deviation__c',  lifecycle_state__v:'In Progress__v',  major:1, minor:0, modified:'2026-03-25', owner:'Carlos Rivera',    severity:'Major__v',    gxp:true,  capa:'CAPA-2025-027', product:'Cardiplex'  },
+  { id:'100040', name__v:'DEV-2025-031: Water System Conductivity Excursion',        type__v:'Deviation__c',  lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2026-04-05', owner:'Jennifer Walsh',   severity:'Major__v',    gxp:true,  capa:'CAPA-2025-018'                                 },
+  /* ── CAPAs (15) ── */
+  { id:'100041', name__v:'CAPA-2024-019: SOP Training Compliance Program',           type__v:'CAPA__c',       lifecycle_state__v:'Closed__v',       major:2, minor:0, modified:'2025-03-01', owner:'David Kim',        severity:'Minor__v',    gxp:false, capa:null                                            },
+  { id:'100042', name__v:'CAPA-2024-028: Equipment Qualification Gap',               type__v:'CAPA__c',       lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2024-12-20', owner:'Jennifer Walsh',   severity:'Major__v',    gxp:true,  capa:null,            expiry:'2026-01-31'                      },
+  { id:'100043', name__v:'CAPA-2024-031: Particulate Control Enhancement Plan',      type__v:'CAPA__c',       lifecycle_state__v:'In Progress__v',  major:1, minor:0, modified:'2026-04-12', owner:'Sarah Chen',       severity:'Critical__v', gxp:true,  capa:null,            product:'Vexatrol'                        },
+  { id:'100044', name__v:'CAPA-2024-037: Process Analytical Technology Implementation',type__v:'CAPA__c',     lifecycle_state__v:'Closed__v',       major:1, minor:0, modified:'2025-05-10', owner:'Michael Torres',   severity:'Major__v',    gxp:true,  capa:null                                            },
+  { id:'100045', name__v:'CAPA-2024-044: Environmental Monitoring Enhancement',      type__v:'CAPA__c',       lifecycle_state__v:'Closed__v',       major:1, minor:0, modified:'2025-02-14', owner:'Robert Patel',     severity:'Minor__v',    gxp:true,  capa:null,            product:'Lumivance'                       },
+  { id:'100046', name__v:'CAPA-2025-002: Root Cause Analysis — Batch 2201 Yield Loss',type__v:'CAPA__c',      lifecycle_state__v:'In Progress__v',  major:1, minor:0, modified:'2025-07-01', owner:'Michael Torres',   severity:'Major__v',    gxp:true,  capa:null,            product:'Vexatrol'                        },
+  { id:'100047', name__v:'CAPA-2025-008: Cold Storage Temperature Alarm Upgrade',    type__v:'CAPA__c',       lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2025-09-15', owner:'Lisa Nakamura',    severity:'Critical__v', gxp:true,  capa:null,            product:'Lumivance',  expiry:'2026-03-01'  },
+  { id:'100048', name__v:'CAPA-2025-012: Sterilization Validation Protocol Update',  type__v:'CAPA__c',       lifecycle_state__v:'In Progress__v',  major:1, minor:0, modified:'2026-01-25', owner:'James Murphy',     severity:'Major__v',    gxp:true,  capa:null,            product:'Lumivance'                       },
+  { id:'100049', name__v:'CAPA-2025-015: Label Control Procedure Enhancement',       type__v:'CAPA__c',       lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2026-02-10', owner:'Yuki Tanaka',      severity:'Minor__v',    gxp:true,  capa:null,            product:'Cardiplex',  expiry:'2026-06-30'  },
+  { id:'100050', name__v:'CAPA-2025-018: Water System Remediation Plan',             type__v:'CAPA__c',       lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2026-02-20', owner:'Alexandra Novak',  severity:'Major__v',    gxp:true,  capa:null,            expiry:'2026-05-15'                       },
+  { id:'100051', name__v:'CAPA-2025-021: Dissolution Method Update — Vexatrol',      type__v:'CAPA__c',       lifecycle_state__v:'In Progress__v',  major:1, minor:0, modified:'2026-02-28', owner:'Ahmed Hassan',     severity:'Major__v',    gxp:true,  capa:null,            product:'Vexatrol'                        },
+  { id:'100052', name__v:'CAPA-2025-024: Filling Line Bioburden Controls',           type__v:'CAPA__c',       lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2025-12-01', owner:'James Murphy',     severity:'Critical__v', gxp:true,  capa:null,            product:'Lumivance',  expiry:'2026-02-15'  },
+  { id:'100053', name__v:'CAPA-2025-027: Packaging Seal Integrity System',           type__v:'CAPA__c',       lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2026-04-01', owner:'Carlos Rivera',    severity:'Major__v',    gxp:true,  capa:null,            product:'Cardiplex',  expiry:'2026-07-01'  },
+  { id:'100054', name__v:'CAPA-2025-030: Sterility Assurance Program',               type__v:'CAPA__c',       lifecycle_state__v:'In Progress__v',  major:1, minor:0, modified:'2026-04-08', owner:'James Murphy',     severity:'Critical__v', gxp:true,  capa:null,            product:'Lumivance'                       },
+  { id:'100055', name__v:'CAPA-2025-033: Analytical Method Revalidation',            type__v:'CAPA__c',       lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2026-03-15', owner:'Ben Okafor',       severity:'Major__v',    gxp:true,  capa:null,            expiry:'2026-06-30'                       },
+  /* ── Clinical Protocols (12) ── */
+  { id:'100056', name__v:'PRO-2024-042-001: Phase III Clinical Protocol',            type__v:'Protocol__c',   lifecycle_state__v:'Approved__v',    major:2, minor:0, modified:'2025-02-15', owner:'Dr. Emily Foster', severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
+  { id:'100057', name__v:'PRO-2024-042-002: Protocol Amendment 1',                   type__v:'Protocol__c',   lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-08-10', owner:'Dr. Emily Foster', severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
+  { id:'100058', name__v:'PRO-2025-007-001: Phase II Clinical Protocol',             type__v:'Protocol__c',   lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-11-20', owner:'Dr. Marcus Webb',  severity:null,          gxp:true,  capa:null,            product:'Lumivance',  study:'STUDY-2025-007' },
+  { id:'100059', name__v:'SAP-2024-042: Statistical Analysis Plan',                  type__v:'Protocol__c',   lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-03-01', owner:'Priya Sharma',     severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
+  { id:'100060', name__v:'DMP-2024-042: Data Management Plan',                       type__v:'Protocol__c',   lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2025-01-15', owner:'Priya Sharma',     severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
+  { id:'100061', name__v:'ICF-2024-042-v3: Informed Consent Form',                   type__v:'Protocol__c',   lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-05-20', owner:'Dr. Emily Foster', severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
+  { id:'100062', name__v:'ICF-2025-007-v1: Informed Consent Form — Lumivance',      type__v:'Protocol__c',   lifecycle_state__v:'Draft__v',        major:1, minor:0, modified:'2026-03-10', owner:'Dr. Marcus Webb',  severity:null,          gxp:true,  capa:null,            product:'Lumivance',  study:'STUDY-2025-007' },
+  { id:'100063', name__v:'RMP-2023-018: Risk Management Protocol',                   type__v:'Protocol__c',   lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2024-08-01', owner:'Dr. Emily Foster', severity:null,          gxp:true,  capa:null,            product:'Cardiplex',  study:'STUDY-2023-018' },
+  { id:'100064', name__v:'PRO-2023-018-001: Post-Approval Study Protocol',           type__v:'Protocol__c',   lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2024-04-15', owner:'Dr. Marcus Webb',  severity:null,          gxp:true,  capa:null,            product:'Cardiplex',  study:'STUDY-2023-018' },
+  { id:'100065', name__v:'SAP-2025-007: Statistical Analysis Plan — Lumivance',     type__v:'Protocol__c',   lifecycle_state__v:'Draft__v',        major:0, minor:1, modified:'2026-04-15', owner:'Priya Sharma',     severity:null,          gxp:true,  capa:null,            product:'Lumivance',  study:'STUDY-2025-007' },
+  { id:'100066', name__v:'DSP-2024-042: Drug Supply Plan',                           type__v:'Protocol__c',   lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-04-10', owner:'Carlos Rivera',    severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
+  { id:'100067', name__v:'AMP-2023-018: Amended Post-Approval Protocol',             type__v:'Protocol__c',   lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2024-12-05', owner:'Dr. Emily Foster', severity:null,          gxp:true,  capa:null,            product:'Cardiplex',  study:'STUDY-2023-018' },
+  /* ── Reports (12) ── */
+  { id:'100068', name__v:'RPT-AUD-2025-001: Annual GMP Compliance Audit Report',     type__v:'Report__c',     lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-02-28', owner:'Jennifer Walsh',   severity:null,          gxp:true,  capa:null                                            },
+  { id:'100069', name__v:'RPT-CSR-2024-042: Clinical Study Report — Vexatrol',      type__v:'Report__c',     lifecycle_state__v:'Draft__v',        major:0, minor:3, modified:'2026-03-20', owner:'Dr. Emily Foster', severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
+  { id:'100070', name__v:"RPT-IB-VXT-2025: Investigator's Brochure Vexatrol v8",    type__v:'Report__c',     lifecycle_state__v:'Approved__v',    major:8, minor:0, modified:'2025-09-10', owner:'Nicole Laurent',   severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
+  { id:'100071', name__v:'RPT-STAB-VXT-2025: Stability Data Report — 24-Month',     type__v:'Report__c',     lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-10-15', owner:'Ahmed Hassan',     severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
+  { id:'100072', name__v:'RPT-VAL-2025-003: Process Validation Report — Line 2',    type__v:'Report__c',     lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2025-08-05', owner:'Alexandra Novak',  severity:null,          gxp:true,  capa:null                                            },
+  { id:'100073', name__v:'RPT-QMS-2025-Q1: Q1 Quality Management Review Report',    type__v:'Report__c',     lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-04-30', owner:'Michael Torres',   severity:null,          gxp:true,  capa:null                                            },
+  { id:'100074', name__v:"RPT-IB-LMV-2025: Investigator's Brochure Lumivance v3",   type__v:'Report__c',     lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-12-01', owner:'Dr. Marcus Webb',  severity:null,          gxp:true,  capa:null,            product:'Lumivance'                       },
+  { id:'100075', name__v:'RPT-STAB-LMV-2024: 12-Month Stability Report — Lumivance',type__v:'Report__c',    lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2024-11-15', owner:'Ben Okafor',       severity:null,          gxp:true,  capa:null,            product:'Lumivance'                       },
+  { id:'100076', name__v:'RPT-AUD-2024-002: EU GMP Audit Report — Cardiplex',       type__v:'Report__c',     lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2024-10-05', owner:'Thomas Berger',    severity:null,          gxp:true,  capa:null,            product:'Cardiplex'                       },
+  { id:'100077', name__v:'RPT-CSR-2023-018: Interim Study Report — Cardiplex',      type__v:'Report__c',     lifecycle_state__v:'Approved__v',    major:2, minor:0, modified:'2025-01-20', owner:'Priya Sharma',     severity:null,          gxp:true,  capa:null,            product:'Cardiplex',  study:'STUDY-2023-018' },
+  { id:'100078', name__v:'RPT-VAL-2024-007: Cleaning Validation Summary Report',     type__v:'Report__c',     lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2024-09-30', owner:'Alexandra Novak',  severity:null,          gxp:true,  capa:null                                            },
+  { id:'100079', name__v:'RPT-DEV-2025-Q1: Q1 2025 Deviation & CAPA Summary',       type__v:'Report__c',     lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-05-15', owner:'David Kim',        severity:null,          gxp:false, capa:null                                            },
+  /* ── Regulatory / CTD (10) ── */
+  { id:'100080', name__v:'CTD-M2.3-VXT: Quality Overall Summary',                    type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:2, minor:0, modified:'2025-06-01', owner:'Nicole Laurent',   severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
+  { id:'100081', name__v:'CTD-M3.2.S-VXT: Drug Substance Section',                   type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-07-15', owner:'Thomas Berger',    severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
+  { id:'100082', name__v:'CTD-M3.2.P-VXT: Drug Product Section',                     type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-07-15', owner:'Yuki Tanaka',      severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
+  { id:'100083', name__v:'CTD-M5.3.5-VXT: Clinical Study Reports Module',            type__v:'Regulatory__c', lifecycle_state__v:'Draft__v',        major:0, minor:2, modified:'2026-04-01', owner:'Nicole Laurent',   severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
+  { id:'100084', name__v:'REG-LABEL-VXT-003: Prescribing Information v3',            type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-08-20', owner:'Yuki Tanaka',      severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   expiry:'2026-06-30'  },
+  { id:'100085', name__v:'REG-IND-2025-007: IND Application — Lumivance',            type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-10-30', owner:'Thomas Berger',    severity:null,          gxp:true,  capa:null,            product:'Lumivance',  study:'STUDY-2025-007' },
+  { id:'100086', name__v:'REG-IMPD-LMV-002: IMPD Section 3 Drug Product',            type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:2, minor:0, modified:'2025-11-05', owner:'Nicole Laurent',   severity:null,          gxp:true,  capa:null,            product:'Lumivance'                       },
+  { id:'100087', name__v:'REG-MAA-CDP-2024: MAA Module 3 EU Submission',             type__v:'Regulatory__c', lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2024-09-15', owner:'Thomas Berger',    severity:null,          gxp:true,  capa:null,            product:'Cardiplex'                       },
+  { id:'100088', name__v:'REG-PSUR-CDP-2025: PSUR Cardiplex Q1 2025',                type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-04-30', owner:'Yuki Tanaka',      severity:null,          gxp:true,  capa:null,            product:'Cardiplex'                       },
+  { id:'100089', name__v:'REG-REMS-VXT-001: REMS Program Document',                  type__v:'Regulatory__c', lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2025-03-20', owner:'Nicole Laurent',   severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
+  /* ── Policies (6) ── */
+  { id:'100090', name__v:'POL-QMS-001: Quality Management System Policy',             type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:5, minor:0, modified:'2024-11-01', owner:'Michael Torres',   severity:null,          gxp:true,  capa:null                                            },
+  { id:'100091', name__v:'POL-QMS-002: Risk Management Policy',                       type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2024-08-15', owner:'Jennifer Walsh',   severity:null,          gxp:true,  capa:null                                            },
+  { id:'100092', name__v:'POL-GXP-001: GxP Compliance Policy',                       type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2025-01-20', owner:'David Kim',        severity:null,          gxp:true,  capa:null                                            },
+  { id:'100093', name__v:'POL-DOC-001: Document Control Policy',                     type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:7, minor:0, modified:'2025-10-10', owner:'Michael Torres',   severity:null,          gxp:true,  capa:null                                            },
+  { id:'100094', name__v:'POL-SEC-004: Data Integrity & Security Policy',             type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-06-25', owner:'Alexandra Novak',  severity:null,          gxp:true,  capa:null                                            },
+  { id:'100095', name__v:'POL-VAL-001: Validation Master Plan Policy',                type__v:'Policy__c',     lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2026-01-05', owner:'Jennifer Walsh',   severity:null,          gxp:true,  capa:null                                            },
 ];
 
 const MOCK_VERSIONS = {
-  '100001': [
-    { ver:'v3.0', state:'Effective__v',   date:'Mar 15, 2025', by:'Alice Chen'   },
-    { ver:'v2.1', state:'Superseded__v',  date:'Sep 10, 2024', by:'Alice Chen'   },
-    { ver:'v2.0', state:'Superseded__v',  date:'Mar 22, 2024', by:'Tom Harris'   },
-    { ver:'v1.0', state:'Superseded__v',  date:'Jun 01, 2023', by:'Tom Harris'   },
+  '100001': [ /* SOP-MFG-001 */
+    { ver:'v3.0', state:'Effective__v',   date:'Mar 15, 2025', by:'Sarah Chen'      },
+    { ver:'v2.1', state:'Superseded__v',  date:'Sep 10, 2024', by:'Sarah Chen'      },
+    { ver:'v2.0', state:'Superseded__v',  date:'Mar 22, 2024', by:'Carlos Rivera'   },
+    { ver:'v1.0', state:'Superseded__v',  date:'Jun 01, 2023', by:'Carlos Rivera'   },
   ],
-  '100008': [
-    { ver:'v4.0', state:'Effective__v',   date:'Jan 10, 2025', by:'Henry Brown'  },
-    { ver:'v3.0', state:'Superseded__v',  date:'Jul 01, 2023', by:'Sarah Jones'  },
+  '100009': [ /* SOP-QC-042 */
+    { ver:'v2.1', state:'Approved__v',    date:'Apr 02, 2025', by:'Ahmed Hassan'    },
+    { ver:'v2.0', state:'Superseded__v',  date:'Oct 15, 2024', by:'Ahmed Hassan'    },
+    { ver:'v1.0', state:'Superseded__v',  date:'Feb 20, 2023', by:'Lisa Nakamura'   },
   ],
-  '100012': [
-    { ver:'v6.2', state:'Effective__v',   date:'Apr 15, 2025', by:'Leo Nguyen'   },
-    { ver:'v6.1', state:'Superseded__v',  date:'Jan 20, 2025', by:'Leo Nguyen'   },
-    { ver:'v6.0', state:'Superseded__v',  date:'Oct 05, 2024', by:'Leo Nguyen'   },
+  '100019': [ /* SOP-QA-033 */
+    { ver:'v6.2', state:'Effective__v',   date:'Jan 15, 2026', by:'Michael Torres'  },
+    { ver:'v6.1', state:'Superseded__v',  date:'Sep 05, 2025', by:'Michael Torres'  },
+    { ver:'v6.0', state:'Superseded__v',  date:'Apr 10, 2025', by:'Michael Torres'  },
+    { ver:'v5.0', state:'Superseded__v',  date:'Aug 01, 2024', by:'Jennifer Walsh'  },
+    { ver:'v4.0', state:'Superseded__v',  date:'Jan 15, 2023', by:'Jennifer Walsh'  },
+    { ver:'v3.0', state:'Superseded__v',  date:'Mar 10, 2022', by:'David Kim'       },
+  ],
+  '100023': [ /* SOP-REG-005 */
+    { ver:'v4.0', state:'Effective__v',   date:'Jan 10, 2025', by:'Thomas Berger'   },
+    { ver:'v3.0', state:'Superseded__v',  date:'Jun 15, 2023', by:'Nicole Laurent'  },
+    { ver:'v2.0', state:'Superseded__v',  date:'Nov 20, 2022', by:'Nicole Laurent'  },
+    { ver:'v1.0', state:'Superseded__v',  date:'Apr 05, 2021', by:'Yuki Tanaka'     },
+  ],
+  '100056': [ /* PRO-2024-042-001 */
+    { ver:'v2.0', state:'Approved__v',    date:'Feb 15, 2025', by:'Dr. Emily Foster'},
+    { ver:'v1.0', state:'Superseded__v',  date:'Jul 20, 2024', by:'Dr. Emily Foster'},
+  ],
+  '100061': [ /* ICF-2024-042-v3 */
+    { ver:'v3.0', state:'Approved__v',    date:'May 20, 2025', by:'Dr. Emily Foster'},
+    { ver:'v2.0', state:'Superseded__v',  date:'Nov 10, 2024', by:'Dr. Emily Foster'},
+    { ver:'v1.0', state:'Superseded__v',  date:'Jul 20, 2024', by:'Dr. Marcus Webb' },
+  ],
+  '100070': [ /* RPT-IB-VXT-2025 */
+    { ver:'v8.0', state:'Approved__v',    date:'Sep 10, 2025', by:'Nicole Laurent'  },
+    { ver:'v7.0', state:'Superseded__v',  date:'Mar 15, 2025', by:'Nicole Laurent'  },
+    { ver:'v6.0', state:'Superseded__v',  date:'Sep 20, 2024', by:'Thomas Berger'   },
+    { ver:'v5.0', state:'Superseded__v',  date:'Apr 01, 2024', by:'Thomas Berger'   },
+    { ver:'v4.0', state:'Superseded__v',  date:'Oct 15, 2023', by:'Thomas Berger'   },
+  ],
+  '100071': [ /* RPT-STAB-VXT-2025 */
+    { ver:'v3.0', state:'Approved__v',    date:'Oct 15, 2025', by:'Ahmed Hassan'    },
+    { ver:'v2.0', state:'Superseded__v',  date:'Apr 20, 2025', by:'Ahmed Hassan'    },
+    { ver:'v1.0', state:'Superseded__v',  date:'Oct 10, 2024', by:'Ben Okafor'      },
+  ],
+  '100080': [ /* CTD-M2.3-VXT */
+    { ver:'v2.0', state:'Approved__v',    date:'Jun 01, 2025', by:'Nicole Laurent'  },
+    { ver:'v1.0', state:'Superseded__v',  date:'Dec 15, 2024', by:'Nicole Laurent'  },
+  ],
+  '100081': [ /* CTD-M3.2.S-VXT */
+    { ver:'v3.0', state:'Approved__v',    date:'Jul 15, 2025', by:'Thomas Berger'   },
+    { ver:'v2.0', state:'Superseded__v',  date:'Feb 10, 2025', by:'Thomas Berger'   },
+    { ver:'v1.0', state:'Superseded__v',  date:'Aug 01, 2024', by:'Yuki Tanaka'     },
+  ],
+  '100082': [ /* CTD-M3.2.P-VXT */
+    { ver:'v3.0', state:'Approved__v',    date:'Jul 15, 2025', by:'Yuki Tanaka'     },
+    { ver:'v2.0', state:'Superseded__v',  date:'Feb 10, 2025', by:'Yuki Tanaka'     },
+    { ver:'v1.0', state:'Superseded__v',  date:'Aug 01, 2024', by:'Nicole Laurent'  },
+  ],
+  '100090': [ /* POL-QMS-001 */
+    { ver:'v5.0', state:'Effective__v',   date:'Nov 01, 2024', by:'Michael Torres'  },
+    { ver:'v4.0', state:'Superseded__v',  date:'May 15, 2023', by:'Michael Torres'  },
+    { ver:'v3.0', state:'Superseded__v',  date:'Nov 20, 2021', by:'Jennifer Walsh'  },
+    { ver:'v2.0', state:'Superseded__v',  date:'Mar 10, 2020', by:'Jennifer Walsh'  },
+    { ver:'v1.0', state:'Superseded__v',  date:'Jan 05, 2019', by:'David Kim'       },
+  ],
+  '100093': [ /* POL-DOC-001 */
+    { ver:'v7.0', state:'Effective__v',   date:'Oct 10, 2025', by:'Michael Torres'  },
+    { ver:'v6.0', state:'Superseded__v',  date:'Apr 25, 2024', by:'Michael Torres'  },
+    { ver:'v5.0', state:'Superseded__v',  date:'Oct 10, 2022', by:'Jennifer Walsh'  },
+    { ver:'v4.0', state:'Superseded__v',  date:'Apr 05, 2021', by:'Jennifer Walsh'  },
+  ],
+  '100043': [ /* CAPA-2024-031 */
+    { ver:'v1.1', state:'In Progress__v', date:'Apr 12, 2026', by:'Sarah Chen'      },
+    { ver:'v1.0', state:'Open__v',        date:'Apr 25, 2025', by:'Sarah Chen'      },
+  ],
+  '100026': [ /* DEV-2024-089 */
+    { ver:'v1.2', state:'Open__v',        date:'Apr 10, 2025', by:'Sarah Chen'      },
+    { ver:'v1.1', state:'Open__v',        date:'Jan 15, 2025', by:'Sarah Chen'      },
+    { ver:'v1.0', state:'Open__v',        date:'Nov 05, 2024', by:'Michael Torres'  },
   ],
 };
 
@@ -1468,7 +1648,10 @@ const QT = {
   capa_high_severity:      d => d.type__v === 'CAPA__c' && ['Critical__v','Major__v'].includes(d.severity),
   capa_overdue:            d => d.type__v === 'CAPA__c' && ['Open__v','In Progress__v'].includes(d.lifecycle_state__v) && !!d.expiry,
   audit_ready_docs:        d => ['Approved__v','Effective__v'].includes(d.lifecycle_state__v) && d.gxp,
-  time_last_30_days_changes: d => true,
+  time_last_30_days_changes: d => {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    return new Date(d.modified) >= cutoff;
+  },
   doc_all_accessible:      d => true,
 };
 
@@ -1537,6 +1720,8 @@ function normalizeVaultDoc(d) {
     gxp:              d.gxp_relevant__c === true || d.gxp_relevant__c === 'true',
     capa:             d.capa_id__c || null,
     expiry:           d.expiration_date__v || null,
+    product:          d.product__c || d.product_name__c || null,
+    study:            d.study_id__c || d.clinical_study__c || null,
   };
 }
 
@@ -1606,7 +1791,7 @@ function initConnectionBanner() {
     banner.style.borderColor  = '#FDE047';
     banner.style.color        = '#854D0E';
     dot.style.background      = '#EAB308';
-    text.textContent          = 'Demo mode — sample data · Connect a real Vault to enable Open-in-Vault links, live VQL, and full CSV export.';
+    text.textContent          = 'Demo mode — 95 simulated pharma docs (Vexatrol · Lumivance · Cardiplex) · Connect a real Vault to enable live VQL and Open-in-Vault links.';
     document.getElementById('connectionBannerLink').textContent = 'Connect Vault →';
   }
 }
@@ -1638,11 +1823,12 @@ const ROLE_ACL = {
   QA_ADMIN:        { drafts: true,  types: ['ALL'] },
   QA_USER:         { drafts: false, types: ['SOP','Deviation','CAPA','Report'] },
   CLINICAL_USER:   { drafts: false, types: ['Protocol','Report','SOP'] },
-  REGULATORY_USER: { drafts: false, types: ['SOP','Policy','Report','Protocol'] },
+  REGULATORY_USER: { drafts: false, types: ['SOP','Policy','Report','Protocol','Regulatory'] },
 };
 const TYPE_KEY = {
   'Standard Operating Procedure__c':'SOP', 'Deviation__c':'Deviation',
   'CAPA__c':'CAPA', 'Protocol__c':'Protocol', 'Report__c':'Report', 'Policy__c':'Policy',
+  'Regulatory__c':'Regulatory',
 };
 
 function applyACL(docs, role) {
@@ -1815,12 +2001,13 @@ async function runQuery(tid) {
 
 /* ── RENDER RESULTS ────────────────────────────────────────── */
 const TYPE_META = {
-  'Standard Operating Procedure__c': { icon:'📋', cls:'t-sop',       label:'SOP'       },
-  'Deviation__c':                     { icon:'⚠️',  cls:'t-deviation', label:'Deviation' },
-  'CAPA__c':                          { icon:'🔧', cls:'t-capa',      label:'CAPA'      },
-  'Protocol__c':                      { icon:'🧪', cls:'t-protocol',  label:'Protocol'  },
-  'Report__c':                        { icon:'📊', cls:'t-report',    label:'Report'    },
-  'Policy__c':                        { icon:'📜', cls:'t-policy',    label:'Policy'    },
+  'Standard Operating Procedure__c': { icon:'📋', cls:'t-sop',        label:'SOP'        },
+  'Deviation__c':                     { icon:'⚠️',  cls:'t-deviation',  label:'Deviation'  },
+  'CAPA__c':                          { icon:'🔧', cls:'t-capa',       label:'CAPA'       },
+  'Protocol__c':                      { icon:'🧪', cls:'t-protocol',   label:'Protocol'   },
+  'Report__c':                        { icon:'📊', cls:'t-report',     label:'Report'     },
+  'Policy__c':                        { icon:'📜', cls:'t-policy',     label:'Policy'     },
+  'Regulatory__c':                    { icon:'🏛️', cls:'t-regulatory', label:'Regulatory' },
 };
 
 const STATE_META = {
@@ -1910,6 +2097,8 @@ function renderResults(docs) {
               ${doc.capa ? `<span class="pill pill-link">↗ ${doc.capa}</span>` : ''}
               ${doc.gxp ? `<span class="pill pill-gxp">GxP</span>` : ''}
               ${doc.expiry ? `<span class="pill pill-sev-minor">Expires ${fmtDate(doc.expiry)}</span>` : ''}
+              ${doc.product ? `<span class="pill pill-product">${doc.product}</span>` : ''}
+              ${doc.study  ? `<span class="pill pill-study">📊 ${doc.study}</span>` : ''}
             </div>
           </div>
           <div class="doc-right">
@@ -2107,7 +2296,7 @@ function renderSavedSearches() {
 /* ── CSV EXPORT ─────────────────────────────────────────────── */
 function exportCSV() {
   if (!currentResults.length) return;
-  const headers = ['ID','Name','Type','Status','Version','Modified','Owner','Severity','GxP'];
+  const headers = ['ID','Name','Type','Status','Version','Modified','Owner','Severity','GxP','Product','Study'];
   const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const rows = currentResults.map(d => [
     d.id,
@@ -2119,6 +2308,8 @@ function exportCSV() {
     d.owner,
     d.severity ? (SEV_META[d.severity] || {}).label || d.severity : '',
     d.gxp ? 'Yes' : 'No',
+    d.product || '',
+    d.study   || '',
   ].map(esc).join(','));
   const csv  = [headers.map(esc).join(','), ...rows].join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
