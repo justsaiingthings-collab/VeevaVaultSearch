@@ -750,6 +750,23 @@
       text-decoration: line-through;
     }
 
+    .pill-state-pending {
+      background: var(--v-amber-10);
+      color: var(--v-amber);
+    }
+    .pill-state-pending .pill-dot { background: var(--v-amber); }
+
+    /* Review-due badge */
+    .pill-review-overdue {
+      background: var(--v-red-10);
+      color: var(--v-red);
+      font-weight: 600;
+    }
+    .pill-review-soon {
+      background: var(--v-amber-10);
+      color: var(--v-amber);
+    }
+
     /* Type pill */
     .pill-type {
       background: var(--v-ink-05);
@@ -1035,6 +1052,54 @@
       padding: 0 2px;
     }
 
+    /* ═══════════════ KPI DASHBOARD ════════════════════════ */
+    .kpi-card {
+      background: var(--v-white);
+      border: 1px solid var(--v-border);
+      border-radius: var(--v-r-lg);
+      padding: 14px 16px 12px;
+      cursor: pointer;
+      transition: box-shadow 0.15s var(--v-ease), border-color 0.15s var(--v-ease), transform 0.1s var(--v-ease);
+    }
+    .kpi-card:hover {
+      box-shadow: var(--v-shadow-md);
+      border-color: var(--v-blue-20);
+      transform: translateY(-1px);
+    }
+    .kpi-card-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: var(--v-ink-60);
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .kpi-card-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--v-ink);
+      line-height: 1;
+    }
+    .kpi-card-sub {
+      font-size: 11px;
+      color: var(--v-ink-60);
+      margin-top: 4px;
+    }
+    .kpi-card-skeleton {
+      background: var(--v-ink-10);
+      border-radius: var(--v-r-lg);
+      height: 80px;
+      animation: kpi-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes kpi-pulse {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.5; }
+    }
+    /* KPI grid breakpoints are handled in the consolidated responsive blocks below */
+
     /* ═══════════════ SCROLLBAR ═════════════════════════════ */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -1088,6 +1153,267 @@
     .action-btn:disabled { opacity: 0.35; cursor: default; }
     .action-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
     .action-btn.saved { color: var(--v-green); border-color: var(--v-green); background: var(--v-green-10); }
+
+    /* ═══════════════ SIDEBAR CLOSE BUTTON ════════════════════ */
+    .sidebar-close-btn {
+      display: none;
+      align-items: center; justify-content: center;
+      width: 24px; height: 24px;
+      background: none; border: none; cursor: pointer;
+      color: var(--v-ink-60); font-size: 15px; line-height: 1;
+      border-radius: 4px; flex-shrink: 0;
+      transition: background 0.12s, color 0.12s;
+    }
+    .sidebar-close-btn:hover { background: var(--v-ink-10); color: var(--v-ink); }
+
+    /* ═══════════════ MOBILE FILTER BUTTON ════════════════════ */
+    .mobile-filter-btn { display: none; }
+    .sidebar-backdrop  { display: none; }
+
+    /* ═══════════════ RESPONSIVE — TABLET (≤900px) ════════════ */
+    @media (max-width: 900px) {
+      .app-shell {
+        grid-template-columns: 220px 1fr;
+      }
+      .kpi-card-value { font-size: 22px; }
+      .kpi-card-label { font-size: 10px; }
+    }
+
+    /* ═══════════════ RESPONSIVE — MOBILE (≤700px) ═════════════ */
+    @media (max-width: 700px) {
+      /* ── Prevent iOS zoom on input focus ── */
+      input, select, textarea { font-size: 16px !important; }
+      .header-search-input { font-size: 15px !important; }
+
+      /* ── Shell: single-column ── */
+      .app-shell {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+        height: 100dvh;
+      }
+
+      /* ── Header: multi-row wrap ── */
+      .app-header {
+        height: auto; min-height: 52px;
+        flex-wrap: wrap; align-items: center;
+        padding: 6px 12px; gap: 8px; row-gap: 0;
+      }
+      .vault-logo        { order: 1; }
+      .vault-logo-text   { display: none; }
+      .header-user       { order: 2; margin-left: auto; }
+      .header-divider    { display: none; }
+      .user-name         { display: none; }
+
+      /* Config gear button — reposition for mobile */
+      #configGearBtn {
+        order: 3; margin-left: 0;
+        min-width: 36px; min-height: 36px;
+        padding: 0; display: flex;
+        align-items: center; justify-content: center;
+      }
+
+      /* Mobile filter toggle */
+      .mobile-filter-btn {
+        display: flex; align-items: center; justify-content: center;
+        order: 3; flex-shrink: 0;
+        width: 36px; height: 36px;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.22);
+        border-radius: 8px; cursor: pointer;
+        color: #fff; font-size: 15px;
+        transition: background 0.14s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .mobile-filter-btn:hover { background: rgba(255,255,255,0.22); }
+
+      /* Search bar: full-width second row */
+      .header-search-wrap {
+        order: 10; flex: 1 1 100%; max-width: 100%;
+        margin: 4px 0 0;
+      }
+      .header-search-input { height: 38px; }
+
+      /* Role switcher: full-width scrollable third row */
+      .role-switcher {
+        order: 11; flex: 1 1 100%;
+        overflow-x: auto; overflow-y: hidden;
+        scrollbar-width: none; -ms-overflow-style: none;
+        background: rgba(0,0,0,0.15); padding: 3px;
+        border-radius: 20px; margin: 4px 0 2px;
+        justify-content: flex-start;
+      }
+      .role-switcher::-webkit-scrollbar { display: none; }
+      /* Ensure each role button has a comfortable tap target */
+      .role-btn { padding: 5px 13px; min-height: 30px; }
+
+      /* ── Sidebar: full-height overlay drawer ── */
+      .filter-sidebar {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        width: min(288px, 85vw); right: auto;
+        z-index: 500;
+        transform: translateX(-100%);
+        transition: transform 0.24s cubic-bezier(0.4,0,0.2,1);
+        box-shadow: 4px 0 32px rgba(0,0,0,.28);
+        overflow-y: auto;
+      }
+      .filter-sidebar.mobile-open { transform: translateX(0); }
+      .sidebar-close-btn { display: flex; }
+
+      /* Larger tap targets for filter items */
+      .filter-section-toggle { min-height: 48px; padding: 0 16px; }
+      .filter-option {
+        min-height: 44px; padding: 8px 6px;
+        gap: 10px;
+      }
+      .filter-option input[type="checkbox"],
+      .filter-option input[type="radio"] {
+        width: 18px; height: 18px;
+        flex-shrink: 0;
+      }
+
+      /* ── Backdrop ── */
+      .sidebar-backdrop {
+        position: fixed; inset: 0;
+        z-index: 499;
+        background: rgba(0,0,0,.45);
+        animation: mobileBackdropIn 0.18s ease forwards;
+      }
+      .sidebar-backdrop.active { display: block; }
+
+      /* ── Chips row: horizontally scrollable ── */
+      .rec-chips-row {
+        flex-wrap: nowrap;
+        overflow-x: auto; overflow-y: hidden;
+        scrollbar-width: none; -ms-overflow-style: none;
+        padding-bottom: 3px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .rec-chips-row::-webkit-scrollbar { display: none; }
+      /* Larger chip tap targets */
+      .rec-chip { padding: 7px 13px; min-height: 36px; }
+
+      /* ── Toolbar ── */
+      .search-toolbar { padding: 8px 12px 6px; }
+
+      /* ── Query info bar: wrap on narrow ── */
+      .query-info-bar {
+        flex-wrap: wrap; row-gap: 4px;
+        padding: 6px 12px;
+      }
+      .qib-spacer { display: none; }
+      .qib-rule { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+      /* ── VQL preview: tighter padding ── */
+      .vql-preview { padding: 0 12px; }
+      .vql-preview.open { padding: 10px 12px; }
+
+      /* ── Ambiguity bar: wrap long text ── */
+      .ambiguity-bar { flex-wrap: wrap; padding: 7px 12px; }
+
+      /* ── Connection banner: wrap ── */
+      #connectionBanner { flex-wrap: wrap !important; padding: 8px 12px !important; }
+
+      /* ── Results area ── */
+      .results-area { padding: 10px 12px 16px; }
+
+      /* ── Results meta bar: stack on mobile ── */
+      .results-meta-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .results-right {
+        width: 100%;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      /* ── Document cards ── */
+      .doc-card-primary { padding: 11px 12px; gap: 10px; }
+      .doc-pills { flex-wrap: wrap; gap: 4px; }
+      /* Keep doc-right items but reduce space */
+      .doc-right { gap: 4px; }
+      .doc-date { font-size: 10.5px; }
+
+      /* ── Version history: simplified on mobile ── */
+      .ver-history-head { display: none; }
+      .ver-row {
+        grid-template-columns: 1fr auto;
+        padding: 9px 14px 9px 14px;
+        gap: 6px;
+      }
+      /* Hide date column on mobile, keep name + state + version */
+      .ver-row-date { display: none; }
+      .ver-row-num { font-size: 11px; }
+
+      /* ── Action buttons: icon-only ── */
+      .action-btn .action-label { display: none; }
+      .action-btn { min-width: 36px; min-height: 36px; padding: 0 8px; justify-content: center; }
+
+      /* ── VQL panel: full width ── */
+      .vql-panel { width: 100% !important; left: 0 !important; right: 0 !important; }
+
+      /* ── KPI grid: 2 col on mobile (already handled at 700px) ── */
+      #kpiGrid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+    }
+
+    /* ═══════════════ RESPONSIVE — SMALL PHONES (≤480px) ═══════ */
+    @media (max-width: 480px) {
+      /* KPI → single column */
+      #kpiGrid { grid-template-columns: 1fr !important; }
+      .kpi-card { padding: 12px 14px 10px; }
+      .kpi-card-value { font-size: 26px; }
+
+      /* Tighter results area */
+      .results-area { padding: 8px 10px 14px; }
+      .doc-card-primary { padding: 10px; gap: 8px; }
+      .doc-icon { width: 30px; height: 30px; font-size: 13px; }
+
+      /* Doc name: allow 2 lines on very small screens */
+      .doc-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+      /* Doc right: move date inline under title instead of aside */
+      .doc-card-primary { flex-wrap: wrap; }
+      .doc-right {
+        flex-direction: row; align-items: center;
+        width: 100%; justify-content: flex-start;
+        margin-top: 4px;
+      }
+      .ver-expand-btn { font-size: 11px; padding: 3px 8px; }
+
+      /* Pills: smaller on tiny screens */
+      .pill { font-size: 10px; padding: 2px 6px; }
+
+      /* Chips: slightly smaller */
+      .rec-chip { font-size: 11px; padding: 6px 10px; }
+
+      /* Search toolbar: minimal */
+      .search-toolbar { padding: 6px 10px 5px; }
+      .chips-label { display: none; }
+
+      /* Header: even tighter */
+      .app-header { padding: 5px 10px; gap: 6px; }
+
+      /* Wider sidebar on very small screens */
+      .filter-sidebar { width: min(310px, 92vw); }
+
+      /* Sidebar filter body: tighter */
+      .filter-body { padding: 2px 12px 10px; }
+
+      /* VQL preview: minimal padding */
+      .vql-preview.open { padding: 8px 10px; font-size: 11px; }
+
+      /* Empty state: compact */
+      .empty-state { padding: 40px 16px; }
+      .empty-title { font-size: 14px; }
+      .empty-body { font-size: 12px; }
+    }
+
+    @keyframes mobileBackdropIn {
+      from { opacity: 0; } to { opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -1109,6 +1435,12 @@
         <span class="vault-logo-sub">Vault DMS</span>
       </div>
     </a>
+
+    <button class="mobile-filter-btn" id="mobileFilterBtn" aria-label="Open filters">
+      <svg viewBox="0 0 16 16" fill="currentColor" width="15" height="15">
+        <path d="M1.5 3.5A.5.5 0 012 3h12a.5.5 0 010 1H2a.5.5 0 01-.5-.5zM3.5 8a.5.5 0 01.5-.5h8a.5.5 0 010 1H4a.5.5 0 01-.5-.5zm2 4.5a.5.5 0 000 1h5a.5.5 0 000-1H6z"/>
+      </svg>
+    </button>
 
     <div class="header-divider"></div>
 
@@ -1133,6 +1465,11 @@
       <button class="role-btn" data-role="REGULATORY_USER">Regulatory</button>
     </div>
 
+    <!-- G-01: Config gear -->
+    <button id="configGearBtn" onclick="openConfigModal()" title="Vault field configuration (G-01)"
+      style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:#fff;padding:5px 8px;cursor:pointer;font-size:14px;line-height:1;margin-left:4px;flex-shrink:0;"
+      aria-label="Configure field names">⚙</button>
+
     <div class="header-user">
       <div class="user-avatar" id="userAvatar">—</div>
       <span class="user-name" id="userName"></span>
@@ -1140,12 +1477,36 @@
 
   </header>
 
+  <!-- G-01: VAULT_CONFIG editor modal -->
+  <div id="configModalBackdrop" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.5);">
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;width:min(640px,94vw);max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <div style="padding:18px 22px 0;border-bottom:1px solid var(--v-border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">
+        <div>
+          <h2 style="font-size:16px;font-weight:700;color:var(--v-ink);margin:0;">Vault Configuration</h2>
+          <p style="font-size:12px;color:var(--v-ink-60);margin:3px 0 14px;">Override document type and field names to match your Vault tenant's schema. Changes are saved to localStorage and take effect immediately.</p>
+        </div>
+        <button onclick="closeConfigModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--v-ink-60);padding:4px 8px;border-radius:4px;">✕</button>
+      </div>
+      <div style="padding:18px 22px;" id="configModalBody">
+        <!-- Injected by openConfigModal() -->
+      </div>
+      <div style="padding:14px 22px;border-top:1px solid var(--v-border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:#fff;">
+        <button onclick="resetConfig()" style="padding:7px 16px;border:1px solid var(--v-border-mid);border-radius:6px;background:#fff;color:var(--v-ink-60);font-size:13px;cursor:pointer;">Reset to defaults</button>
+        <button onclick="saveConfig()" style="padding:7px 18px;border:none;border-radius:6px;background:var(--v-blue);color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Save &amp; rebuild</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile sidebar backdrop -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
   <!-- ══════════ FILTER SIDEBAR ══════════════════════════════ -->
   <aside class="filter-sidebar" aria-label="Filters">
 
     <div class="sidebar-header">
       <span class="sidebar-header-title">Filters</span>
       <button class="clear-filters-btn" id="clearFiltersBtn">Reset</button>
+      <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close filters">✕</button>
     </div>
 
     <!-- Document Type -->
@@ -1238,10 +1599,16 @@
           <span class="filter-count">8</span>
         </label>
         <label class="filter-option">
+          <input type="checkbox" name="state" value="Pending Approval__v">
+          <span class="filter-dot" style="background:#8A6200"></span>
+          <span class="filter-option-label">Pending Approval</span>
+          <span class="filter-count">3</span>
+        </label>
+        <label class="filter-option">
           <input type="checkbox" name="state" value="Draft__v" id="draftOpt">
           <span class="filter-dot" style="background:#0060B9"></span>
           <span class="filter-option-label">Draft</span>
-          <span class="filter-count">5</span>
+          <span class="filter-count">3</span>
         </label>
       </div>
     </div>
@@ -1312,6 +1679,39 @@
       </div>
     </div>
 
+    <!-- G-09: Query Composition — date range + owner -->
+    <div class="filter-section" id="compose-section">
+      <button class="filter-section-toggle" onclick="toggleSection(this)">
+        <span class="filter-section-label">Narrow Results</span>
+        <span class="filter-chevron open">▼</span>
+      </button>
+      <div class="filter-body" style="gap:8px;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:11px;color:var(--v-ink-60);font-weight:500;">Modified from</label>
+          <input type="date" id="composeDateFrom"
+            style="width:100%;padding:5px 8px;border:1px solid var(--v-border-mid);border-radius:var(--v-r-sm);font-size:12px;color:var(--v-ink);background:var(--v-white);">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:11px;color:var(--v-ink-60);font-weight:500;">Modified to</label>
+          <input type="date" id="composeDateTo"
+            style="width:100%;padding:5px 8px;border:1px solid var(--v-border-mid);border-radius:var(--v-r-sm);font-size:12px;color:var(--v-ink);background:var(--v-white);">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <label style="font-size:11px;color:var(--v-ink-60);font-weight:500;">Owner contains</label>
+          <input type="text" id="composeOwner" placeholder="e.g. Sarah Chen"
+            style="width:100%;padding:5px 8px;border:1px solid var(--v-border-mid);border-radius:var(--v-r-sm);font-size:12px;color:var(--v-ink);background:var(--v-white);">
+        </div>
+        <button id="composeApplyBtn" onclick="applyCompose()"
+          style="width:100%;margin-top:2px;padding:6px;border:none;border-radius:var(--v-r-sm);background:var(--v-blue);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">
+          Apply
+        </button>
+        <button id="composeClearBtn" onclick="clearCompose()"
+          style="width:100%;padding:5px;border:1px solid var(--v-border-mid);border-radius:var(--v-r-sm);background:var(--v-white);color:var(--v-ink-60);font-size:12px;cursor:pointer;display:none;">
+          Clear
+        </button>
+      </div>
+    </div>
+
     <!-- Recent Searches (sessionStorage) — shown dynamically -->
     <div class="filter-section" id="history-section" style="display:none">
       <button class="filter-section-toggle" onclick="toggleSection(this)">
@@ -1369,7 +1769,7 @@
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="4,6 8,10 12,6"/>
         </svg>
-        Show VQL
+        <span class="action-label">Show VQL</span>
       </button>
     </div>
 
@@ -1402,16 +1802,26 @@
           </span>
           <button class="action-btn" id="saveSearchBtn" onclick="saveCurrentSearch()" title="Save this search" style="display:none">
             <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.655 2.23c.19-.28.51-.448.845-.448s.656.168.845.449l1.56 2.277 2.644.594c.344.077.626.304.783.617.157.312.15.677-.02.984l-1.716 2.994.18 2.738c.023.35-.127.69-.395.905-.268.214-.62.283-.944.183l-2.661-.779-2.66.779c-.324.1-.676.03-.944-.183-.268-.214-.418-.555-.395-.905l.18-2.738-1.716-2.994c-.17-.307-.176-.672-.02-.984.158-.313.44-.54.783-.617l2.645-.594L7.655 2.23z"/></svg>
-            Save
+            <span class="action-label">Save</span>
           </button>
           <button class="action-btn" id="exportCsvBtn" onclick="exportCSV()" title="Export results as CSV" style="display:none">
             <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
-            CSV
+            <span class="action-label">CSV</span>
           </button>
           <div class="view-toggle">
             <button class="view-btn active" id="viewList">List</button>
             <button class="view-btn" id="viewCompact">Compact</button>
           </div>
+        </div>
+      </div>
+
+      <!-- G-15: KPI Dashboard — shown on load, hidden on first query -->
+      <div id="kpiDashboard" style="padding:20px 4px 8px;">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--v-ink-60);margin-bottom:14px;">Document Overview</div>
+        <div id="kpiGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+          <!-- KPI cards injected by JS -->
+          <div class="kpi-card-skeleton"></div><div class="kpi-card-skeleton"></div><div class="kpi-card-skeleton"></div>
+          <div class="kpi-card-skeleton"></div><div class="kpi-card-skeleton"></div><div class="kpi-card-skeleton"></div>
         </div>
       </div>
 
@@ -1427,14 +1837,7 @@
         </div>
       </div>
 
-      <div class="pagination-bar" id="paginationBar" style="display:none">
-        <button class="page-btn" id="prevPage" disabled>← Prev</button>
-        <button class="page-btn current">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <span class="page-sep">…</span>
-        <button class="page-btn" id="nextPage">Next →</button>
-      </div>
+      <div id="paginationBar" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-top:1px solid var(--v-border);background:var(--v-ink-05);border-radius:0 0 var(--v-r-lg) var(--v-r-lg);"></div>
 
     </div>
   </main>
@@ -1449,30 +1852,30 @@
 /* ── MOCK DATA ─────────────────────────────────────────────── */
 const MOCK_DOCS = [
   /* ── SOPs (25) ── */
-  { id:'100001', name__v:'SOP-MFG-001: Raw Material Handling Procedure',             type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2025-03-15', owner:'Sarah Chen',       severity:null,         gxp:true,  capa:null,             product:'Vexatrol'                        },
+  { id:'100001', name__v:'SOP-MFG-001: Raw Material Handling Procedure',             type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2025-03-15', owner:'Sarah Chen',       severity:null,         gxp:true,  capa:null,             product:'Vexatrol',  review_due:'2026-02-15' },
   { id:'100002', name__v:'SOP-MFG-003: Granulation Process Control',                 type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-01-20', owner:'Carlos Rivera',    severity:null,         gxp:true,  capa:null,             product:'Vexatrol'                        },
   { id:'100003', name__v:'SOP-MFG-007: Tablet Compression Standards',                type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:4, minor:1, modified:'2025-02-10', owner:'Carlos Rivera',    severity:null,         gxp:true,  capa:null,             product:'Vexatrol'                        },
   { id:'100004', name__v:'SOP-MFG-009: Sterile Fill-Finish Operations',              type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-04-01', owner:'James Murphy',     severity:null,         gxp:true,  capa:null,             product:'Lumivance',  expiry:'2026-06-15'  },
-  { id:'100005', name__v:'SOP-MFG-012: Lyophilization Cycle Validation',             type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Draft__v',        major:0, minor:2, modified:'2026-04-10', owner:'James Murphy',     severity:null,         gxp:true,  capa:null,             product:'Lumivance'                       },
+  { id:'100005', name__v:'SOP-MFG-012: Lyophilization Cycle Validation',             type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Pending Approval__v', major:0, minor:2, modified:'2026-04-10', owner:'James Murphy',     severity:null,         gxp:true,  capa:null,             product:'Lumivance'                       },
   { id:'100006', name__v:'SOP-MFG-015: Equipment Cleaning Validation',               type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:5, minor:0, modified:'2024-09-15', owner:'Patricia Olsen',   severity:null,         gxp:true,  capa:null                                              },
   { id:'100007', name__v:'SOP-MFG-018: Batch Record Review Procedure',               type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2026-02-01', owner:'Patricia Olsen',   severity:null,         gxp:true,  capa:null,             expiry:'2026-05-20'                       },
-  { id:'100008', name__v:'SOP-MFG-022: Packaging Line Qualification',                type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2024-11-20', owner:'Carlos Rivera',    severity:null,         gxp:true,  capa:null,             product:'Cardiplex'                       },
-  { id:'100009', name__v:'SOP-QC-042: In-Process Sampling & Testing',                type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:2, minor:1, modified:'2025-04-02', owner:'Ahmed Hassan',     severity:null,         gxp:true,  capa:null                                              },
+  { id:'100008', name__v:'SOP-MFG-022: Packaging Line Qualification',                type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2024-11-20', owner:'Carlos Rivera',    severity:null,         gxp:true,  capa:null,             product:'Cardiplex',  review_due:'2026-05-20' },
+  { id:'100009', name__v:'SOP-QC-042: In-Process Sampling & Testing',                type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:2, minor:1, modified:'2025-04-02', owner:'Ahmed Hassan',     severity:null,         gxp:true,  capa:null,             review_due:'2026-06-02' },
   { id:'100010', name__v:'SOP-QC-056: Analytical Method Validation',                 type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2025-01-15', owner:'Ahmed Hassan',     severity:null,         gxp:true,  capa:null,             product:'Vexatrol'                        },
-  { id:'100011', name__v:'SOP-QC-061: Out-of-Specification Investigation',           type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2024-12-10', owner:'Lisa Nakamura',    severity:null,         gxp:true,  capa:null                                              },
+  { id:'100011', name__v:'SOP-QC-061: Out-of-Specification Investigation',           type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2024-12-10', owner:'Lisa Nakamura',    severity:null,         gxp:true,  capa:null,             review_due:'2026-01-10' },
   { id:'100012', name__v:'SOP-QC-067: Stability Sample Management',                  type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-06-01', owner:'Lisa Nakamura',    severity:null,         gxp:true,  capa:null,             expiry:'2026-07-01'                       },
   { id:'100013', name__v:'SOP-QC-073: Environmental Monitoring Program',             type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2026-01-10', owner:'Robert Patel',     severity:null,         gxp:true,  capa:null                                              },
   { id:'100014', name__v:'SOP-QC-079: Microbial Limit Testing',                      type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-08-20', owner:'Robert Patel',     severity:null,         gxp:true,  capa:null,             product:'Lumivance'                       },
-  { id:'100015', name__v:'SOP-LAB-017: HPLC Method Validation Protocol',             type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Draft__v',        major:0, minor:1, modified:'2026-04-18', owner:'Ben Okafor',       severity:null,         gxp:true,  capa:null                                              },
-  { id:'100016', name__v:'SOP-LAB-023: GC/MS Analytical Protocol',                   type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-03-30', owner:'Alexandra Novak',  severity:null,         gxp:true,  capa:null                                              },
+  { id:'100015', name__v:'SOP-LAB-017: HPLC Method Validation Protocol',             type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Draft__v',        major:0, minor:1, modified:'2025-07-15', owner:'Ben Okafor',       severity:null,         gxp:true,  capa:null                                              },
+  { id:'100016', name__v:'SOP-LAB-023: GC/MS Analytical Protocol',                   type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-03-30', owner:'Alexandra Novak',  severity:null,         gxp:true,  capa:null,             review_due:'2026-07-01' },
   { id:'100017', name__v:'SOP-LAB-031: Reference Standard Management',               type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2024-10-15', owner:'Ben Okafor',       severity:null,         gxp:true,  capa:null                                              },
   { id:'100018', name__v:'SOP-LAB-038: Laboratory Notebook Management',              type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2024-07-22', owner:'Alexandra Novak',  severity:null,         gxp:false, capa:null                                              },
   { id:'100019', name__v:'SOP-QA-033: Document Control & Change Management',         type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:6, minor:2, modified:'2026-01-15', owner:'Michael Torres',   severity:null,         gxp:true,  capa:null                                              },
-  { id:'100020', name__v:'SOP-QA-041: Internal Audit Procedure',                     type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2025-09-05', owner:'Jennifer Walsh',   severity:null,         gxp:true,  capa:null                                              },
+  { id:'100020', name__v:'SOP-QA-041: Internal Audit Procedure',                     type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2025-09-05', owner:'Jennifer Walsh',   severity:null,         gxp:true,  capa:null,             review_due:'2026-03-05' },
   { id:'100021', name__v:'SOP-QA-055: Change Control Management',                    type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:2, minor:0, modified:'2026-01-30', owner:'David Kim',        severity:null,         gxp:true,  capa:null,             expiry:'2026-06-01'                       },
   { id:'100022', name__v:'SOP-QA-062: CAPA Management Procedure',                    type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2025-11-10', owner:'David Kim',        severity:null,         gxp:true,  capa:null                                              },
   { id:'100023', name__v:'SOP-REG-005: CTD Module Preparation & Submission',         type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2025-01-10', owner:'Thomas Berger',    severity:null,         gxp:true,  capa:null                                              },
-  { id:'100024', name__v:'SOP-REG-011: Regulatory Submission Management',            type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-05-12', owner:'Nicole Laurent',   severity:null,         gxp:true,  capa:null                                              },
+  { id:'100024', name__v:'SOP-REG-011: Regulatory Submission Management',            type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-05-12', owner:'Nicole Laurent',   severity:null,         gxp:true,  capa:null,             review_due:'2026-07-12' },
   { id:'100025', name__v:'SOP-REG-019: Labelling Review & Approval',                 type__v:'Standard Operating Procedure__c', lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2026-02-28', owner:'Yuki Tanaka',      severity:null,         gxp:true,  capa:null                                              },
   /* ── Deviations (15) ── */
   { id:'100026', name__v:'DEV-2024-089: Particulate Contamination — Batch 7734',     type__v:'Deviation__c',  lifecycle_state__v:'Open__v',         major:1, minor:0, modified:'2025-04-10', owner:'Sarah Chen',       severity:'Critical__v', gxp:true,  capa:'CAPA-2024-031', product:'Vexatrol'   },
@@ -1513,15 +1916,15 @@ const MOCK_DOCS = [
   { id:'100059', name__v:'SAP-2024-042: Statistical Analysis Plan',                  type__v:'Protocol__c',   lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-03-01', owner:'Priya Sharma',     severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
   { id:'100060', name__v:'DMP-2024-042: Data Management Plan',                       type__v:'Protocol__c',   lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2025-01-15', owner:'Priya Sharma',     severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
   { id:'100061', name__v:'ICF-2024-042-v3: Informed Consent Form',                   type__v:'Protocol__c',   lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-05-20', owner:'Dr. Emily Foster', severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
-  { id:'100062', name__v:'ICF-2025-007-v1: Informed Consent Form — Lumivance',      type__v:'Protocol__c',   lifecycle_state__v:'Draft__v',        major:1, minor:0, modified:'2026-03-10', owner:'Dr. Marcus Webb',  severity:null,          gxp:true,  capa:null,            product:'Lumivance',  study:'STUDY-2025-007' },
+  { id:'100062', name__v:'ICF-2025-007-v1: Informed Consent Form — Lumivance',      type__v:'Protocol__c',   lifecycle_state__v:'Pending Approval__v', major:1, minor:0, modified:'2026-03-10', owner:'Dr. Marcus Webb',  severity:null,          gxp:true,  capa:null,            product:'Lumivance',  study:'STUDY-2025-007' },
   { id:'100063', name__v:'RMP-2023-018: Risk Management Protocol',                   type__v:'Protocol__c',   lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2024-08-01', owner:'Dr. Emily Foster', severity:null,          gxp:true,  capa:null,            product:'Cardiplex',  study:'STUDY-2023-018' },
   { id:'100064', name__v:'PRO-2023-018-001: Post-Approval Study Protocol',           type__v:'Protocol__c',   lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2024-04-15', owner:'Dr. Marcus Webb',  severity:null,          gxp:true,  capa:null,            product:'Cardiplex',  study:'STUDY-2023-018' },
-  { id:'100065', name__v:'SAP-2025-007: Statistical Analysis Plan — Lumivance',     type__v:'Protocol__c',   lifecycle_state__v:'Draft__v',        major:0, minor:1, modified:'2026-04-15', owner:'Priya Sharma',     severity:null,          gxp:true,  capa:null,            product:'Lumivance',  study:'STUDY-2025-007' },
+  { id:'100065', name__v:'SAP-2025-007: Statistical Analysis Plan — Lumivance',     type__v:'Protocol__c',   lifecycle_state__v:'Pending Approval__v', major:0, minor:1, modified:'2026-04-15', owner:'Priya Sharma',     severity:null,          gxp:true,  capa:null,            product:'Lumivance',  study:'STUDY-2025-007' },
   { id:'100066', name__v:'DSP-2024-042: Drug Supply Plan',                           type__v:'Protocol__c',   lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-04-10', owner:'Carlos Rivera',    severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
   { id:'100067', name__v:'AMP-2023-018: Amended Post-Approval Protocol',             type__v:'Protocol__c',   lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2024-12-05', owner:'Dr. Emily Foster', severity:null,          gxp:true,  capa:null,            product:'Cardiplex',  study:'STUDY-2023-018' },
   /* ── Reports (12) ── */
   { id:'100068', name__v:'RPT-AUD-2025-001: Annual GMP Compliance Audit Report',     type__v:'Report__c',     lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-02-28', owner:'Jennifer Walsh',   severity:null,          gxp:true,  capa:null                                            },
-  { id:'100069', name__v:'RPT-CSR-2024-042: Clinical Study Report — Vexatrol',      type__v:'Report__c',     lifecycle_state__v:'Draft__v',        major:0, minor:3, modified:'2026-03-20', owner:'Dr. Emily Foster', severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
+  { id:'100069', name__v:'RPT-CSR-2024-042: Clinical Study Report — Vexatrol',      type__v:'Report__c',     lifecycle_state__v:'Draft__v',        major:0, minor:3, modified:'2025-09-10', owner:'Dr. Emily Foster', severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   study:'STUDY-2024-042' },
   { id:'100070', name__v:"RPT-IB-VXT-2025: Investigator's Brochure Vexatrol v8",    type__v:'Report__c',     lifecycle_state__v:'Approved__v',    major:8, minor:0, modified:'2025-09-10', owner:'Nicole Laurent',   severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
   { id:'100071', name__v:'RPT-STAB-VXT-2025: Stability Data Report — 24-Month',     type__v:'Report__c',     lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-10-15', owner:'Ahmed Hassan',     severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
   { id:'100072', name__v:'RPT-VAL-2025-003: Process Validation Report — Line 2',    type__v:'Report__c',     lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2025-08-05', owner:'Alexandra Novak',  severity:null,          gxp:true,  capa:null                                            },
@@ -1537,16 +1940,16 @@ const MOCK_DOCS = [
   { id:'100081', name__v:'CTD-M3.2.S-VXT: Drug Substance Section',                   type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-07-15', owner:'Thomas Berger',    severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
   { id:'100082', name__v:'CTD-M3.2.P-VXT: Drug Product Section',                     type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-07-15', owner:'Yuki Tanaka',      severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
   { id:'100083', name__v:'CTD-M5.3.5-VXT: Clinical Study Reports Module',            type__v:'Regulatory__c', lifecycle_state__v:'Draft__v',        major:0, minor:2, modified:'2026-04-01', owner:'Nicole Laurent',   severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
-  { id:'100084', name__v:'REG-LABEL-VXT-003: Prescribing Information v3',            type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-08-20', owner:'Yuki Tanaka',      severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   expiry:'2026-06-30'  },
+  { id:'100084', name__v:'REG-LABEL-VXT-003: Prescribing Information v3',            type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:3, minor:0, modified:'2025-08-20', owner:'Yuki Tanaka',      severity:null,          gxp:true,  capa:null,            product:'Vexatrol',   expiry:'2026-05-31'  },
   { id:'100085', name__v:'REG-IND-2025-007: IND Application — Lumivance',            type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-10-30', owner:'Thomas Berger',    severity:null,          gxp:true,  capa:null,            product:'Lumivance',  study:'STUDY-2025-007' },
   { id:'100086', name__v:'REG-IMPD-LMV-002: IMPD Section 3 Drug Product',            type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:2, minor:0, modified:'2025-11-05', owner:'Nicole Laurent',   severity:null,          gxp:true,  capa:null,            product:'Lumivance'                       },
   { id:'100087', name__v:'REG-MAA-CDP-2024: MAA Module 3 EU Submission',             type__v:'Regulatory__c', lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2024-09-15', owner:'Thomas Berger',    severity:null,          gxp:true,  capa:null,            product:'Cardiplex'                       },
   { id:'100088', name__v:'REG-PSUR-CDP-2025: PSUR Cardiplex Q1 2025',                type__v:'Regulatory__c', lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2025-04-30', owner:'Yuki Tanaka',      severity:null,          gxp:true,  capa:null,            product:'Cardiplex'                       },
   { id:'100089', name__v:'REG-REMS-VXT-001: REMS Program Document',                  type__v:'Regulatory__c', lifecycle_state__v:'Effective__v',   major:1, minor:0, modified:'2025-03-20', owner:'Nicole Laurent',   severity:null,          gxp:true,  capa:null,            product:'Vexatrol'                        },
   /* ── Policies (6) ── */
-  { id:'100090', name__v:'POL-QMS-001: Quality Management System Policy',             type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:5, minor:0, modified:'2024-11-01', owner:'Michael Torres',   severity:null,          gxp:true,  capa:null                                            },
-  { id:'100091', name__v:'POL-QMS-002: Risk Management Policy',                       type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2024-08-15', owner:'Jennifer Walsh',   severity:null,          gxp:true,  capa:null                                            },
-  { id:'100092', name__v:'POL-GXP-001: GxP Compliance Policy',                       type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2025-01-20', owner:'David Kim',        severity:null,          gxp:true,  capa:null                                            },
+  { id:'100090', name__v:'POL-QMS-001: Quality Management System Policy',             type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:5, minor:0, modified:'2024-11-01', owner:'Michael Torres',   severity:null,          gxp:true,  capa:null,            review_due:'2025-11-01' },
+  { id:'100091', name__v:'POL-QMS-002: Risk Management Policy',                       type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:3, minor:0, modified:'2024-08-15', owner:'Jennifer Walsh',   severity:null,          gxp:true,  capa:null,            review_due:'2026-06-15' },
+  { id:'100092', name__v:'POL-GXP-001: GxP Compliance Policy',                       type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:4, minor:0, modified:'2025-01-20', owner:'David Kim',        severity:null,          gxp:true,  capa:null,            review_due:'2026-01-20' },
   { id:'100093', name__v:'POL-DOC-001: Document Control Policy',                     type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:7, minor:0, modified:'2025-10-10', owner:'Michael Torres',   severity:null,          gxp:true,  capa:null                                            },
   { id:'100094', name__v:'POL-SEC-004: Data Integrity & Security Policy',             type__v:'Policy__c',     lifecycle_state__v:'Effective__v',   major:2, minor:0, modified:'2025-06-25', owner:'Alexandra Novak',  severity:null,          gxp:true,  capa:null                                            },
   { id:'100095', name__v:'POL-VAL-001: Validation Master Plan Policy',                type__v:'Policy__c',     lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2026-01-05', owner:'Jennifer Walsh',   severity:null,          gxp:true,  capa:null                                            },
@@ -1653,6 +2056,31 @@ const QT = {
     return new Date(d.modified) >= cutoff;
   },
   doc_all_accessible:      d => true,
+  /* ── Admin / Vault Community pain points ── */
+  periodic_review_overdue: d => !!d.review_due && new Date(d.review_due) < new Date() && ['Approved__v','Effective__v'].includes(d.lifecycle_state__v),
+  periodic_review_due_soon: d => {
+    if (!d.review_due) return false;
+    const rd = new Date(d.review_due); const now = new Date();
+    return rd >= now && rd <= new Date(now.getTime() + 90*24*60*60*1000);
+  },
+  awaiting_approval:       d => d.lifecycle_state__v === 'Pending Approval__v',
+  stale_drafts:            d => d.lifecycle_state__v === 'Draft__v' && new Date(d.modified) < new Date(Date.now() - 90*24*60*60*1000),
+  tmf_incomplete:          d => !!d.study && ['Draft__v','Pending Approval__v'].includes(d.lifecycle_state__v),
+  ctd_modules_draft:       d => d.type__v === 'Regulatory__c' && d.lifecycle_state__v === 'Draft__v',
+  labelling_expiring_60:   d => d.type__v === 'Regulatory__c' && !!d.expiry && (() => { const ex = new Date(d.expiry); const now = new Date(); return ex > now && ex <= new Date(now.getTime() + 60*24*60*60*1000); })(),
+  deviation_without_capa:  d => d.type__v === 'Deviation__c' && ['Open__v','In Progress__v'].includes(d.lifecycle_state__v) && !d.capa,
+  // v26.1: archived_documents — demo uses Obsolete/Superseded as proxy for archived
+  doc_archived: d => ['Obsolete__v','Superseded__v'].includes(d.lifecycle_state__v),
+  /* ── Free-text name / owner / product / study search ── */
+  name_search: d => {
+    const t = (S.searchText || '').toLowerCase();
+    if (!t) return true;
+    return (d.name__v  || '').toLowerCase().includes(t)
+        || (d.owner    || '').toLowerCase().includes(t)
+        || (d.product  || '').toLowerCase().includes(t)
+        || (d.study    || '').toLowerCase().includes(t)
+        || (d.capa     || '').toLowerCase().includes(t);
+  },
 };
 
 const TNAMES = {
@@ -1661,6 +2089,16 @@ const TNAMES = {
   capa_open: 'Open CAPAs', capa_closed: 'Closed CAPAs', capa_high_severity: 'High Severity CAPAs',
   capa_overdue: 'Overdue CAPAs', audit_ready_docs: 'Audit-Ready Docs',
   time_last_30_days_changes: 'Recent Changes', doc_all_accessible: 'All Documents',
+  periodic_review_overdue:  'Periodic Review Overdue',
+  periodic_review_due_soon: 'Periodic Review Due Soon',
+  awaiting_approval:        'Awaiting Approval',
+  stale_drafts:             'Stale Drafts (>90d)',
+  tmf_incomplete:           'TMF Incomplete Docs',
+  ctd_modules_draft:        'CTD Modules in Draft',
+  labelling_expiring_60:    'Labelling Expiring ≤60d',
+  deviation_without_capa:   'Deviations Without CAPA',
+  name_search:              'Search Results',
+  doc_archived:             'Archived Documents',   // v26.1
 };
 
 /* ── VQL DISPLAY STRINGS ───────────────────────────────────── */
@@ -1670,6 +2108,7 @@ const VQLS = {
   capa_open: `<span class="vql-kw">SELECT</span> id, name__v, severity__v, priority__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'CAPA__c'</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Open__v'</span>, <span class="vql-str">'In Progress__v'</span>)\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>`,
   audit_ready_docs: `<span class="vql-kw">SELECT</span> id, name__v, type__v, effective_date__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Approved__v'</span>, <span class="vql-str">'Effective__v'</span>)\n  <span class="vql-kw">AND</span> gxp_relevant__c <span class="vql-op">=</span> <span class="vql-lit">true</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">ORDER BY</span> type__v <span class="vql-kw">ASC</span>`,
   doc_all_accessible: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n<span class="vql-kw">ORDER BY</span> last_modified_date__v <span class="vql-kw">DESC</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">100</span>`,
+  name_search: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> name__v <span class="vql-fn">CONTAINS</span>(<span class="vql-str">'{QUERY}'</span>)\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">ORDER BY</span> last_modified_date__v <span class="vql-kw">DESC</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">50</span>`,
 };
 VQLS.capa_closed = VQLS.capa_open.replace("'Open__v', 'In Progress__v'", "'Closed__v'").replace('IN (', '= ').replace(')', '');
 VQLS.capa_high_severity = VQLS.capa_open.replace("lifecycle_state__v IN ('Open__v', 'In Progress__v')\n  AND","severity__v IN ('Critical__v', 'Major__v')\n  AND lifecycle_state__v IN ('Open__v', 'In Progress__v')\n  AND");
@@ -1678,35 +2117,155 @@ VQLS.deviation_high_severity = VQLS.deviation_all_open.replace("lifecycle_state_
 VQLS.sop_expiring_soon = VQLS.sop_approved + `\n  <span class="vql-kw">AND</span> expiration_date__v <span class="vql-op">&lt;=</span> <span class="vql-fn">dateadd(now(), 90, 'day')</span>`;
 VQLS.time_last_30_days_changes = VQLS.doc_all_accessible.replace("WHERE is_latest_version__v = true\n  AND lifecycle_state__v != 'Obsolete__v'", "WHERE last_modified_date__v >= dateadd(now(), -30, 'day')");
 
+/* ── G-01: VAULT_CONFIG — parameterised type/field names ──────
+   Override any key via localStorage key "vault_config" (JSON).
+   Connect page can write this on behalf of the user.
+   All VQL templates are rebuilt after config loads so a single
+   field-name change takes effect everywhere.
+─────────────────────────────────────────────────────────── */
+const VAULT_CONFIG_DEFAULTS = {
+  // Document type names (customisable per Vault tenant)
+  type_sop:        'Standard Operating Procedure__c',
+  type_deviation:  'Deviation__c',
+  type_capa:       'CAPA__c',
+  type_protocol:   'Protocol__c',
+  type_report:     'Report__c',
+  type_policy:     'Policy__c',
+  type_regulatory: 'Regulatory__c',
+
+  // Lifecycle state names
+  state_approved:         'Approved__v',
+  state_effective:        'Effective__v',
+  state_draft:            'Draft__v',
+  state_in_review:        'In Review__v',
+  state_open:             'Open__v',
+  state_in_progress:      'In Progress__v',
+  state_closed:           'Closed__v',
+  state_obsolete:         'Obsolete__v',
+  state_pending_approval: 'Pending Approval__v',
+
+  // Severity values
+  sev_critical: 'Critical__v',
+  sev_major:    'Major__v',
+  sev_minor:    'Minor__v',
+
+  // Custom field names (most likely to vary per Vault)
+  field_gxp:         'gxp_relevant__c',
+  field_capa_link:   'capa_id__c',
+  field_product:     'product__c',
+  field_study:       'study_id__c',
+  field_review_date: 'periodic_review_date__v',
+  field_expiry:      'expiration_date__v',
+  field_severity:    'severity__v',
+  field_priority:    'priority__v',
+  field_dev_type:    'deviation_type__v',
+
+  // API / query defaults
+  default_page_size: 50,
+  api_version: 'v26.1',   // bump here when Vault releases a new API version
+};
+
+// Merge localStorage overrides
+const VAULT_CONFIG = (() => {
+  const cfg = { ...VAULT_CONFIG_DEFAULTS };
+  try {
+    const saved = JSON.parse(localStorage.getItem('vault_config') || '{}');
+    Object.assign(cfg, saved);
+  } catch {}
+  return cfg;
+})();
+
+// Convenience accessor — short alias
+const VC = key => VAULT_CONFIG[key] || VAULT_CONFIG_DEFAULTS[key] || '';
+
 /* ── LIVE CONNECTION ───────────────────────────────────────── */
 const LIVE = (() => {
   const token    = sessionStorage.getItem('vault_session_token');
   const baseUrl  = sessionStorage.getItem('vault_base_url');
-  const apiVer   = sessionStorage.getItem('vault_api_version') || 'v24.1';
+  const apiVer   = sessionStorage.getItem('vault_api_version') || 'v26.1';
   // Lambda proxy URL — set by connect.html when a proxy is configured.
   // When present, all VQL queries are forwarded through it instead of
   // calling Vault directly (which would be blocked by CORS).
   const proxyUrl = (sessionStorage.getItem('vault_proxy_url') || '').replace(/\/$/, '');
-  return token && baseUrl ? { token, baseUrl, apiVer, proxyUrl } : null;
+  // Expose as both apiVer (legacy) and apiVersion (canonical)
+  return token && baseUrl ? { token, baseUrl, apiVer, apiVersion: apiVer, proxyUrl } : null;
 })();
 
-// Plain VQL strings (no HTML) used for real API calls
-const VQL_RAW = {
-  sop_approved:            `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, minor_version_number__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'Standard Operating Procedure__c' AND lifecycle_state__v IN ('Approved__v','Effective__v') AND is_latest_version__v = true ORDER BY name__v ASC LIMIT 50`,
-  sop_expiring_soon:       `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, expiration_date__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'Standard Operating Procedure__c' AND lifecycle_state__v IN ('Approved__v','Effective__v') AND is_latest_version__v = true AND expiration_date__v <= dateadd(now(), 90, 'day') ORDER BY expiration_date__v ASC LIMIT 50`,
-  deviation_all_open:      `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, deviation_type__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'Deviation__c' AND lifecycle_state__v IN ('Open__v','In Progress__v') AND is_latest_version__v = true ORDER BY severity__v ASC LIMIT 50`,
-  deviation_high_severity: `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, deviation_type__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'Deviation__c' AND severity__v IN ('Critical__v','Major__v') AND lifecycle_state__v IN ('Open__v','In Progress__v') AND is_latest_version__v = true ORDER BY severity__v ASC LIMIT 50`,
-  capa_open:               `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, priority__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'CAPA__c' AND lifecycle_state__v IN ('Open__v','In Progress__v') AND is_latest_version__v = true LIMIT 50`,
-  capa_closed:             `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'CAPA__c' AND lifecycle_state__v = 'Closed__v' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT 50`,
-  capa_high_severity:      `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, priority__v, last_modified_date__v, owner__v FROM documents WHERE type__v = 'CAPA__c' AND severity__v IN ('Critical__v','Major__v') AND lifecycle_state__v IN ('Open__v','In Progress__v') AND is_latest_version__v = true LIMIT 50`,
-  capa_overdue:            `SELECT id, name__v, type__v, lifecycle_state__v, severity__v, expiration_date__v, owner__v FROM documents WHERE type__v = 'CAPA__c' AND lifecycle_state__v IN ('Open__v','In Progress__v') AND expiration_date__v < now() AND is_latest_version__v = true LIMIT 50`,
-  audit_ready_docs:        `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, effective_date__v, last_modified_date__v, owner__v FROM documents WHERE lifecycle_state__v IN ('Approved__v','Effective__v') AND gxp_relevant__c = true AND is_latest_version__v = true ORDER BY type__v ASC LIMIT 50`,
-  time_last_30_days_changes:`SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, minor_version_number__v, last_modified_date__v, owner__v FROM documents WHERE last_modified_date__v >= dateadd(now(), -30, 'day') AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT 50`,
-  doc_all_accessible:      `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, minor_version_number__v, last_modified_date__v, owner__v FROM documents WHERE is_latest_version__v = true AND lifecycle_state__v != 'Obsolete__v' ORDER BY last_modified_date__v DESC LIMIT 100`,
-};
+// Build VQL strings from VAULT_CONFIG so every type/field name
+// is substituted at runtime — changing VAULT_CONFIG rebuilds all queries.
+function buildVQLRAW() {
+  const ps = VC('default_page_size');
+  const SEL_BASE = `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, minor_version_number__v, last_modified_date__v, owner__v FROM documents`;
+  const APPROVED_STATES = `('${VC('state_approved')}','${VC('state_effective')}')`;
+  const OPEN_STATES     = `('${VC('state_open')}','${VC('state_in_progress')}')`;
+  const EXP  = VC('field_expiry');
+  const REV  = VC('field_review_date');
+  const SEV  = VC('field_severity');
+  const PRI  = VC('field_priority');
+  const GXP  = VC('field_gxp');
+  const CAPA = VC('field_capa_link');
+  const STU  = VC('field_study');
+  const OBS  = VC('state_obsolete');
+  return {
+    sop_approved:
+      `${SEL_BASE} WHERE type__v = '${VC('type_sop')}' AND lifecycle_state__v IN ${APPROVED_STATES} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
+    sop_expiring_soon:
+      `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, ${EXP}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_sop')}' AND lifecycle_state__v IN ${APPROVED_STATES} AND is_latest_version__v = true AND ${EXP} <= dateadd(now(), 90, 'day') ORDER BY ${EXP} ASC LIMIT ${ps}`,
+    deviation_all_open:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${SEV}, ${VC('field_dev_type')}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND lifecycle_state__v IN ${OPEN_STATES} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+    deviation_high_severity:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${SEV}, ${VC('field_dev_type')}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND ${SEV} IN ('${VC('sev_critical')}','${VC('sev_major')}') AND lifecycle_state__v IN ${OPEN_STATES} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+    capa_open:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${SEV}, ${PRI}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' AND lifecycle_state__v IN ${OPEN_STATES} AND is_latest_version__v = true LIMIT ${ps}`,
+    capa_closed:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' AND lifecycle_state__v = '${VC('state_closed')}' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+    capa_high_severity:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${SEV}, ${PRI}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' AND ${SEV} IN ('${VC('sev_critical')}','${VC('sev_major')}') AND lifecycle_state__v IN ${OPEN_STATES} AND is_latest_version__v = true LIMIT ${ps}`,
+    capa_overdue:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${SEV}, ${EXP}, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' AND lifecycle_state__v IN ${OPEN_STATES} AND ${EXP} < now() AND is_latest_version__v = true LIMIT ${ps}`,
+    audit_ready_docs:
+      `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, last_modified_date__v, owner__v FROM documents WHERE lifecycle_state__v IN ${APPROVED_STATES} AND ${GXP} = true AND is_latest_version__v = true ORDER BY type__v ASC LIMIT ${ps}`,
+    time_last_30_days_changes:
+      `${SEL_BASE} WHERE last_modified_date__v >= dateadd(now(), -30, 'day') AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+    doc_all_accessible:
+      `${SEL_BASE} WHERE is_latest_version__v = true AND lifecycle_state__v != '${OBS}' ORDER BY last_modified_date__v DESC LIMIT 100`,
+    periodic_review_overdue:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${REV}, owner__v FROM documents WHERE lifecycle_state__v IN ${APPROVED_STATES} AND ${REV} < now() AND is_latest_version__v = true ORDER BY ${REV} ASC LIMIT ${ps}`,
+    periodic_review_due_soon:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${REV}, owner__v FROM documents WHERE lifecycle_state__v IN ${APPROVED_STATES} AND ${REV} >= now() AND ${REV} <= dateadd(now(), 90, 'day') AND is_latest_version__v = true ORDER BY ${REV} ASC LIMIT ${ps}`,
+    awaiting_approval:
+      `${SEL_BASE} WHERE lifecycle_state__v = '${VC('state_pending_approval')}' AND is_latest_version__v = true ORDER BY last_modified_date__v ASC LIMIT ${ps}`,
+    stale_drafts:
+      `${SEL_BASE} WHERE lifecycle_state__v = '${VC('state_draft')}' AND last_modified_date__v < dateadd(now(), -90, 'day') AND is_latest_version__v = true ORDER BY last_modified_date__v ASC LIMIT ${ps}`,
+    tmf_incomplete:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${STU}, last_modified_date__v, owner__v FROM documents WHERE ${STU} != null AND lifecycle_state__v NOT IN (${APPROVED_STATES.replace('(','').replace(')','')},'${VC('state_closed')}','${OBS}') AND is_latest_version__v = true ORDER BY ${STU}, type__v ASC LIMIT ${ps}`,
+    ctd_modules_draft:
+      `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' AND lifecycle_state__v = '${VC('state_draft')}' AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
+    labelling_expiring_60:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${EXP}, owner__v FROM documents WHERE type__v = '${VC('type_regulatory')}' AND ${EXP} > now() AND ${EXP} <= dateadd(now(), 60, 'day') AND lifecycle_state__v IN ${APPROVED_STATES} AND is_latest_version__v = true ORDER BY ${EXP} ASC LIMIT ${ps}`,
+    deviation_without_capa:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND lifecycle_state__v IN ${OPEN_STATES} AND ${CAPA} = null AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+    name_search:
+      `${SEL_BASE} WHERE name__v CONTAINS('{QUERY}') AND lifecycle_state__v != '${OBS}' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+    // v26.1: archived_documents object (native support added in v26.1 SDK)
+    doc_archived:
+      `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, minor_version_number__v, last_modified_date__v, owner__v FROM archived_documents WHERE is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+    // v26.1: FIND clause with optional DISTANCE() for typo-tolerant search
+    // Searches across document_number__v, name__v, and full-text index.
+    // Only used in live mode (demo falls back to name_search CONTAINS logic).
+    name_search_find:
+      `${SEL_BASE} FIND '{QUERY}' SCOPE document_number__v, name__v WHERE lifecycle_state__v != '${OBS}' AND is_latest_version__v = true LIMIT ${ps}`,
+    name_search_fuzzy:
+      `${SEL_BASE} FIND '{QUERY}' DISTANCE(1) SCOPE document_number__v, name__v WHERE lifecycle_state__v != '${OBS}' AND is_latest_version__v = true LIMIT ${ps}`,
+  };
+}
 
-// Normalize a Vault API document record into the shape renderResults expects
+let VQL_RAW = buildVQLRAW();
+
+// Normalize a Vault API document record into the shape renderResults expects.
+// Uses VAULT_CONFIG field names so custom field mappings work.
 function normalizeVaultDoc(d) {
+  const gxpVal = d[VC('field_gxp')];
   return {
     id:               d.id,
     name__v:          d.name__v || d.title__v || '(Untitled)',
@@ -1716,59 +2275,115 @@ function normalizeVaultDoc(d) {
     minor:            d.minor_version_number__v ?? 0,
     modified:         (d.last_modified_date__v || '').slice(0, 10),
     owner:            d.owner__v || '',
-    severity:         d.severity__v || null,
-    gxp:              d.gxp_relevant__c === true || d.gxp_relevant__c === 'true',
-    capa:             d.capa_id__c || null,
-    expiry:           d.expiration_date__v || null,
-    product:          d.product__c || d.product_name__c || null,
-    study:            d.study_id__c || d.clinical_study__c || null,
+    severity:         d[VC('field_severity')] || null,
+    gxp:              gxpVal === true || gxpVal === 'true',
+    capa:             d[VC('field_capa_link')] || null,
+    expiry:           d[VC('field_expiry')] || null,
+    product:          d[VC('field_product')] || d.product_name__c || null,
+    study:            d[VC('field_study')] || d.clinical_study__c || null,
+    review_due:       d[VC('field_review_date')] || null,
   };
 }
 
 // Execute a VQL string — routes through Lambda proxy when configured,
 // falls back to direct Vault API call in demo mode.
-async function executeVQL(vql) {
+// ── G-13: In-memory query cache (60s TTL) ──────────────────
+const VQL_CACHE = new Map();   // key: vql string → { data, total, nextPageUrl, ts }
+const VQL_CACHE_TTL = 60_000; // 60 seconds
+
+function vqlCacheKey(vql) { return vql.trim().replace(/\s+/g, ' '); }
+
+function vqlCacheGet(vql) {
+  const entry = VQL_CACHE.get(vqlCacheKey(vql));
+  if (!entry) return null;
+  if (Date.now() - entry.ts > VQL_CACHE_TTL) { VQL_CACHE.delete(vqlCacheKey(vql)); return null; }
+  return entry;
+}
+
+function vqlCacheSet(vql, payload) {
+  VQL_CACHE.set(vqlCacheKey(vql), { ...payload, ts: Date.now() });
+}
+
+/** Execute VQL against Vault.
+ *  Returns { data: NormalizedDoc[], total: number, nextPageUrl: string|null, fromCache: bool }
+ */
+async function executeVQL(vql, nextPageUrl = null) {
+  // Cache only applies to first-page requests (not pagination continuations)
+  if (!nextPageUrl) {
+    const cached = vqlCacheGet(vql);
+    if (cached) return { ...cached, fromCache: true };
+  }
+
   let endpoint, requestHeaders, requestBody;
 
   if (LIVE.proxyUrl) {
-    // ── Proxy path (production) ──────────────────────────────
-    // Browser → Lambda (HTTPS, your domain) → Vault (HTTPS, any tenant)
-    // The proxy adds CORS headers and forwards server-side.
-    endpoint      = `${LIVE.proxyUrl}/query`;
+    // ── Proxy path (production / CORS-safe) ────────────────
+    endpoint      = nextPageUrl ? `${LIVE.proxyUrl}/query/next` : `${LIVE.proxyUrl}/query`;
     requestHeaders = {
       'Content-Type':          'application/json',
       'Accept':                'application/json',
       'X-Vault-URL':           LIVE.baseUrl,
       'X-Vault-Token':         LIVE.token,
-      'X-Vault-API-Version':   LIVE.apiVer,
+      'X-Vault-API-Version':   LIVE.apiVersion,   // v26.1
     };
-    requestBody = JSON.stringify({ vql, apiVersion: LIVE.apiVer });
+    requestBody = JSON.stringify(nextPageUrl ? { nextPageUrl } : { vql, apiVersion: LIVE.apiVersion });
   } else {
-    // ── Direct path (demo / local dev) ───────────────────────
-    // Only works if Vault allows CORS from this origin (uncommon).
-    endpoint      = `${LIVE.baseUrl}/api/${LIVE.apiVer}/query`;
+    // ── Direct path (local dev / same-origin) ──────────────
+    // v26.1: POST /api/v26.1/query with form-encoded q=<vql>
+    // Pagination: GET the next_page_url returned in the response.
+    // next_page_url is already absolute (includes /api/<ver>/query/next?...).
+    endpoint      = nextPageUrl
+      ? `${LIVE.baseUrl}${nextPageUrl}`            // cursor URL is relative path
+      : `${LIVE.baseUrl}/api/${LIVE.apiVersion}/query`;
     requestHeaders = {
       'Authorization': LIVE.token,
-      'Content-Type':  'application/x-www-form-urlencoded',
       'Accept':        'application/json',
+      // v26.1 perf: skip query plan description for data-only requests
+      'X-VaultAPI-DescribeQuery': 'false',
+      ...(nextPageUrl
+        ? {}
+        : {
+          'Content-Type':       'application/x-www-form-urlencoded',
+          // v26.1: request facet counts for type and state filter sidebar (first-page only)
+          'X-VaultAPI-Facets':  'type__v,lifecycle_state__v',
+        }),
     };
-    requestBody = `q=${encodeURIComponent(vql)}`;
+    requestBody = nextPageUrl ? null : `q=${encodeURIComponent(vql)}`;
   }
 
   const resp = await fetch(endpoint, {
-    method:  'POST',
+    method:  nextPageUrl ? 'GET' : 'POST',   // v26.1: pagination uses GET
     headers: requestHeaders,
     body:    requestBody,
   });
 
-  const data = await resp.json();
+  if (resp.status === 401) throw new Error('INVALID_SESSION_ID');
 
-  // Normalise error shape from both proxy and direct paths
-  if (data.responseStatus !== 'SUCCESS') {
-    const msg = data.errors?.[0]?.message || data.error || data.responseStatus || 'VQL error';
+  const raw = await resp.json();
+
+  if (raw.responseStatus !== 'SUCCESS') {
+    const msg = (raw.errors?.[0]?.message) || raw.error || raw.responseStatus || 'VQL error';
     throw new Error(msg);
   }
-  return (data.data || []).map(normalizeVaultDoc);
+
+  // v26.1 response envelope:
+  // { responseStatus, responseDetails: { total, pageoffset, pagesize, next_page, previous_page }, data: [...] }
+  // Pagination cursor: responseDetails.next_page (v26.1 docs canonical).
+  // Fallback to raw.next_page and legacy raw.next_page_url for older SDK variants.
+  const result = {
+    data:        (raw.data || []).map(normalizeVaultDoc),
+    total:       raw.responseDetails?.total ?? (raw.data || []).length,
+    pageOffset:  raw.responseDetails?.pageoffset ?? 0,
+    nextPageUrl: raw.responseDetails?.next_page   // v26.1 canonical location in responseDetails
+                 || raw.next_page                  // alternative top-level variant
+                 || raw.next_page_url              // legacy / proxy wrapper fallback
+                 || null,                          // null = last page
+    fromCache:   false,
+    facets:      raw.facets || null,               // X-VaultAPI-Facets response (when requested)
+  };
+
+  if (!nextPageUrl) vqlCacheSet(vql, result);
+  return result;
 }
 
 // Show connection status banner
@@ -1796,17 +2411,91 @@ function initConnectionBanner() {
   }
 }
 
+/* ── G-02: Object source detection ────────────────────────────
+   In live mode, probes Vault to determine whether CAPA and
+   Deviation records are stored as Documents or Vault Objects.
+   Vault Objects have their own API endpoint (/vobjects/) and
+   a different VQL syntax (SELECT ... FROM capa__c vs documents).
+   Results stored in sessionStorage and shown as a banner warning
+   when object-type queries are executed.
+   Completely no-op in demo mode.
+─────────────────────────────────────────────────────────── */
+const OBJECT_SOURCE = (() => {
+  try { return JSON.parse(sessionStorage.getItem('vault_object_source') || 'null'); } catch { return null; }
+})() || { capa: 'unknown', deviation: 'unknown' };
+
+async function detectObjectSources() {
+  if (!LIVE) return;
+  if (OBJECT_SOURCE.capa !== 'unknown' && OBJECT_SOURCE.deviation !== 'unknown') return;
+
+  const probe = async (typeVal) => {
+    // Try documents table first — COUNT(*) is fast and auth-safe
+    const vql = `SELECT COUNT(*) FROM documents WHERE type__v = '${typeVal}' AND is_latest_version__v = true`;
+    try {
+      const res = await fetch(
+        `${LIVE.baseUrl}/api/${LIVE.apiVersion}/query?q=${encodeURIComponent(vql)}`,
+        { headers: { Authorization: LIVE.token, Accept: 'application/json' } }
+      );
+      const json = await res.json();
+      if (json.responseStatus === 'SUCCESS') {
+        const count = (json.data && json.data[0]) ? (json.data[0]['COUNT(*)'] || 0) : 0;
+        return count > 0 ? 'documents' : 'objects';  // 0 results → likely in objects
+      }
+    } catch {}
+    return 'unknown';
+  };
+
+  OBJECT_SOURCE.capa      = await probe(VC('type_capa'));
+  OBJECT_SOURCE.deviation = await probe(VC('type_deviation'));
+  sessionStorage.setItem('vault_object_source', JSON.stringify(OBJECT_SOURCE));
+
+  // Warn user if either type resolves to objects (queries will return empty)
+  const warnings = [];
+  if (OBJECT_SOURCE.capa      === 'objects') warnings.push(`CAPA (${VC('type_capa')})`);
+  if (OBJECT_SOURCE.deviation === 'objects') warnings.push(`Deviation (${VC('type_deviation')})`);
+  if (warnings.length) {
+    const w = document.createElement('div');
+    w.style.cssText = 'margin:8px 0;padding:9px 14px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;font-size:12.5px;color:#92400E;';
+    w.innerHTML = `<strong>⚠ Object type mismatch:</strong> ${warnings.join(' and ')} appear to be stored as <em>Vault Objects</em>, not documents. Queries for these types may return 0 results. Update the type name in <button onclick="openConfigModal()" style="background:none;border:none;color:inherit;font-weight:700;cursor:pointer;text-decoration:underline;padding:0;">Config ⚙</button>.`;
+    const bar = document.getElementById('connectionBanner');
+    if (bar) bar.insertAdjacentElement('afterend', w);
+  }
+}
+
 /* ── RULE-BASED PARSER ─────────────────────────────────────── */
 function parseToTemplate(raw) {
   const q = (raw || '').toLowerCase().trim();
-  if (!q || q.length < 2 || /^(the|a|an|show|me|find|get|list|all|any)\s*$/.test(q))
+  // Single stopword OR common "show everything" phrases → all docs
+  const isAllDocsPhrase = /^(show (me )?(all|everything|all docs?|all documents?)|get all( docs?| documents?)?|list all( docs?| documents?)?|find all( docs?| documents?)?|(all|every(thing)?) docs?( please)?|all documents?)\s*$/.test(q);
+  if (!q || q.length < 2 || /^(the|a|an|show|me|find|get|list|all|any)\s*$/.test(q) || isAllDocsPhrase)
     return { tid: 'doc_all_accessible', rule: 'RULE-099' };
-  if ((q.includes('overdue')||q.includes('past due')) && (q.includes('capa')||q.includes('capas')))   return { tid: 'capa_overdue',            rule: 'RULE-004' };
+  // Document-number pattern (e.g. SOP-MFG-001, DEV-2025-042, QMS-2024-REV-3)
+  // Requires at least one digit so plain 3-word phrases don't false-positive.
+  if (/\d/.test(q) && /^[a-z]+-[a-z0-9]+-[a-z0-9]+(-[a-z0-9]+)*$/i.test(q.replace(/\s+/g,'-')))
+    return { tid: 'name_search', rule: 'RULE-097' };
+  // ── Admin / periodic review rules (high priority — specific intent) ──────
+  if ((q.includes('periodic') || q.includes('review')) && (q.includes('overdue')||q.includes('past due')||q.includes('miss')||q.includes('late'))) return { tid: 'periodic_review_overdue',  rule: 'RULE-030' };
+  if ((q.includes('periodic') || q.includes('review')) && (q.includes('due')||q.includes('upcoming')||q.includes('soon')||q.includes('next')))     return { tid: 'periodic_review_due_soon', rule: 'RULE-031' };
+  if (q.includes('review overdue') || q.includes('overdue review') || (q.includes('review') && q.includes('overdue')))                             return { tid: 'periodic_review_overdue',  rule: 'RULE-032' };
+  if ((q.includes('approv') || q.includes('pending')) && (q.includes('wait')||q.includes('queue')||q.includes('stuck')||q.includes('bottleneck'))) return { tid: 'awaiting_approval',        rule: 'RULE-033' };
+  if (q.includes('pending approval') || q.includes('awaiting approval') || (q.includes('pending') && q.includes('approv')))                        return { tid: 'awaiting_approval',        rule: 'RULE-034' };
+  if ((q.includes('stale')||q.includes('old draft')||q.includes('abandoned')) && q.includes('draft'))                                              return { tid: 'stale_drafts',             rule: 'RULE-035' };
+  if (q.includes('stale draft') || (q.includes('draft') && (q.includes('90')||q.includes('old')||q.includes('no activity'))))                      return { tid: 'stale_drafts',             rule: 'RULE-036' };
+  if ((q.includes('tmf')||q.includes('trial master')||q.includes('essential doc')) && (q.includes('missing')||q.includes('incomplet')||q.includes('gap'))) return { tid: 'tmf_incomplete', rule: 'RULE-037' };
+  if (q.includes('tmf') || q.includes('trial master file'))                                                                                         return { tid: 'tmf_incomplete',          rule: 'RULE-038' };
+  if ((q.includes('ctd')||q.includes('module')) && (q.includes('draft')||q.includes('submit')||q.includes('pending')))                              return { tid: 'ctd_modules_draft',        rule: 'RULE-039' };
+  if (q.includes('ctd') || q.includes('common technical'))                                                                                          return { tid: 'ctd_modules_draft',        rule: 'RULE-040' };
+  if ((q.includes('label')||q.includes('pi ') || q.includes('prescrib')||q.includes('spc ')) && (q.includes('expir')||q.includes('renew')||q.includes('updat'))) return { tid: 'labelling_expiring_60', rule: 'RULE-041' };
+  if ((q.includes('deviati')||q.includes('incident')) && (q.includes('no capa')||q.includes('without capa')||q.includes('missing capa')||q.includes('unlinked'))) return { tid: 'deviation_without_capa', rule: 'RULE-042' };
+  // v26.1: archived_documents support
+  if (q.includes('archiv'))                                                                                                                             return { tid: 'doc_archived',            rule: 'RULE-043' };
+  // ── Existing rules ─────────────────────────────────────────────────────
+  if ((q.includes('overdue')||q.includes('past due')) && (q.includes('capa')||q.includes('capas')))   return { tid: 'capa_overdue',             rule: 'RULE-004' };
   if (q.includes('expir') && (q.includes('sop')||q.includes('sops')))                                 return { tid: 'sop_expiring_soon',        rule: 'RULE-005' };
   if (q.includes('inspection') && (q.includes('package')||q.includes('ready')||q.includes('audit'))) return { tid: 'audit_ready_docs',          rule: 'RULE-001' };
   if ((q.includes('critical')||q.includes('major')||q.includes('high')) && q.includes('deviati'))    return { tid: 'deviation_high_severity',   rule: 'RULE-002' };
   if ((q.includes('critical')||q.includes('major')||q.includes('high')) && (q.includes('capa')||q.includes('capas'))) return { tid: 'capa_high_severity', rule: 'RULE-015' };
-  if ((q.includes('sop')||q.includes('sops')) && (q.includes('approv')||q.includes('effectiv')||q.includes('current'))) return { tid: 'sop_approved', rule: 'RULE-010' };
+  if ((q.includes('sop')||q.includes('sops')) && (q.includes('approv')||q.includes('effectiv')||q.includes('current'))) return { tid: 'sop_approved',    rule: 'RULE-010' };
   if (q.includes('deviati') && (q.includes('open')||q.includes('active')))                           return { tid: 'deviation_all_open',        rule: 'RULE-012' };
   if ((q.includes('capa')||q.includes('capas')) && (q.includes('close')||q.includes('resolv')))      return { tid: 'capa_closed',               rule: 'RULE-014' };
   if ((q.includes('capa')||q.includes('capas')) && (q.includes('open')||q.includes('active')))       return { tid: 'capa_open',                 rule: 'RULE-013' };
@@ -1815,6 +2504,8 @@ function parseToTemplate(raw) {
   if (q.includes('deviati')||q.includes('incident')||q.includes('oos'))                              return { tid: 'deviation_all_open',        rule: 'RULE-021' };
   if (q.includes('capa')||q.includes('capas')||q.includes('corrective'))                             return { tid: 'capa_open',                 rule: 'RULE-022' };
   if (q.includes('recent')||q.includes('change')||q.includes('modif'))                               return { tid: 'time_last_30_days_changes', rule: 'RULE-023' };
+  // ── Name / free-text fallback: query didn't match any template keyword ───
+  if (q.length >= 3) return { tid: 'name_search', rule: 'RULE-098' };
   return { tid: 'doc_all_accessible', rule: 'RULE-099' };
 }
 
@@ -1832,6 +2523,9 @@ const TYPE_KEY = {
 };
 
 function applyACL(docs, role) {
+  // G-06: In live mode Vault API enforces real permissions — never filter server results client-side.
+  // Client-side ACL only applies in demo mode to simulate role-based visibility.
+  if (LIVE) return docs;
   const acl = ROLE_ACL[role] || ROLE_ACL.QA_USER;
   return docs.filter(d => {
     if (!acl.drafts && d.lifecycle_state__v === 'Draft__v') return false;
@@ -1855,35 +2549,341 @@ function applySidebarFilters(docs) {
   });
 }
 
+/* ── G-15: KPI Dashboard show/hide ───────────────────────── */
+function showDashboard() {
+  const d = document.getElementById('kpiDashboard');
+  if (d) d.style.display = '';
+}
+function hideDashboard() {
+  const d = document.getElementById('kpiDashboard');
+  if (d) d.style.display = 'none';
+}
+
+/* ── G-08: Session expired persistent banner ─────────────── */
+function showSessionExpiredBanner() {
+  if (document.getElementById('sessionExpiredBanner')) return;
+  const b = document.createElement('div');
+  b.id = 'sessionExpiredBanner';
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;padding:10px 20px;background:#991B1B;color:#fff;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:12px;';
+  b.innerHTML = `<span>⚠ Vault session expired. Results shown are demo data.</span>
+    <a href="connect.html" style="color:#FCA5A5;font-weight:700;text-decoration:underline;">Reconnect →</a>`;
+  document.body.prepend(b);
+}
+
+/* ── G-09: Query composition — stubs (filters added by sidebar) ── */
+// These are populated by the composition sidebar inputs (added in G-09 task below)
+const COMPOSE = { dateFrom: '', dateTo: '', owner: '' };
+
+function applyCompositionFilters(vql) {
+  let v = vql;
+  // Insert extra AND clauses before ORDER BY / LIMIT
+  const extras = [];
+  if (COMPOSE.dateFrom) extras.push(`last_modified_date__v >= '${COMPOSE.dateFrom}'`);
+  if (COMPOSE.dateTo)   extras.push(`last_modified_date__v <= '${COMPOSE.dateTo}'`);
+  if (COMPOSE.owner)    extras.push(`owner__v CONTAINS('${COMPOSE.owner.replace(/'/g,"''")}')` );
+  if (!extras.length) return v;
+  const inject = ' AND ' + extras.join(' AND ');
+  // Insert before ORDER BY, LIMIT, or end
+  v = v.replace(/\s+(ORDER BY|LIMIT)/i, inject + ' $1');
+  if (!v.includes(inject)) v += inject; // fallback: append
+  return v;
+}
+
+function applyCompositionFiltersMock(docs) {
+  let d = docs;
+  if (COMPOSE.dateFrom) d = d.filter(x => x.modified >= COMPOSE.dateFrom);
+  if (COMPOSE.dateTo)   d = d.filter(x => x.modified <= COMPOSE.dateTo);
+  if (COMPOSE.owner)    d = d.filter(x => (x.owner||'').toLowerCase().includes(COMPOSE.owner.toLowerCase()));
+  return d;
+}
+
+/* ── G-09: Composition apply / clear ───────────────────────── */
+function applyCompose() {
+  COMPOSE.dateFrom = (document.getElementById('composeDateFrom')?.value || '').trim();
+  COMPOSE.dateTo   = (document.getElementById('composeDateTo')?.value   || '').trim();
+  COMPOSE.owner    = (document.getElementById('composeOwner')?.value    || '').trim();
+
+  // Show clear button when any filter is active
+  const active = COMPOSE.dateFrom || COMPOSE.dateTo || COMPOSE.owner;
+  const clearBtn = document.getElementById('composeClearBtn');
+  if (clearBtn) clearBtn.style.display = active ? '' : 'none';
+
+  // Visual indicator on the section header
+  const section = document.getElementById('compose-section');
+  if (section) {
+    const lbl = section.querySelector('.filter-section-label');
+    if (lbl) lbl.style.color = active ? 'var(--v-blue)' : '';
+  }
+
+  if (S.currentTid) runQuery(S.currentTid);
+}
+
+function clearCompose() {
+  COMPOSE.dateFrom = '';
+  COMPOSE.dateTo   = '';
+  COMPOSE.owner    = '';
+  const f = document.getElementById('composeDateFrom');
+  const t = document.getElementById('composeDateTo');
+  const o = document.getElementById('composeOwner');
+  if (f) f.value = '';
+  if (t) t.value = '';
+  if (o) o.value = '';
+  document.getElementById('composeClearBtn').style.display = 'none';
+  const section = document.getElementById('compose-section');
+  if (section) {
+    const lbl = section.querySelector('.filter-section-label');
+    if (lbl) lbl.style.color = '';
+  }
+  if (S.currentTid) runQuery(S.currentTid);
+}
+
+/* ── G-01: VAULT_CONFIG modal ──────────────────────────────── */
+const CONFIG_FIELD_LABELS = {
+  type_sop:        'SOP type name',
+  type_deviation:  'Deviation type name',
+  type_capa:       'CAPA type name',
+  type_protocol:   'Protocol type name',
+  type_report:     'Report type name',
+  type_policy:     'Policy type name',
+  type_regulatory: 'Regulatory type name',
+  state_approved:         'Approved state',
+  state_effective:        'Effective state',
+  state_draft:            'Draft state',
+  state_in_review:        'In Review state',
+  state_open:             'Open state',
+  state_in_progress:      'In Progress state',
+  state_closed:           'Closed state',
+  state_obsolete:         'Obsolete state',
+  state_pending_approval: 'Pending Approval state',
+  sev_critical: 'Critical severity value',
+  sev_major:    'Major severity value',
+  sev_minor:    'Minor severity value',
+  field_gxp:         'GxP field name',
+  field_capa_link:   'CAPA link field name',
+  field_product:     'Product field name',
+  field_study:       'Study field name',
+  field_review_date: 'Periodic review date field',
+  field_expiry:      'Expiry date field',
+  field_severity:    'Severity field name',
+  field_priority:    'Priority field name',
+  field_dev_type:    'Deviation type field',
+  default_page_size: 'Default page size',
+};
+
+const CONFIG_SECTIONS = {
+  'Document Types':  ['type_sop','type_deviation','type_capa','type_protocol','type_report','type_policy','type_regulatory'],
+  'Lifecycle States':['state_approved','state_effective','state_draft','state_in_review','state_open','state_in_progress','state_closed','state_obsolete','state_pending_approval'],
+  'Severity Values': ['sev_critical','sev_major','sev_minor'],
+  'Custom Fields':   ['field_gxp','field_capa_link','field_product','field_study','field_review_date','field_expiry','field_severity','field_priority','field_dev_type'],
+  'Query Settings':  ['default_page_size'],
+};
+
+function openConfigModal() {
+  const body = document.getElementById('configModalBody');
+  body.innerHTML = Object.entries(CONFIG_SECTIONS).map(([section, keys]) => `
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--v-ink-60);margin-bottom:8px;">${section}</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+        ${keys.map(k => `
+          <div>
+            <label style="font-size:11px;color:var(--v-ink-60);display:block;margin-bottom:2px;">${CONFIG_FIELD_LABELS[k] || k}</label>
+            <input id="cfg_${k}" type="text" value="${VAULT_CONFIG[k] || ''}"
+              placeholder="${VAULT_CONFIG_DEFAULTS[k] || ''}"
+              style="width:100%;padding:5px 8px;border:1px solid var(--v-border-mid);border-radius:4px;font-size:12px;font-family:monospace;">
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+  document.getElementById('configModalBackdrop').style.display = '';
+}
+
+function closeConfigModal() {
+  document.getElementById('configModalBackdrop').style.display = 'none';
+}
+
+function saveConfig() {
+  const overrides = {};
+  Object.keys(CONFIG_FIELD_LABELS).forEach(k => {
+    const el = document.getElementById(`cfg_${k}`);
+    if (!el) return;
+    const val = el.value.trim();
+    if (val && val !== VAULT_CONFIG_DEFAULTS[k]) overrides[k] = val;
+    if (val) VAULT_CONFIG[k] = val;
+    else VAULT_CONFIG[k] = VAULT_CONFIG_DEFAULTS[k];
+  });
+  localStorage.setItem('vault_config', JSON.stringify(overrides));
+  // Rebuild VQL with new config
+  VQL_RAW = buildVQLRAW();
+  closeConfigModal();
+  // Re-run current query so changes are visible immediately
+  if (S.currentTid) runQuery(S.currentTid);
+}
+
+function resetConfig() {
+  Object.keys(VAULT_CONFIG_DEFAULTS).forEach(k => { VAULT_CONFIG[k] = VAULT_CONFIG_DEFAULTS[k]; });
+  localStorage.removeItem('vault_config');
+  VQL_RAW = buildVQLRAW();
+  openConfigModal(); // refresh modal to show defaults
+  if (S.currentTid) runQuery(S.currentTid);
+}
+
+// Close on backdrop click
+document.getElementById('configModalBackdrop')
+  ?.addEventListener('click', e => { if (e.target === e.currentTarget) closeConfigModal(); });
+
+/* ── G-03: Pagination bar update ─────────────────────────── */
+function updatePaginationBar() {
+  const bar = document.getElementById('paginationBar');
+  if (!bar) return;
+  if (PAGE.nextUrl && PAGE.total > PAGE.loaded) {
+    const remaining = PAGE.total - PAGE.loaded;
+    bar.style.display = 'flex';
+    bar.innerHTML = `
+      <span style="font-size:12.5px;color:var(--v-ink-60);">
+        Showing <strong>${PAGE.loaded}</strong> of <strong>${PAGE.total}</strong> documents
+      </span>
+      <button onclick="loadMore()" style="
+        padding:5px 14px;border:1px solid var(--v-border-mid);border-radius:6px;
+        background:var(--v-white);color:var(--v-blue);font-size:12.5px;font-weight:600;
+        cursor:pointer;white-space:nowrap;">
+        Load ${Math.min(remaining, 50)} more ↓
+      </button>`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+async function loadMore() {
+  if (!PAGE.nextUrl || !PAGE.tid) return;
+  await runQuery(PAGE.tid, { append: true });
+}
+
+/* ── G-15: KPI Dashboard ────────────────────────────────────
+   6 KPI cards computed from MOCK_DOCS in demo mode, or via
+   COUNT(*) VQL queries in live mode. Each card is clickable
+   and fires the underlying template.
+─────────────────────────────────────────────────────────── */
+const KPI_CARDS = [
+  {
+    label:  'All Documents',
+    tid:    'doc_all_accessible',
+    color:  'var(--v-blue)',
+    countFn: docs => docs.length,
+    liveVql: `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true`,
+  },
+  {
+    label:  'Approved / Effective',
+    tid:    'sop_approved',
+    color:  'var(--v-green)',
+    countFn: docs => docs.filter(d => ['Approved__v','Effective__v'].includes(d.lifecycle_state__v)).length,
+    liveVql: `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true AND lifecycle_state__v IN ('Approved__v','Effective__v')`,
+  },
+  {
+    label:  'Open CAPAs',
+    tid:    'capa_open',
+    color:  'var(--v-orange)',
+    countFn: docs => docs.filter(d => d.type__v === 'CAPA__c' && d.lifecycle_state__v === 'Open__v').length,
+    liveVql: `SELECT COUNT(*) FROM documents WHERE type__v = 'CAPA__c' AND lifecycle_state__v = 'Open__v'`,
+  },
+  {
+    label:  'Review Overdue',
+    tid:    'periodic_review_overdue',
+    color:  'var(--v-red)',
+    countFn: docs => { const now = new Date().toISOString().split('T')[0]; return docs.filter(d => d.review_due && d.review_due < now).length; },
+    liveVql: `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true AND review_due_date__v <= '${new Date().toISOString().split('T')[0]}'`,
+  },
+  {
+    label:  'Awaiting Approval',
+    tid:    'awaiting_approval',
+    color:  'var(--v-amber)',
+    countFn: docs => docs.filter(d => ['Pending Approval__v','In Review__v'].includes(d.lifecycle_state__v)).length,
+    liveVql: `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true AND lifecycle_state__v IN ('Pending Approval__v','In Review__v')`,
+  },
+  {
+    label:  'Expiring ≤60d',
+    tid:    'labelling_expiring_60',
+    color:  'var(--v-purple)',
+    countFn: docs => {
+      const now = new Date(); const cutoff = new Date(); cutoff.setDate(cutoff.getDate() + 60);
+      return docs.filter(d => d.expiry && new Date(d.expiry) >= now && new Date(d.expiry) <= cutoff).length;
+    },
+    liveVql: null,   // complex date math — use demo count in live mode too
+  },
+];
+
+async function loadKpiDashboard() {
+  const grid = document.getElementById('kpiGrid');
+  if (!grid) return;
+
+  // Compute counts
+  const counts = await Promise.all(KPI_CARDS.map(async card => {
+    if (LIVE && card.liveVql) {
+      try {
+        const res = await fetch(
+          `${LIVE.baseUrl}/api/${LIVE.apiVersion}/query?q=${encodeURIComponent(card.liveVql)}`,
+          { headers: { Authorization: LIVE.token, Accept: 'application/json' } }
+        );
+        const json = await res.json();
+        return (json.data && json.data[0]) ? (json.data[0]['COUNT(*)'] || 0) : 0;
+      } catch { /* fall through to demo */ }
+    }
+    return card.countFn(MOCK_DOCS);
+  }));
+
+  grid.innerHTML = KPI_CARDS.map((card, i) => `
+    <div class="kpi-card" onclick="hideDashboard();runQuery('${card.tid}')" title="Click to run: ${card.label}">
+      <div class="kpi-card-label">${card.label}</div>
+      <div class="kpi-card-value" style="color:${card.color}">${counts[i]}</div>
+      <div class="kpi-card-sub">${LIVE ? 'live count' : 'demo'} · click to filter</div>
+    </div>`).join('');
+}
+
 /* ── CHIPS ─────────────────────────────────────────────────── */
 const CHIPS = {
+  // QA Admin sees the full operational dashboard
   QA_ADMIN: [
-    { label:'Approved SOPs',           tid:'sop_approved',            cat:'sop',       icon:'📋' },
-    { label:'Open Deviations',         tid:'deviation_all_open',      cat:'deviation', icon:'⚠️' },
-    { label:'Overdue CAPAs',           tid:'capa_overdue',            cat:'capa',      icon:'🔴' },
-    { label:'Audit-Ready Docs',        tid:'audit_ready_docs',        cat:'audit',     icon:'🏛️' },
-    { label:'Open CAPAs',              tid:'capa_open',               cat:'capa',      icon:'🔧' },
-    { label:'SOPs Expiring Soon',      tid:'sop_expiring_soon',       cat:'sop',       icon:'⏰' },
-    { label:'High Severity Deviations',tid:'deviation_high_severity', cat:'deviation', icon:'🚨' },
+    { label:'Review Overdue',          tid:'periodic_review_overdue',  cat:'review',    icon:'🔴' },
+    { label:'Awaiting Approval',       tid:'awaiting_approval',        cat:'review',    icon:'⏳' },
+    { label:'Open Deviations',         tid:'deviation_all_open',       cat:'deviation', icon:'⚠️' },
+    { label:'Overdue CAPAs',           tid:'capa_overdue',             cat:'capa',      icon:'🚨' },
+    { label:'Devs Without CAPA',       tid:'deviation_without_capa',   cat:'deviation', icon:'🔗' },
+    { label:'Audit-Ready Docs',        tid:'audit_ready_docs',         cat:'audit',     icon:'🏛️' },
+    { label:'Review Due Soon',         tid:'periodic_review_due_soon', cat:'review',    icon:'📅' },
+    { label:'Stale Drafts',            tid:'stale_drafts',             cat:'review',    icon:'🗄️' },
+    { label:'SOPs Expiring Soon',      tid:'sop_expiring_soon',        cat:'sop',       icon:'⏰' },
+    { label:'High Sev Deviations',     tid:'deviation_high_severity',  cat:'deviation', icon:'🔥' },
+    { label:'Archived Documents',      tid:'doc_archived',             cat:'audit',     icon:'🗃️' },
   ],
+  // QA User: day-to-day quality work
   QA_USER: [
-    { label:'Approved SOPs',    tid:'sop_approved',       cat:'sop',       icon:'📋' },
-    { label:'Open Deviations',  tid:'deviation_all_open', cat:'deviation', icon:'⚠️' },
-    { label:'Open CAPAs',       tid:'capa_open',          cat:'capa',      icon:'🔧' },
-    { label:'SOPs Expiring',    tid:'sop_expiring_soon',  cat:'sop',       icon:'⏰' },
+    { label:'Review Overdue',          tid:'periodic_review_overdue',  cat:'review',    icon:'🔴' },
+    { label:'Open Deviations',         tid:'deviation_all_open',       cat:'deviation', icon:'⚠️' },
+    { label:'Open CAPAs',              tid:'capa_open',                cat:'capa',      icon:'🔧' },
+    { label:'Devs Without CAPA',       tid:'deviation_without_capa',   cat:'deviation', icon:'🔗' },
+    { label:'Awaiting Approval',       tid:'awaiting_approval',        cat:'review',    icon:'⏳' },
+    { label:'Approved SOPs',           tid:'sop_approved',             cat:'sop',       icon:'📋' },
   ],
+  // Clinical: eTMF completeness + protocol docs
   CLINICAL_USER: [
-    { label:'Approved SOPs',    tid:'sop_approved',      cat:'sop',   icon:'📋' },
-    { label:'Audit-Ready Docs', tid:'audit_ready_docs',  cat:'audit', icon:'🏛️' },
+    { label:'TMF Incomplete Docs',     tid:'tmf_incomplete',           cat:'clinical',  icon:'📂' },
+    { label:'Awaiting Approval',       tid:'awaiting_approval',        cat:'review',    icon:'⏳' },
+    { label:'Approved SOPs',           tid:'sop_approved',             cat:'sop',       icon:'📋' },
+    { label:'Audit-Ready Docs',        tid:'audit_ready_docs',         cat:'audit',     icon:'🏛️' },
+    { label:'Review Overdue',          tid:'periodic_review_overdue',  cat:'review',    icon:'🔴' },
   ],
+  // Regulatory: submission readiness focus
   REGULATORY_USER: [
-    { label:'Approved SOPs',     tid:'sop_approved',     cat:'sop',   icon:'📋' },
-    { label:'Inspection Package',tid:'audit_ready_docs', cat:'audit', icon:'📦' },
+    { label:'CTD Modules in Draft',    tid:'ctd_modules_draft',        cat:'regulatory',icon:'📝' },
+    { label:'Labelling Expiring ≤60d', tid:'labelling_expiring_60',    cat:'regulatory',icon:'🏷️' },
+    { label:'TMF Incomplete Docs',     tid:'tmf_incomplete',           cat:'clinical',  icon:'📂' },
+    { label:'Inspection Package',      tid:'audit_ready_docs',         cat:'audit',     icon:'📦' },
+    { label:'Awaiting Approval',       tid:'awaiting_approval',        cat:'review',    icon:'⏳' },
+    { label:'Review Due Soon',         tid:'periodic_review_due_soon', cat:'review',    icon:'📅' },
+    { label:'Archived Documents',      tid:'doc_archived',             cat:'audit',     icon:'🗃️' },
   ],
 };
 
 /* ── STATE ─────────────────────────────────────────────────── */
-const S = { role:'QA_ADMIN', currentTid:null, vqlOpen:false, activeChip:null };
+const S = { role:'QA_ADMIN', currentTid:null, vqlOpen:false, activeChip:null, searchText:'' };
 
 /* ── CURRENT RESULTS (for CSV export) ─────────────────────── */
 let currentResults = [];
@@ -1936,50 +2936,116 @@ function renderChips(role) {
 }
 
 /* ── QUERY RUNNER ──────────────────────────────────────────── */
-async function runQuery(tid) {
+// Pagination state — reset on each new query, advanced by loadMore()
+const PAGE = { nextUrl: null, total: 0, loaded: 0, tid: null, vql: null };
+
+async function runQuery(tid, { append = false } = {}) {
   const t0 = Date.now();
-  S.currentTid = tid;
+  if (!append) {
+    S.currentTid = tid;
+    PAGE.tid = tid;
+    PAGE.nextUrl = null;
+    PAGE.total = 0;
+    PAGE.loaded = 0;
+  }
   E.loading.classList.add('active');
+  hideDashboard();   // collapse KPI dashboard when a query fires
 
   let raw = [];
   let liveError = null;
+  let fromCache = false;
 
   if (LIVE) {
     // ── Live path: execute real VQL against Vault ──────────────
-    const vql = VQL_RAW[tid] || VQL_RAW.doc_all_accessible;
+    let vql = VQL_RAW[tid] || VQL_RAW.doc_all_accessible;
+    if (tid === 'name_search') {
+      const safe = (S.searchText || '').replace(/'/g, "''");
+      // v26.1: prefer FIND clause for simple single/double-word queries (no special chars).
+      // FIND searches document_number__v + name__v + full-text index — much richer than CONTAINS.
+      // Fall back to CONTAINS for complex/quoted expressions that FIND doesn't support.
+      if (LIVE && safe && /^[a-z0-9\s\-]+$/i.test(safe)) {
+        // Use fuzzy FIND with DISTANCE(1) for short terms, exact FIND for longer ones
+        const findTemplate = safe.length <= 8 ? VQL_RAW.name_search_fuzzy : VQL_RAW.name_search_find;
+        vql = findTemplate.replace('{QUERY}', safe);
+      } else {
+        vql = vql.replace('{QUERY}', safe);
+      }
+    }
+    PAGE.vql = vql;
+
+    // Apply composition filters (G-09) to the VQL
+    vql = applyCompositionFilters(vql);
+
     try {
-      raw = await executeVQL(vql);
+      const res = await executeVQL(vql, append ? PAGE.nextUrl : null);
+      raw          = res.data;
+      PAGE.nextUrl = res.nextPageUrl;
+      PAGE.total   = append ? PAGE.total : res.total;
+      PAGE.loaded  += raw.length;
+      fromCache    = res.fromCache;
+      // v26.1 facets: update filter sidebar with live counts (first-page requests only)
+      if (!append && res.facets) updateFacetCounts(res.facets);
     } catch (err) {
       liveError = err.message;
-      // Session may have expired — fall back to mock and show warning
+      if (err.message.includes('INVALID_SESSION_ID')) {
+        showSessionExpiredBanner();
+      }
       raw = MOCK_DOCS.filter(QT[tid] || QT.doc_all_accessible);
     }
   } else {
     // ── Demo path: filter mock data ────────────────────────────
     await new Promise(r => setTimeout(r, 120 + Math.random() * 100));
-    raw = MOCK_DOCS.filter(QT[tid] || QT.doc_all_accessible);
+    let pool = MOCK_DOCS.filter(QT[tid] || QT.doc_all_accessible);
+    pool = applyCompositionFiltersMock(pool);
+    // Simulate pagination in demo: 20 per page
+    const offset = append ? PAGE.loaded : 0;
+    raw          = pool.slice(offset, offset + 20);
+    PAGE.total   = pool.length;
+    PAGE.loaded  = append ? PAGE.loaded + raw.length : raw.length;
+    PAGE.nextUrl = PAGE.loaded < PAGE.total ? '__demo_next__' : null;
   }
 
-  const acl   = applyACL(raw, S.role);
-  const final = applySidebarFilters(acl);
+  const acl    = applyACL(raw, S.role);
+  const ranked = rerankResults(acl);           // G-11: frequency boost
+  const final  = applySidebarFilters(ranked);
   const ms    = Date.now() - t0;
 
   /* Update query info bar */
   E.qibTemplate.textContent = tid;
-  E.qibRule.textContent     = LIVE ? (liveError ? '⚠ fell back to demo' : '● live') : '';
+  let liveLabel = '';
+  if (LIVE && !liveError) liveLabel = fromCache ? `◎ cached` : '● live';
+  else if (LIVE && liveError) liveLabel = '⚠ demo fallback';
+  E.qibRule.textContent = liveLabel;
   E.qib.classList.add('visible');
 
   /* Update VQL preview */
-  E.vqlContent.innerHTML = VQLS[tid] || VQLS.doc_all_accessible;
+  if (tid === 'name_search') {
+    const safeDisplay = (S.searchText || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const useFIND = LIVE && S.searchText && /^[a-z0-9\s\-]+$/i.test(S.searchText);
+    if (useFIND) {
+      const isFuzzy = S.searchText.length <= 8;
+      const findVql = isFuzzy
+        ? `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">FIND</span> <span class="vql-str">'${safeDisplay}'</span> <span class="vql-fn">DISTANCE</span>(<span class="vql-lit">1</span>)\n<span class="vql-kw">SCOPE</span> document_number__v, name__v\n<span class="vql-kw">WHERE</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">50</span>`
+        : `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">FIND</span> <span class="vql-str">'${safeDisplay}'</span>\n<span class="vql-kw">SCOPE</span> document_number__v, name__v\n<span class="vql-kw">WHERE</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">50</span>`;
+      E.vqlContent.innerHTML = findVql;
+    } else {
+      E.vqlContent.innerHTML = VQLS.name_search.replace(/{QUERY}/g, safeDisplay);
+    }
+  } else {
+    E.vqlContent.innerHTML = VQLS[tid] || VQLS.doc_all_accessible;
+  }
 
-  /* Update counts */
+  /* Update counts — show X of Y when server total is known */
   const name = TNAMES[tid] || 'Documents';
-  E.resultsCount.textContent = `${final.length} document${final.length !== 1 ? 's' : ''}`;
+  const countLabel = PAGE.total > PAGE.loaded
+    ? `${PAGE.loaded} of ${PAGE.total} documents`
+    : `${final.length} document${final.length !== 1 ? 's' : ''}`;
+  E.resultsCount.textContent = countLabel;
   E.resultsSub.textContent   = `• ${name}${LIVE && !liveError ? '' : ' (demo)'}`;
   E.execTime.innerHTML       = `<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 15A7 7 0 108 1a7 7 0 000 14zm.75-10.25a.75.75 0 00-1.5 0v3.5c0 .414.336.75.75.75h2.5a.75.75 0 000-1.5H8.75v-2.75z" clip-rule="evenodd"/></svg>${ms}ms`;
 
   /* Show session-expired warning inline */
-  if (liveError) {
+  if (liveError && !liveError.includes('INVALID_SESSION_ID')) {
     const warn = document.createElement('div');
     warn.style.cssText = 'margin-bottom:10px;padding:9px 12px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;font-size:12.5px;color:#92400E;';
     warn.innerHTML = `<strong>Vault query failed:</strong> ${liveError} — showing demo data. <a href="connect.html" style="color:inherit;font-weight:600;text-decoration:underline;">Reconnect →</a>`;
@@ -1987,8 +3053,9 @@ async function runQuery(tid) {
     setTimeout(() => warn.remove(), 8000);
   }
 
-  addToHistory(tid);
-  renderResults(final);
+  if (!append) addToHistory(tid);
+  renderResults(final, append);
+  updatePaginationBar();
 
   // Show action buttons once there are results
   const saveBtn   = document.getElementById('saveSearchBtn');
@@ -2018,8 +3085,10 @@ const STATE_META = {
   'Open__v':        { cls:'pill-state-open',       label:'Open'         },
   'In Progress__v': { cls:'pill-state-inprogress', label:'In Progress'  },
   'Closed__v':      { cls:'pill-state-closed',     label:'Closed'       },
-  'Obsolete__v':    { cls:'pill-state-obsolete',   label:'Obsolete'     },
-  'Superseded__v':  { cls:'pill-state-closed',     label:'Superseded'   },
+  'Obsolete__v':          { cls:'pill-state-obsolete', label:'Obsolete'          },
+  'Superseded__v':        { cls:'pill-state-closed',   label:'Superseded'        },
+  'Pending Approval__v':  { cls:'pill-state-pending',  label:'Pending Approval'  },
+  'In Periodic Review__v':{ cls:'pill-state-inreview', label:'In Periodic Review'},
 };
 
 const SEV_META = {
@@ -2033,9 +3102,15 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
 }
 
-function renderResults(docs) {
-  currentResults = docs;   // keep reference for CSV export
-  if (!docs.length) {
+function renderResults(docs, append = false) {
+  // In append mode, accumulate for CSV; in fresh mode, replace.
+  if (append) {
+    currentResults = currentResults.concat(docs);
+  } else {
+    currentResults = docs;
+  }
+
+  if (!append && !docs.length) {
     E.resultsList.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">
@@ -2049,36 +3124,26 @@ function renderResults(docs) {
     return;
   }
 
-  E.resultsList.innerHTML = docs.map(doc => {
+  const html = docs.map(doc => {
     const tm   = TYPE_META[doc.type__v]         || { icon:'📄', cls:'t-policy', label:'Doc' };
     const sm   = STATE_META[doc.lifecycle_state__v] || { cls:'pill-state-closed', label:doc.lifecycle_state__v };
     const sevm = doc.severity ? SEV_META[doc.severity] : null;
-    const vers = MOCK_VERSIONS[doc.id];
+    // In demo mode use MOCK_VERSIONS for count label; in live mode always show expand button
+    const mockVers = MOCK_VERSIONS[doc.id];
+    const showExpand = LIVE || !!mockVers;
+    const verCountLabel = mockVers ? `${mockVers.length} versions` : 'versions';
     const vLabel = `v${doc.major}.${doc.minor}`;
     const dateStr = fmtDate(doc.modified);
 
-    const expandBtn = vers ? `
+    const expandBtn = showExpand ? `
       <button class="ver-expand-btn" onclick="toggleVer('${doc.id}',this)">
-        ${vers.length} versions
+        ${verCountLabel}
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4,6 8,10 12,6"/></svg>
       </button>` : '';
 
-    const verRows = vers ? vers.map(v => {
-      const vsm = STATE_META[v.state] || { cls:'pill-state-closed', label:v.state };
-      return `<div class="ver-row">
-        <span class="ver-row-name">${doc.name__v}</span>
-        <span class="ver-row-num">${v.ver}</span>
-        <span class="pill ${vsm.cls}" style="font-size:10px;"><span class="pill-dot"></span>${vsm.label}</span>
-        <span class="ver-row-date">${v.date}</span>
-      </div>`;
-    }).join('') : '';
-
-    const verSection = vers ? `
+    // Version history panel — empty shell; content loaded lazily on first expand
+    const verSection = showExpand ? `
       <div class="ver-history" id="vh-${doc.id}">
-        <div class="ver-history-head">
-          <span>Document</span><span>Version</span><span>Status</span><span>Date</span>
-        </div>
-        ${verRows}
       </div>` : '';
 
     return `
@@ -2087,7 +3152,7 @@ function renderResults(docs) {
           <div class="doc-icon ${tm.cls}">${tm.icon}</div>
           <div class="doc-main">
             <a class="doc-name"
-               ${LIVE ? `href="${LIVE.baseUrl}/ui/#doc:${doc.id}" target="_blank" rel="noopener noreferrer"` : `href="#" onclick="return false"`}
+               ${LIVE ? `href="${LIVE.baseUrl}/ui/#doc:${doc.id}" target="_blank" rel="noopener noreferrer" onclick="recordAccess('${doc.id}')"` : `href="#" onclick="return false"`}
                title="${LIVE ? 'Open in Vault' : doc.name__v}">${doc.name__v}${LIVE ? ` <svg style="display:inline-block;vertical-align:middle;margin-left:3px;opacity:.5" width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3H3a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1v-3M10 2h4v4M14 2L7 9"/></svg>` : ''}</a>
             <div class="doc-pills">
               <span class="pill pill-type">${tm.label}</span>
@@ -2099,6 +3164,7 @@ function renderResults(docs) {
               ${doc.expiry ? `<span class="pill pill-sev-minor">Expires ${fmtDate(doc.expiry)}</span>` : ''}
               ${doc.product ? `<span class="pill pill-product">${doc.product}</span>` : ''}
               ${doc.study  ? `<span class="pill pill-study">📊 ${doc.study}</span>` : ''}
+              ${doc.review_due ? (() => { const rd = new Date(doc.review_due); const now = new Date(); return rd < now ? `<span class="pill pill-review-overdue">⚠ Review Overdue</span>` : `<span class="pill pill-review-soon">↻ Review ${fmtDate(doc.review_due)}</span>`; })() : ''}
             </div>
           </div>
           <div class="doc-right">
@@ -2109,14 +3175,96 @@ function renderResults(docs) {
         ${verSection}
       </div>`;
   }).join('');
+
+  if (append) {
+    E.resultsList.insertAdjacentHTML('beforeend', html);
+  } else {
+    E.resultsList.innerHTML = html;
+  }
 }
 
-/* ── VERSION TOGGLE ────────────────────────────────────────── */
-function toggleVer(id, btn) {
+/* ── G-04: Version history — live fetch + demo fallback ─────
+   In live mode: queries Vault for all versions of a document
+   using VQL:  SELECT id, major_version_number__v,
+                       minor_version_number__v, version_creation_date__v,
+                       version_modified_date__v, lifecycle_state__v, created_by__v
+               FROM documents WHERE id = '{ID}'
+   Caches results per doc ID for the lifetime of the page.
+   In demo mode: falls back to MOCK_VERSIONS lookup.
+─────────────────────────────────────────────────────────── */
+const VERSION_CACHE = new Map();
+
+async function fetchVersionHistory(docId) {
+  if (VERSION_CACHE.has(docId)) return VERSION_CACHE.get(docId);
+
+  if (LIVE) {
+    const vql = `SELECT id, major_version_number__v, minor_version_number__v, ` +
+                `version_creation_date__v, lifecycle_state__v, created_by__v ` +
+                `FROM documents WHERE id = '${docId}'`;
+    try {
+      const res = await executeVQL(vql);
+      const vers = (res.data || []).map(v => ({
+        ver:   `v${v.major_version_number__v}.${v.minor_version_number__v}`,
+        state: v.lifecycle_state__v,
+        date:  v.version_creation_date__v ? new Date(v.version_creation_date__v).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—',
+        by:    v.created_by__v || '—',
+      }));
+      VERSION_CACHE.set(docId, vers);
+      return vers;
+    } catch {
+      // fall through to demo data
+    }
+  }
+
+  // Demo: return from MOCK_VERSIONS
+  const fallback = MOCK_VERSIONS[docId] || [];
+  VERSION_CACHE.set(docId, fallback);
+  return fallback;
+}
+
+function renderVersionPanel(panel, vers) {
+  if (!vers.length) {
+    panel.innerHTML = `<div style="padding:12px;font-size:12px;color:var(--v-ink-60);">No version history available.</div>`;
+    return;
+  }
+  panel.innerHTML = `
+    <div class="ver-history-head">
+      <span>Version</span><span>Status</span><span>Date</span><span>Author</span>
+    </div>` +
+    vers.map(v => {
+      const vsm = STATE_META[v.state] || { cls:'pill-state-closed', label: v.state };
+      return `<div class="ver-row">
+        <span class="ver-row-num">${v.ver}</span>
+        <span class="pill ${vsm.cls}" style="font-size:10px;"><span class="pill-dot"></span>${vsm.label}</span>
+        <span class="ver-row-date">${v.date}</span>
+        <span class="ver-row-name" style="color:var(--v-ink-60);">${v.by || '—'}</span>
+      </div>`;
+    }).join('');
+}
+
+async function toggleVer(id, btn) {
   const panel = document.getElementById(`vh-${id}`);
   if (!panel) return;
-  const open = panel.classList.toggle('open');
-  btn.classList.toggle('open', open);
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+    btn.classList.remove('open');
+    return;
+  }
+  // First open: fetch (or retrieve cached) version history
+  if (!panel.dataset.loaded) {
+    panel.innerHTML = `<div style="padding:12px;font-size:12px;color:var(--v-ink-60);">Loading versions…</div>`;
+    panel.classList.add('open');
+    btn.classList.add('open');
+    const vers = await fetchVersionHistory(id);
+    panel.dataset.loaded = 'true';
+    renderVersionPanel(panel, vers);
+    // Update button count
+    btn.childNodes[0].textContent = `${vers.length} version${vers.length !== 1 ? 's' : ''}`;
+  } else {
+    panel.classList.add('open');
+    btn.classList.add('open');
+  }
 }
 
 /* ── VQL TOGGLE (FIXED) ─────────────────────────────────────── */
@@ -2128,22 +3276,35 @@ E.vqlToggle.addEventListener('click', () => {
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
       <polyline points="4,6 8,10 12,6"/>
     </svg>
-    ${S.vqlOpen ? 'Hide VQL' : 'Show VQL'}`;
+    <span class="action-label">${S.vqlOpen ? 'Hide VQL' : 'Show VQL'}</span>`;
 });
 
 /* ── SEARCH INPUT ──────────────────────────────────────────── */
 let debounce;
+
+function triggerSearch(raw) {
+  const trimmed = (raw || '').trim();
+  S.searchText = trimmed;
+  if (!trimmed) { runQuery('doc_all_accessible'); return; }
+  const { tid } = parseToTemplate(trimmed);
+  runQuery(tid);
+}
+
 E.input.addEventListener('input', () => {
   const v = E.input.value;
   E.clearBtn.style.display = v ? 'flex' : 'none';
   E.chipsRow.querySelectorAll('.rec-chip').forEach(b => b.classList.remove('active'));
   S.activeChip = null;
   clearTimeout(debounce);
-  debounce = setTimeout(() => {
-    if (!v.trim()) { runQuery('doc_all_accessible'); return; }
-    const { tid } = parseToTemplate(v);
-    runQuery(tid);
-  }, 320);
+  debounce = setTimeout(() => triggerSearch(v), 320);
+});
+
+/* Enter key — skip debounce and fire immediately */
+E.input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    clearTimeout(debounce);
+    triggerSearch(E.input.value);
+  }
 });
 
 E.clearBtn.addEventListener('click', () => {
@@ -2186,8 +3347,59 @@ $('clearFiltersBtn').addEventListener('click', () => {
     .forEach(r => r.checked = r.value === '30');
   document.querySelectorAll('input[name="versionDisplay"]')
     .forEach(r => r.checked = r.value === 'latest');
-  if (S.currentTid) runQuery(S.currentTid);
+  // Also clear composition filters (G-09)
+  clearCompose();
 });
+
+/* ── X-VaultAPI-Facets: update filter sidebar with live counts ─ */
+/**
+ * Called after a successful executeVQL when facets are present in the response.
+ * Overwrites the static demo counts in the Document Type and Status filter
+ * sections with real counts from Vault's facet engine.
+ *
+ * Facets response shape (v26.1):
+ *   raw.facets = [{ name, label, type, count, truncated_list, values: [{ value, result_count }] }]
+ */
+function updateFacetCounts(facets) {
+  if (!facets || !Array.isArray(facets)) return;
+
+  facets.forEach(facet => {
+    if (!Array.isArray(facet.values)) return;
+
+    if (facet.name === 'lifecycle_state__v') {
+      // State values already match the checkbox value= attributes exactly
+      facet.values.forEach(v => {
+        const input = document.querySelector(`input[name="state"][value="${v.value}"]`);
+        if (input) {
+          const countEl = input.closest('.filter-option')?.querySelector('.filter-count');
+          if (countEl) countEl.textContent = v.result_count;
+        }
+      });
+
+    } else if (facet.name === 'type__v') {
+      // Map Vault document type names → filter checkbox value attributes
+      // Uses VAULT_CONFIG so per-tenant type names are honoured.
+      const TYPE_MAP = {
+        [VC('type_sop')]:        'sop',
+        [VC('type_deviation')]:  'deviation',
+        [VC('type_capa')]:       'capa',
+        [VC('type_protocol')]:   'protocol',
+        [VC('type_report')]:     'report',
+        [VC('type_policy')]:     'policy',
+        [VC('type_regulatory')]: 'regulatory',
+      };
+      facet.values.forEach(v => {
+        const filterVal = TYPE_MAP[v.value];
+        if (!filterVal) return;
+        const input = document.querySelector(`input[name="type"][value="${filterVal}"]`);
+        if (input) {
+          const countEl = input.closest('.filter-option')?.querySelector('.filter-count');
+          if (countEl) countEl.textContent = v.result_count;
+        }
+      });
+    }
+  });
+}
 
 /* ── SIDEBAR SECTION TOGGLE ─────────────────────────────────── */
 function toggleSection(btn) {
@@ -2368,7 +3580,184 @@ renderChips(S.role);
 initConnectionBanner();
 renderHistory();       // render any history from previous session actions
 renderSavedSearches(); // render saved searches from localStorage
-runQuery('sop_approved');
+
+// G-02: Probe object sources in live mode (non-blocking)
+detectObjectSources().catch(() => {});
+
+// G-15: Load KPI dashboard counts, then fire the default query
+// which will call hideDashboard() automatically.
+loadKpiDashboard().catch(() => {}).finally(() => runQuery('sop_approved'));
+
+/* ── Mobile sidebar drawer ─────────────────────────────── */
+(function () {
+  const sidebar  = document.querySelector('.filter-sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const openBtn  = document.getElementById('mobileFilterBtn');
+  const closeBtn = document.getElementById('sidebarCloseBtn');
+
+  function openSidebar() {
+    sidebar.classList.add('mobile-open');
+    backdrop.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar() {
+    sidebar.classList.remove('mobile-open');
+    backdrop.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  if (openBtn)  openBtn.addEventListener('click', openSidebar);
+  if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+  if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
+  // Auto-close after filter change on mobile
+  document.querySelectorAll('input[name="type"], input[name="state"], input[name="gxp"]')
+    .forEach(inp => inp.addEventListener('change', () => {
+      if (window.matchMedia('(max-width: 700px)').matches) closeSidebar();
+    }));
+})();
+
+/* ── G-08: Session heartbeat ───────────────────────────────
+   In live mode, ping Vault every 25 min to detect expiry.
+   Uses a lightweight COUNT(*) VQL query via /api/v26.1/query.
+   Tab visibility API pauses the timer when the tab is hidden
+   to avoid unnecessary requests.
+─────────────────────────────────────────────────────────── */
+(function initHeartbeat() {
+  if (!LIVE) return;               // no-op in demo mode
+  const INTERVAL_MS = 25 * 60 * 1000;   // 25 minutes
+  let timer = null;
+
+  async function pingSession() {
+    if (document.hidden) return;   // skip while tab is hidden
+    try {
+      // Use VQL query endpoint (lightweight COUNT) — /objects/documents deprecated in v26.1
+      const pingVql = `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true LIMIT 1`;
+      const res = await fetch(
+        `${LIVE.baseUrl}/api/${LIVE.apiVersion}/query?q=${encodeURIComponent(pingVql)}`,
+        { headers: { Authorization: LIVE.token, Accept: 'application/json' } }
+      );
+      if (res.status === 401) {
+        clearInterval(timer);
+        showSessionExpiredBanner();
+      }
+    } catch {
+      // network error — let the next real query surface the issue
+    }
+  }
+
+  // Start timer
+  timer = setInterval(pingSession, INTERVAL_MS);
+
+  // Pause / resume when tab visibility changes
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clearInterval(timer);
+    } else {
+      pingSession();                  // immediate check on re-focus
+      timer = setInterval(pingSession, INTERVAL_MS);
+    }
+  });
+})();
+
+/* ── G-20: Keyboard navigation ─────────────────────────────
+   Cmd/Ctrl+K  → focus search input
+   Escape      → clear input or close sidebar on mobile
+   ArrowDown   → move focus to first result card
+   ArrowUp/Dn  → navigate between result cards
+   Enter (card) → trigger the doc link inside the focused card
+─────────────────────────────────────────────────────────── */
+(function initKeyNav() {
+  // Cmd+K / Ctrl+K → focus search
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      E.input.focus();
+      E.input.select();
+    }
+  });
+
+  // Escape: clear search or close mobile sidebar
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const sidebar = document.querySelector('.filter-sidebar');
+    if (sidebar && sidebar.classList.contains('mobile-open')) {
+      sidebar.classList.remove('mobile-open');
+      const bd = document.getElementById('sidebarBackdrop');
+      if (bd) { bd.classList.remove('active'); document.body.style.overflow = ''; }
+      return;
+    }
+    if (document.activeElement === E.input && E.input.value) {
+      E.input.value = '';
+      E.clearBtn.style.display = 'none';
+      runQuery('doc_all_accessible');
+      return;
+    }
+    E.input.blur();
+  });
+
+  // ArrowDown from search → move into results list
+  E.input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const first = E.resultsList.querySelector('.doc-card');
+      if (first) { first.setAttribute('tabindex', '-1'); first.focus(); }
+    }
+  });
+
+  // Arrow navigation between cards + Enter to open
+  E.resultsList.addEventListener('keydown', e => {
+    const card = e.target.closest('.doc-card');
+    if (!card) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = card.nextElementSibling;
+      if (next && next.classList.contains('doc-card')) {
+        next.setAttribute('tabindex', '-1'); next.focus();
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = card.previousElementSibling;
+      if (prev && prev.classList.contains('doc-card')) {
+        prev.setAttribute('tabindex', '-1'); prev.focus();
+      } else {
+        E.input.focus();   // wrap back to search bar
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const link = card.querySelector('a.doc-name');
+      if (link) link.click();
+    }
+  });
+})();
+
+/* ── G-11: Access-frequency re-ranking ─────────────────────
+   Records every "Open in Vault" click in localStorage.
+   On subsequent queries, previously-accessed docs bubble up.
+   Ranking is purely deterministic (access count desc, then
+   original order). No ML involved.
+─────────────────────────────────────────────────────────── */
+const ACCESS_KEY = 'vault_doc_access';
+
+function recordAccess(docId) {
+  try {
+    const map = JSON.parse(localStorage.getItem(ACCESS_KEY) || '{}');
+    map[docId] = (map[docId] || 0) + 1;
+    localStorage.setItem(ACCESS_KEY, JSON.stringify(map));
+  } catch {}
+}
+
+function rerankResults(docs) {
+  try {
+    const map = JSON.parse(localStorage.getItem(ACCESS_KEY) || '{}');
+    if (!Object.keys(map).length) return docs;
+    // Stable sort: higher access count first; ties preserve original order
+    return [...docs].sort((a, b) => (map[b.id] || 0) - (map[a.id] || 0));
+  } catch {
+    return docs;
+  }
+}
 </script>
 </body>
 </html>

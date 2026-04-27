@@ -571,10 +571,69 @@
     .toast.error   { background: var(--c-error); }
 
     /* ── Responsive ──────────────────────────────────────────── */
+
+    /* Tablet (≤720px): shrink body padding and card */
+    @media (max-width: 720px) {
+      body { padding: 20px 16px 48px; }
+      .topbar, .steps, .card { max-width: 100%; }
+      .card-header { padding: 20px 20px 0; }
+      .card-body   { padding: 20px; }
+    }
+
+    /* Small phones (≤600px) */
+    @media (max-width: 600px) {
+      body { padding: 16px 12px 40px; }
+
+      /* Step labels: hide on very small — they're self-evident */
+      .step-label { font-size: 11px; }
+
+      /* Role grid: 2 columns */
+      .role-picker-grid { grid-template-columns: repeat(2, 1fr); }
+
+      /* Role pick buttons: comfortable tap target */
+      .role-pick-btn { min-height: 60px; padding: 10px 4px; }
+
+      /* Auth cards: side by side, but allow wrapping */
+      .auth-cards { gap: 10px; }
+      .auth-card  { padding: 14px 12px; }
+      .auth-card-title { font-size: 12.5px; }
+      .auth-card-desc  { font-size: 10.5px; }
+
+      /* Inputs: adequate tap height */
+      input[type="text"],
+      input[type="password"],
+      input[type="email"],
+      select { height: 46px; font-size: 16px; } /* 16px prevents iOS zoom */
+    }
+
+    /* Extra-small phones (≤480px) */
     @media (max-width: 480px) {
+      body { padding: 12px 8px 32px; }
       .auth-cards { grid-template-columns: 1fr; }
       .vault-details { grid-template-columns: 1fr; }
-      .card-body, .card-header, .card-footer { padding-left: 18px; padding-right: 18px; }
+      .card-header  { padding: 16px 16px 0; }
+      .card-body    { padding: 16px; }
+      .role-picker-grid { grid-template-columns: repeat(2, 1fr); }
+
+      /* Steps: hide labels, show dots only — saves horizontal space */
+      .step-label { display: none; }
+
+      /* Progress connector: adjust for smaller dots */
+      .step:not(:last-child)::after { top: 16px; }
+
+      /* Topbar: compact */
+      .topbar { margin-bottom: 20px; }
+      .topbar-sub { font-size: 12px; }
+
+      /* Card header title */
+      .card-header h1 { font-size: 17px; }
+      .card-header p  { font-size: 13px; }
+
+      /* Prevent iOS zoom on all inputs */
+      input, select { font-size: 16px !important; }
+
+      /* OAuth button: full width */
+      .btn-oauth { width: 100%; justify-content: center; }
     }
 
     /* ── Role Picker ──────────────────────────────────────── */
@@ -736,7 +795,7 @@
           <span class="input-prefix">v</span>
           <input type="text" id="api-version" class="has-prefix-sm" value="24.1" style="max-width:110px;" />
         </div>
-        <div class="hint">Default: v24.1 · Check <a href="https://developer.veevavault.com/api/" target="_blank" style="color:var(--c-brand)">developer.veevavault.com</a> for latest.</div>
+        <div class="hint">Default: v26.1 (GA Feb 2026) · Check <a href="https://general.veevavault.dev/vault-api/api-reference" target="_blank" style="color:var(--c-brand)">developer portal</a> for latest.</div>
       </div>
 
       <div class="field">
@@ -964,7 +1023,7 @@
     const state = {
       vaultDomain:     '',
       vaultUrl:        '',
-      apiVersion:      'v24.1',
+      apiVersion:      'v26.1',
       label:           '',
       proxyUrl:        '',   // Lambda proxy base URL
       role:            'QA_ADMIN',

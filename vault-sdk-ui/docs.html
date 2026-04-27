@@ -29,7 +29,7 @@
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
 
     body {
       font-family: var(--font);
@@ -37,6 +37,8 @@
       background: var(--surface);
       -webkit-font-smoothing: antialiased;
       line-height: 1.6;
+      /* Prevent any child from blowing out the viewport */
+      overflow-x: hidden;
     }
 
     /* ── Nav ───────────────────────────────────────────────── */
@@ -90,6 +92,9 @@
       gap: 0;
       max-width: 1400px;
       margin: 0 auto;
+      /* Prevent grid children from blowing out the viewport */
+      min-width: 0;
+      overflow-x: hidden;
     }
 
     /* ── Sidebar ───────────────────────────────────────────── */
@@ -141,6 +146,8 @@
     /* ── Main content ──────────────────────────────────────── */
     .doc-main {
       padding: 64px 48px;
+      min-width: 0;        /* prevents grid child from overflowing */
+      overflow-x: hidden;  /* belt-and-suspenders for overflow containment */
     }
     .doc-section {
       margin-bottom: 80px;
@@ -185,7 +192,17 @@
     ul, ol { margin: 16px 0; margin-left: 24px; }
     li { margin-bottom: 8px; color: var(--ink-2); line-height: 1.65; }
     strong { font-weight: 600; color: var(--ink); }
-    code { font-family: var(--mono); background: var(--surface-2); padding: 2px 6px; border-radius: 4px; font-size: 13.5px; color: var(--brand); }
+    code {
+      font-family: var(--mono);
+      background: var(--surface-2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13.5px;
+      color: var(--brand);
+      /* Break long identifiers (VQL field names, URLs) before they overflow */
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
 
     /* ── Code blocks ───────────────────────────────────────── */
     pre {
@@ -193,18 +210,28 @@
       color: #E2E8F0;
       padding: 16px;
       border-radius: 8px;
+      /* Critical: constrain width so it scrolls internally, not the page */
+      max-width: 100%;
+      width: 100%;
       overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       margin: 20px 0;
       font-family: var(--mono);
       font-size: 13px;
       line-height: 1.5;
       border: 1px solid rgba(0,0,0,.2);
+      /* Prevent word-wrapping inside code blocks */
+      white-space: pre;
+      word-break: normal;
+      word-wrap: normal;
     }
     pre code {
       background: none;
       padding: 0;
       color: inherit;
       font-size: inherit;
+      /* Inherit scroll behavior from pre */
+      white-space: inherit;
     }
 
     /* ── Info boxes ────────────────────────────────────────– */
@@ -240,14 +267,23 @@
     .info-box-success strong { color: #065F46; }
 
     /* ── Tables ────────────────────────────────────────────– */
-    table {
-      width: 100%;
+    /* All tables get horizontal scroll regardless of wrapper presence */
+    .doc-main table {
+      /* Remove border-radius hack that requires overflow:hidden on the table itself */
       border-collapse: collapse;
-      border-radius: 8px;
-      overflow: hidden;
+      width: 100%;
+      min-width: 480px;   /* tables with many columns need elbow room */
       border: 1px solid var(--border);
-      margin: 24px 0;
+      margin: 0;          /* margin handled by .table-scrollable wrapper */
       font-size: 14px;
+    }
+    /* Ensure every table — wrapped or not — is contained */
+    .doc-main table,
+    .doc-main .table-scrollable {
+      display: block;
+    }
+    .doc-main table {
+      display: table;      /* override the block above for actual table rendering */
     }
     thead tr { background: var(--ink); }
     th {
@@ -257,15 +293,31 @@
       font-weight: 700;
       letter-spacing: .3px;
       color: #fff;
+      white-space: nowrap;
     }
     td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
     tr:last-child td { border-bottom: none; }
     tbody tr:nth-child(even) { background: var(--surface-2); }
 
+    /* Scrollable table wrapper — applied to all table parents */
     .table-scrollable {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       margin: 24px 0;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .table-scrollable table {
+      border: none;
+      margin: 0;
+    }
+
+    /* Auto-wrap any raw <table> not inside .table-scrollable */
+    .doc-main > section table:not(.table-scrollable table),
+    .doc-section table {
+      max-width: 100%;
+      overflow-x: auto;
+      display: block;
     }
 
     /* ── Definition lists ──────────────────────────────────– */
@@ -385,42 +437,163 @@
     .footer-links a:hover { color: #9CA3AF; }
     .footer-copy { font-size: 12px; color: #374151; }
 
+    /* ── Mobile sidebar close button ──────────────────────── */
+    .sidebar-close-btn {
+      display: none;
+      position: absolute;
+      top: 12px; right: 12px;
+      background: none; border: none;
+      cursor: pointer; padding: 6px;
+      color: var(--ink-3); font-size: 18px; line-height: 1;
+      border-radius: 4px; transition: color .15s, background .15s;
+    }
+    .sidebar-close-btn:hover { color: var(--ink); background: var(--surface-3); }
+
+    /* ── Mobile TOC toggle (sticky pill, content area) ─────── */
+    .toc-toggle-btn {
+      display: none;
+      position: sticky;
+      top: 68px; /* below fixed nav */
+      z-index: 90;
+      margin: 0 0 20px;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      font-size: 13px; font-weight: 600;
+      color: var(--ink-2);
+      cursor: pointer;
+      font-family: var(--font);
+      width: 100%;
+      text-align: left;
+      transition: background .15s;
+    }
+    .toc-toggle-btn:hover { background: var(--surface-2); }
+    .toc-toggle-btn svg { flex-shrink: 0; }
+
+    /* ── Sidebar backdrop ───────────────────────────────────── */
+    .sidebar-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 98;
+      animation: backdropIn .18s ease forwards;
+    }
+    .sidebar-backdrop.active { display: block; }
+    @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+
     /* ── Responsive ────────────────────────────────────────– */
+
+    /* Tablet (≤1024px): collapse sidebar into overlay */
     @media (max-width: 1024px) {
       .doc-container { grid-template-columns: 1fr; }
+
       .doc-sidebar {
         position: fixed;
-        left: 0;
-        top: 58px;
-        width: 100%;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid var(--border);
-        padding: 16px 0;
-        max-height: 60vh;
+        left: 0; top: 0; bottom: 0;
+        width: min(300px, 85vw);
+        height: 100vh;
+        border-right: 1px solid var(--border);
+        border-bottom: none;
+        padding: 56px 0 24px; /* top padding clears close button */
         z-index: 99;
-      }
-      .doc-main { padding: 24px; margin-top: 0; }
-      .cards-grid { grid-template-columns: 1fr; }
-      .nav-hamburger { display: flex; margin-left: auto; }
-    }
-    @media (max-width: 768px) {
-      .nav-links { display: none; }
-      .doc-sidebar {
-        display: none;
+        transform: translateX(-100%);
+        transition: transform .24s cubic-bezier(.4,0,.2,1);
+        box-shadow: 4px 0 24px rgba(0,0,0,.18);
+        overflow-y: auto;
       }
       .doc-sidebar.mobile-open {
-        display: block;
+        transform: translateX(0);
       }
-      .doc-main { padding: 20px; }
+
+      /* Show close button inside sidebar */
+      .sidebar-close-btn { display: block; }
+
+      /* Show hamburger in nav */
+      .nav-hamburger { display: flex; margin-left: auto; }
+      .nav-cta { display: none; }
+
+      /* Show TOC toggle button in content area */
+      .toc-toggle-btn { display: flex; }
+
+      .doc-main { padding: 24px 24px 40px; margin-top: 0; }
+      .cards-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Mobile (≤768px) */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-inner { height: 52px; padding: 0 16px; }
+      .nav-hamburger { min-width: 44px; min-height: 44px; }
+
+      /* Sidebar: slides in from left */
+      .doc-sidebar {
+        top: 0;
+        padding-top: 52px;
+      }
+
+      .doc-main { padding: 16px 16px 40px; }
+      .toc-toggle-btn { top: 62px; margin-bottom: 16px; }
+
       .doc-section { margin-bottom: 48px; }
       .doc-section h2 { font-size: 22px; }
-      .doc-section h3 { font-size: 16px; }
-      pre { font-size: 12px; padding: 12px; }
-      table { font-size: 12.5px; }
+      .doc-section h3 { font-size: 17px; }
+      .doc-section h4 { font-size: 13.5px; }
+
+      /* Code blocks: smaller text, maintain scroll */
+      pre {
+        font-size: 12px;
+        padding: 12px;
+        border-radius: 6px;
+        margin: 14px 0;
+      }
+
+      /* Tables: ensure horizontal scroll */
+      table { font-size: 12.5px; min-width: 380px; }
       th, td { padding: 10px 12px; }
+
+      /* Inline code: slightly smaller */
+      code { font-size: 12.5px; }
+
       .section-intro { font-size: 14px; }
-      p, li { font-size: 14px; }
+      p, li { font-size: 14px; line-height: 1.65; }
+
+      /* Info boxes */
+      .info-box { padding: 14px; font-size: 13.5px; }
+
+      /* Step items */
+      .step { gap: 12px; }
+      .step-num { width: 28px; height: 28px; font-size: 13px; flex-shrink: 0; }
+      .step-desc { font-size: 13.5px; }
+
+      /* Cards */
+      .cards-grid { gap: 14px; }
+      .card { padding: 16px; }
+
+      /* Footer */
+      .footer-inner { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .footer-links { flex-wrap: wrap; gap: 12px; }
+
+      /* Sidebar nav links: larger tap targets */
+      .doc-sidebar nav a { padding: 11px 12px; font-size: 14px; }
+      .doc-sidebar h4 { font-size: 11.5px; margin-top: 20px; }
+    }
+
+    /* Small phones (≤480px) */
+    @media (max-width: 480px) {
+      .doc-main { padding: 12px 12px 32px; }
+      .toc-toggle-btn { font-size: 12.5px; padding: 8px 12px; margin-bottom: 14px; }
+      .doc-section h2 { font-size: 20px; }
+      .doc-section h3 { font-size: 16px; }
+      pre { font-size: 11.5px; padding: 10px; }
+      p, li { font-size: 13.5px; }
+      /* Prevent iOS zoom on any inputs in the docs page */
+      input, select { font-size: 16px; }
+      /* Tags: wrap on tiny screens */
+      .tag { font-size: 10.5px; }
     }
 
     /* ── Scrollbar styling ─────────────────────────────────– */
@@ -463,7 +636,10 @@
 <div class="doc-container">
 
 <!-- ── Sidebar (Table of Contents) ───────────────────────── -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
 <aside class="doc-sidebar" id="sidebar">
+  <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close table of contents">✕</button>
   <div class="doc-sidebar-content">
     <h4>Getting Started</h4>
     <nav>
@@ -520,6 +696,15 @@
 
 <!-- ── Main Content ───────────────────────────────────────── -->
 <main class="doc-main">
+
+<!-- Mobile: sticky Table of Contents toggle -->
+<button class="toc-toggle-btn" id="tocToggleBtn" aria-expanded="false" aria-controls="sidebar">
+  <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h8M4 18h12"/>
+  </svg>
+  Table of Contents
+</button>
+
 <section class="doc-section" id="getting-started">
 <h2>Getting Started</h2>
 <section class="doc-section" id="what-is-vaultsearch">
@@ -876,40 +1061,65 @@ ORDER BY expiration_date__v ASC</pre>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const sections = document.querySelectorAll('[id]');
-    const navLinks = document.querySelectorAll('.doc-sidebar nav a');
+    const sidebar   = document.getElementById('sidebar');
+    const backdrop  = document.getElementById('sidebarBackdrop');
+    const hamburger = document.getElementById('hamburger');
+    const closeBtn  = document.getElementById('sidebarCloseBtn');
+    const tocBtn    = document.getElementById('tocToggleBtn');
+    const sections  = document.querySelectorAll('[id]');
+    const navLinks  = document.querySelectorAll('.doc-sidebar nav a');
 
+    /* ── Sidebar open / close ── */
+    function openSidebar() {
+      sidebar.classList.add('mobile-open');
+      backdrop.classList.add('active');
+      if (tocBtn) tocBtn.setAttribute('aria-expanded', 'true');
+      document.body.style.overflow = 'hidden'; // prevent background scroll
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('mobile-open');
+      backdrop.classList.remove('active');
+      if (tocBtn) tocBtn.setAttribute('aria-expanded', 'false');
+      document.body.style.overflow = '';
+    }
+
+    function toggleSidebar() {
+      sidebar.classList.contains('mobile-open') ? closeSidebar() : openSidebar();
+    }
+
+    hamburger && hamburger.addEventListener('click', toggleSidebar);
+    closeBtn  && closeBtn.addEventListener('click', closeSidebar);
+    tocBtn    && tocBtn.addEventListener('click', toggleSidebar);
+    backdrop  && backdrop.addEventListener('click', closeSidebar);
+
+    /* Close sidebar on nav link click (mobile only) */
+    navLinks.forEach(link => {
+      link.addEventListener('click', function() {
+        if (window.innerWidth <= 1024) closeSidebar();
+      });
+    });
+
+    /* Close sidebar on Escape */
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && sidebar.classList.contains('mobile-open')) closeSidebar();
+    });
+
+    /* ── Active link tracking on scroll ── */
     function updateActiveLink() {
       let current = '';
       sections.forEach(section => {
-        const sectionTop = section.offsetTop;
-        if (window.scrollY >= sectionTop - 200) {
+        if (window.scrollY >= section.offsetTop - 220) {
           current = section.getAttribute('id');
         }
       });
-
       navLinks.forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === '#' + current) {
-          link.classList.add('active');
-        }
+        link.classList.toggle('active', link.getAttribute('href') === '#' + current);
       });
     }
 
-    window.addEventListener('scroll', updateActiveLink);
+    window.addEventListener('scroll', updateActiveLink, { passive: true });
     updateActiveLink();
-  });
-
-  document.getElementById('hamburger').addEventListener('click', function() {
-    document.getElementById('sidebar').classList.toggle('mobile-open');
-  });
-
-  document.querySelectorAll('.doc-sidebar nav a').forEach(link => {
-    link.addEventListener('click', function() {
-      if (window.innerWidth < 768) {
-        document.getElementById('sidebar').classList.remove('mobile-open');
-      }
-    });
   });
 </script>
 

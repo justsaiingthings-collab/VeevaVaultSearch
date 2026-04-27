@@ -610,14 +610,23 @@
       color: var(--ink-4);
     }
 
-    @media (max-width: 600px) {
-      .hero {
-        padding: 64px 20px 48px;
-      }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .preview-inner { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .preview-frame { padding: 14px; }
+      .mock-app { min-width: 520px; }
+    }
 
-      .nav-cta span {
-        display: none;
-      }
+    @media (max-width: 600px) {
+      .hero { padding: 64px 20px 48px; }
+      .hero p { font-size: 16px; }
+      .btn-primary, .btn-secondary { height: 44px; font-size: 14px; padding: 0 18px; width: 100%; justify-content: center; }
+      .hero-actions { flex-direction: column; align-items: stretch; gap: 10px; }
+      .section { padding: 56px 16px; }
+      .section h2 { margin-bottom: 28px; }
+      nav { padding: 0 16px; }
+      .nav-cta span { display: none; }
+      .nav-cta { padding: 0 12px; }
     }
   </style>
 </head>

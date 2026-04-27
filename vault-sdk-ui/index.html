@@ -470,6 +470,8 @@
     .mobile-menu a:hover { background: var(--surface-2); color: var(--ink); }
 
     /* ── Responsive ────────────────────────────────────────── */
+
+    /* ── Tablet (≤900px) ── */
     @media (max-width: 900px) {
       .hero-grid   { grid-template-columns: 1fr; gap: 40px; }
       .hero-visual { display: none; }
@@ -482,13 +484,15 @@
       .compare-table { font-size: 12.5px; }
       .compare-table td, .compare-table th { padding: 11px 14px; }
     }
+
+    /* ── Mobile (≤600px) ── */
     @media (max-width: 600px) {
       .pain-grid   { grid-template-columns: 1fr; }
       .how-steps   { grid-template-columns: 1fr; }
       section { padding: 56px 0; }
       .hero { padding: 52px 0 48px; }
       .hero h1 { font-size: 32px; }
-      .hero-sub { font-size: 15px; }
+      .hero-sub { font-size: 15px; margin-bottom: 28px; }
       .hero-stat { gap: 20px; flex-wrap: wrap; }
       .hero-stat-num { font-size: 22px; }
       .btn-hero-primary, .btn-hero-secondary { height: 44px; font-size: 14px; padding: 0 18px; }
@@ -504,6 +508,31 @@
       .post-quote { font-size: 13.5px; }
       .fix-problem-text, .fix-solution-text { font-size: 12.5px; }
       .pain-counter { font-size: 10.5px; }
+
+      /* Mobile nav touch targets */
+      .nav-inner { height: 52px; }
+      .nav-hamburger { min-width: 44px; min-height: 44px; }
+
+      /* Post cards: full-width */
+      .post-card { font-size: 13px; }
+
+      /* Mobile menu links: larger tap targets */
+      .mobile-menu a { padding: 14px 20px; font-size: 15px; }
+
+      /* Hero stat: 2-column grid on narrow */
+      .hero-stat { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    }
+
+    /* ── Small phones (≤400px) ── */
+    @media (max-width: 400px) {
+      .hero h1 { font-size: 28px; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .btn-hero-primary, .btn-hero-secondary {
+        width: 100%; justify-content: center;
+      }
+      .hero-stat { grid-template-columns: 1fr 1fr; }
+      .section-heading { font-size: 22px; }
+      .container, .container-sm { padding: 0 14px; }
     }
   </style>
 </head>
