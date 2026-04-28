@@ -672,6 +672,60 @@
       font-weight: 600;
     }
     .role-pick-icon { font-size: 18px; line-height: 1; }
+
+    /* ── Schema Discovery Step ──────────────────────────────── */
+    .disc-list { display:flex; flex-direction:column; gap:10px; margin:4px 0 16px; }
+    .disc-item {
+      display:flex; align-items:center; gap:12px;
+      padding:11px 14px;
+      background:var(--c-bg); border:1px solid var(--c-border); border-radius:8px;
+      transition: border-color .2s, background .2s;
+    }
+    .disc-item.running { border-color:var(--c-brand); background:var(--c-brand-lt); }
+    .disc-item.done    { border-color:#6EE7B7; background:var(--c-success-lt); }
+    .disc-item.error   { border-color:#FCA5A5; background:var(--c-error-lt); }
+    .disc-icon {
+      width:32px; height:32px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-size:14px; background:var(--c-border);
+    }
+    .disc-item.running .disc-icon { background:var(--c-brand-lt); }
+    .disc-item.done    .disc-icon { background:var(--c-success-lt); color:#065F46; font-weight:700; }
+    .disc-item.error   .disc-icon { background:var(--c-error-lt);   color:#991B1B; font-weight:700; }
+    .disc-text  { flex:1; min-width:0; }
+    .disc-name  { font-size:13px; font-weight:600; color:var(--c-text); }
+    .disc-detail{ font-size:11.5px; color:var(--c-text-3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .app-type-card {
+      display:flex; align-items:center; gap:14px;
+      padding:14px 16px; border-radius:10px; margin-bottom:14px;
+      background:var(--c-brand-lt); border:1px solid rgba(74,108,247,.25);
+    }
+    .app-type-emoji { font-size:26px; }
+    .app-type-info  { flex:1; }
+    .app-type-sub   { font-size:11px; color:var(--c-text-3); text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; }
+    .app-type-name  { font-size:15px; font-weight:700; color:var(--c-text); }
+
+    .disc-stats {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:12px 0 4px;
+    }
+    .disc-stat {
+      background:var(--c-surface); border:1px solid var(--c-border); border-radius:8px;
+      padding:12px 8px; text-align:center;
+    }
+    .disc-stat-num   { font-size:22px; font-weight:800; color:var(--c-brand); line-height:1; }
+    .disc-stat-label { font-size:10px; color:var(--c-text-3); text-transform:uppercase; letter-spacing:.5px; margin-top:4px; }
+
+    .extra-types-wrap {
+      background:var(--c-bg); border:1px solid var(--c-border); border-radius:8px;
+      padding:12px 14px; margin-top:10px;
+    }
+    .extra-types-wrap h4 { font-size:11.5px; font-weight:700; color:var(--c-text-2); margin-bottom:8px; }
+    .extra-types-list { display:flex; flex-wrap:wrap; gap:6px; }
+    .extra-type-chip {
+      font-size:11.5px; padding:3px 10px; border-radius:20px;
+      background:var(--c-surface); border:1px solid var(--c-border); color:var(--c-text-2);
+    }
   </style>
 </head>
 <body>
@@ -750,6 +804,10 @@
     <div class="step" id="step-indicator-3">
       <div class="step-dot" id="step-dot-3">3</div>
       <span class="step-label">Verify</span>
+    </div>
+    <div class="step" id="step-indicator-4">
+      <div class="step-dot" id="step-dot-4">4</div>
+      <span class="step-label">Schema</span>
     </div>
   </div>
 
@@ -989,8 +1047,57 @@
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
         Save connection
       </button>
-      <button class="btn btn-primary" id="btn-open-search" onclick="openSearch()" style="display:none;">
+      <button class="btn btn-primary" id="btn-open-search" onclick="runDiscoveryThenOpen()" style="display:none;">
         <span id="btn-open-search-label">Open VaultSearch</span>
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: Schema Discovery ─────────────────────────────── -->
+  <div class="card" id="step4" style="display:none;">
+    <div class="card-header">
+      <h1>Schema discovery</h1>
+      <p>Analysing <strong id="step4-domain-label">your vault</strong> to auto-configure document types, lifecycle states, Vault Objects, and query templates.</p>
+    </div>
+    <div class="card-body">
+      <div class="disc-list" id="disc-status-list">
+        <div class="disc-item" id="di-doctypes">
+          <div class="disc-icon" id="di-doctypes-icon">📄</div>
+          <div class="disc-text">
+            <div class="disc-name">Document types</div>
+            <div class="disc-detail" id="di-doctypes-detail">Waiting…</div>
+          </div>
+        </div>
+        <div class="disc-item" id="di-fields">
+          <div class="disc-icon" id="di-fields-icon">🔍</div>
+          <div class="disc-text">
+            <div class="disc-name">Fields &amp; properties</div>
+            <div class="disc-detail" id="di-fields-detail">Waiting…</div>
+          </div>
+        </div>
+        <div class="disc-item" id="di-objects">
+          <div class="disc-icon" id="di-objects-icon">🗃️</div>
+          <div class="disc-text">
+            <div class="disc-name">Vault Objects</div>
+            <div class="disc-detail" id="di-objects-detail">Waiting…</div>
+          </div>
+        </div>
+        <div class="disc-item" id="di-states">
+          <div class="disc-icon" id="di-states-icon">🔄</div>
+          <div class="disc-text">
+            <div class="disc-name">Lifecycle states</div>
+            <div class="disc-detail" id="di-states-detail">Waiting…</div>
+          </div>
+        </div>
+      </div>
+      <div id="disc-results" style="display:none;"></div>
+    </div>
+    <div class="card-footer" id="step4-footer" style="display:none;">
+      <button class="btn btn-secondary" onclick="skipDiscovery()" style="font-size:13px;">Skip</button>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="btn-open-after-disc" onclick="openSearch()">
+        Open VaultSearch
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
       </button>
     </div>
@@ -1091,15 +1198,15 @@
     // NAVIGATION
     // ─────────────────────────────────────────────────────────
     function setStep(n) {
-      // Show/hide main form and step indicators; hide quick reconnect
       document.getElementById('quick-reconnect').style.display = 'none';
       document.getElementById('steps').style.display           = 'flex';
-      ['step1','step2','step3'].forEach((id, i) => {
+      ['step1','step2','step3','step4'].forEach((id, i) => {
         document.getElementById(id).style.display = (i + 1 === n) ? 'block' : 'none';
       });
-      for (let i = 1; i <= 3; i++) {
+      for (let i = 1; i <= 4; i++) {
         const ind = document.getElementById(`step-indicator-${i}`);
         const dot = document.getElementById(`step-dot-${i}`);
+        if (!ind) continue;
         ind.className = 'step' + (i < n ? ' done' : i === n ? ' active' : '');
         dot.innerHTML = i < n
           ? '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
@@ -1675,6 +1782,322 @@
       renderSavedConnections();
     }
 
+    // ─────────────────────────────────────────────────────────
+    // SCHEMA DISCOVERY
+    // ─────────────────────────────────────────────────────────
+
+    async function runDiscoveryThenOpen() {
+      // If no live session (OAuth not yet exchanged, demo mode), skip discovery
+      if (!state.sessionToken) { openSearch(); return; }
+      setStep(4);
+      document.getElementById('step4-domain-label').textContent =
+        state.vaultUrl.replace('https://', '');
+      await runSchemaDiscovery();
+    }
+
+    function skipDiscovery() { openSearch(); }
+
+    function discSetItem(id, phase, detail) {
+      const item = document.getElementById(`di-${id}`);
+      const icon = document.getElementById(`di-${id}-icon`);
+      const det  = document.getElementById(`di-${id}-detail`);
+      if (!item) return;
+      item.className = `disc-item ${phase}`;
+      if (phase === 'running') {
+        icon.innerHTML = '<div class="spinner" style="width:14px;height:14px;margin:auto;"></div>';
+      } else if (phase === 'done') {
+        icon.innerHTML = '✓';
+      } else if (phase === 'error') {
+        icon.innerHTML = '✗';
+      }
+      if (det) det.textContent = detail;
+    }
+
+    async function runSchemaDiscovery() {
+      const token   = state.sessionToken;
+      const BASE    = `${state.vaultUrl}/api/${state.apiVersion}`;
+      const headers = { Authorization: token, Accept: 'application/json' };
+
+      let docTypes = [], docFields = [], vaultObjects = [], facets = null;
+
+      // ── 1. Document types ───────────────────────────────────
+      discSetItem('doctypes', 'running', 'Fetching document type tree…');
+      try {
+        const r    = await fetch(`${BASE}/metadata/objects/documents/types`, { headers });
+        const json = await r.json();
+        if (json.responseStatus === 'SUCCESS') {
+          docTypes = json.types || [];
+          const flat = flattenDocTypes(docTypes);
+          discSetItem('doctypes', 'done', `${flat.length} type${flat.length !== 1 ? 's' : ''} found`);
+        } else {
+          discSetItem('doctypes', 'error', json.responseMessage || 'API error');
+        }
+      } catch (e) { discSetItem('doctypes', 'error', e.message); }
+
+      // ── 2. Document fields ──────────────────────────────────
+      discSetItem('fields', 'running', 'Reading field definitions…');
+      try {
+        const r    = await fetch(`${BASE}/metadata/objects/documents/properties`, { headers });
+        const json = await r.json();
+        if (json.responseStatus === 'SUCCESS') {
+          docFields = json.properties || [];
+          discSetItem('fields', 'done', `${docFields.length} fields available`);
+        } else {
+          discSetItem('fields', 'error', json.responseMessage || 'API error');
+        }
+      } catch (e) { discSetItem('fields', 'error', e.message); }
+
+      // ── 3. Vault Objects ────────────────────────────────────
+      discSetItem('objects', 'running', 'Discovering Vault Object types…');
+      try {
+        const r    = await fetch(`${BASE}/metadata/vobjects`, { headers });
+        const json = await r.json();
+        if (json.responseStatus === 'SUCCESS') {
+          vaultObjects = json.objects || [];
+          discSetItem('objects', 'done', `${vaultObjects.length} object type${vaultObjects.length !== 1 ? 's' : ''} found`);
+        } else {
+          discSetItem('objects', 'error', json.responseMessage || 'API error');
+        }
+      } catch (e) { discSetItem('objects', 'error', e.message); }
+
+      // ── 4. Lifecycle states (facet probe) ───────────────────
+      discSetItem('states', 'running', 'Querying live lifecycle states…');
+      try {
+        const r = await fetch(`${BASE}/query`, {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded',
+                     'X-VaultAPI-Facets': 'lifecycle_state__v', 'X-VaultAPI-DescribeQuery': 'false' },
+          body: 'q=SELECT+id+FROM+documents+LIMIT+1',
+        });
+        const json = await r.json();
+        if (json.responseStatus === 'SUCCESS') {
+          facets = json.facets || null;
+          const sf = facets?.find(f => f.name === 'lifecycle_state__v');
+          const cnt = sf?.values?.length || 0;
+          discSetItem('states', 'done', `${cnt} lifecycle state${cnt !== 1 ? 's' : ''} discovered`);
+        } else {
+          discSetItem('states', 'error', json.responseMessage || 'API error');
+        }
+      } catch (e) { discSetItem('states', 'error', e.message); }
+
+      // ── Synthesize and save ─────────────────────────────────
+      const schema = synthesizeSchema(docTypes, docFields, vaultObjects, facets);
+      localStorage.setItem('vault_schema', JSON.stringify(schema));
+
+      renderDiscoveryResults(schema);
+
+      document.getElementById('step4-footer').style.display = 'flex';
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────
+
+    function flattenDocTypes(types, depth) {
+      depth = depth || 0;
+      const result = [];
+      (types || []).forEach(t => {
+        result.push({ name: t.name, label: t.label || t.name, depth });
+        if (t.subtypes?.length) result.push(...flattenDocTypes(t.subtypes, depth + 1));
+      });
+      return result;
+    }
+
+    function findTypeByPatterns(allTypes, patterns) {
+      for (const pat of patterns) {
+        const pl = pat.toLowerCase();
+        const m  = allTypes.find(t =>
+          (t.label || '').toLowerCase().includes(pl) ||
+          (t.name  || '').toLowerCase().replace(/__[vc]$/, '').replace(/_/g, ' ').includes(pl)
+        );
+        if (m) return m;
+      }
+      return null;
+    }
+
+    function detectAppType(allTypes, vaultObjects) {
+      const tl  = allTypes.map(t => (t.label || '').toLowerCase()).join(' ');
+      const ons = vaultObjects.map(o => (o.name || '').toLowerCase()).join(' ');
+      if (ons.includes('submission__v') || ons.includes('application__v') || tl.includes('ectd') || tl.includes('nda') || tl.includes(' bla') || tl.includes(' ind')) return { id: 'rim',       label: 'Regulatory Information Management', emoji: '📤' };
+      if (ons.includes('tmf') || tl.includes('informed consent') || tl.includes('investigator brochure')) return { id: 'etmf',     label: 'eTMF / Clinical Operations',        emoji: '🧪' };
+      if (ons.includes('adverse') || ons.includes('safety_case') || tl.includes('icsr') || tl.includes('adverse event')) return { id: 'safety',   label: 'Safety / Pharmacovigilance',       emoji: '🛡️' };
+      if (ons.includes('claim__v') || tl.includes('promotional') || tl.includes('mlr')) return { id: 'promomats',label: 'Promotional Materials (PromoMats)',   emoji: '📢' };
+      if (ons.includes('capa') || ons.includes('deviation') || ons.includes('quality_event') || tl.includes('sop') || tl.includes('standard operating')) return { id: 'qms',      label: 'Quality Management System',        emoji: '✅' };
+      if (tl.includes('protocol') || tl.includes('study report') || tl.includes('investigational')) return { id: 'clinical', label: 'Clinical / RnD',                    emoji: '🔬' };
+      return { id: 'generic', label: 'Veeva Vault', emoji: '🔷' };
+    }
+
+    function guessTypeEmoji(label) {
+      const l = (label || '').toLowerCase();
+      if (l.includes('sop') || l.includes('operating procedure')) return '📋';
+      if (l.includes('deviation') || l.includes('oos') || l.includes('non-conform')) return '⚠️';
+      if (l.includes('capa') || l.includes('corrective')) return '🔧';
+      if (l.includes('protocol')) return '🔬';
+      if (l.includes('report')) return '📊';
+      if (l.includes('policy') || l.includes('guideline')) return '📜';
+      if (l.includes('audit')) return '🔍';
+      if (l.includes('change control') || l.includes('change notice')) return '🔄';
+      if (l.includes('risk')) return '⚡';
+      if (l.includes('submission') || l.includes('application') || l.includes('ectd')) return '📤';
+      if (l.includes('consent') || l.includes('patient')) return '📝';
+      if (l.includes('contract') || l.includes('agreement')) return '🤝';
+      if (l.includes('training')) return '🎓';
+      return '📄';
+    }
+
+    function synthesizeSchema(docTypes, docFields, vaultObjects, facets) {
+      const allTypes   = flattenDocTypes(docTypes);
+      const fieldNames = docFields.map(f => f.name);
+
+      // ── Map document types ──────────────────────────────────
+      const TYPE_PATTERNS = {
+        type_sop:        ['standard operating', 'sop', 'work instruction', 'standard practice'],
+        type_deviation:  ['deviation', 'out of specification', 'oos report', 'non-conformance', 'lab incident'],
+        type_capa:       ['capa', 'corrective action', 'corrective and preventive'],
+        type_protocol:   ['protocol', 'study protocol', 'test protocol', 'analytical method'],
+        type_report:     ['study report', 'technical report', 'csr', 'clinical study report', 'report'],
+        type_policy:     ['policy', 'guideline', 'procedure'],
+        type_regulatory: ['regulatory submission', 'submission', 'application', 'ectd'],
+      };
+      const config = {};
+      for (const [key, pats] of Object.entries(TYPE_PATTERNS)) {
+        const m = findTypeByPatterns(allTypes, pats);
+        if (m) config[key] = m.name;
+      }
+
+      // ── Map optional document fields ────────────────────────
+      const FIELD_CANDIDATES = {
+        field_product:     ['product__v', 'product__c'],
+        field_study:       ['study__v', 'study_id__c', 'study__c'],
+        field_expiry:      ['expiration_date__v', 'expiry_date__c', 'expiration_date__c'],
+        field_gxp:         ['gxp_relevant__c', 'gxp__c', 'gxp_relevant__v'],
+        field_severity:    ['severity__v', 'severity__c'],
+        field_capa_link:   ['capa_id__c', 'capa__c', 'capa_link__c'],
+        field_review_date: ['periodic_review_date__v', 'review_date__c', 'next_review_date__c'],
+        field_priority:    ['priority__v', 'priority__c'],
+        field_dev_type:    ['deviation_type__v', 'deviation_type__c'],
+      };
+      for (const [key, cands] of Object.entries(FIELD_CANDIDATES)) {
+        const found = cands.find(f => fieldNames.includes(f));
+        if (found) config[key] = found;
+      }
+
+      // ── Object source detection ─────────────────────────────
+      const objNames = vaultObjects.map(o => (o.name || '').toLowerCase());
+      config.capa_is_object      = objNames.some(n => n.includes('capa'));
+      config.deviation_is_object = objNames.some(n => n.includes('deviation') || n.includes('quality_event'));
+
+      // ── Lifecycle state mapping ─────────────────────────────
+      const stateValues = [];
+      if (facets) {
+        const sf = facets.find(f => f.name === 'lifecycle_state__v');
+        if (sf?.values) stateValues.push(...sf.values.map(v => v.value));
+      }
+
+      const STATE_PATTERNS = {
+        state_approved:         ['approved'],
+        state_effective:        ['effective'],
+        state_draft:            ['draft', 'in authoring', 'in-authoring'],
+        state_in_review:        ['in review', 'under review', 'medical legal review'],
+        state_open:             ['open', 'initiated'],
+        state_in_progress:      ['in progress', 'in-progress', 'ongoing'],
+        state_closed:           ['closed', 'complete', 'completed', 'resolved'],
+        state_obsolete:         ['obsolete', 'superseded', 'retired', 'cancelled'],
+        state_pending_approval: ['pending approval', 'pending', 'awaiting approval'],
+      };
+      for (const [key, pats] of Object.entries(STATE_PATTERNS)) {
+        const m = stateValues.find(s =>
+          pats.some(p => s.toLowerCase().replace(/__[vc]$/, '').replace(/_/g, ' ').includes(p))
+        );
+        if (m) config[key] = m;
+      }
+
+      // ── Application type detection ──────────────────────────
+      const appType = detectAppType(allTypes, vaultObjects);
+
+      // ── Extra document types (not matched to a config key) ──
+      const mappedNames = new Set(Object.values(config).filter(v => typeof v === 'string' && (v.includes('__v') || v.includes('__c'))));
+      const extraDocTypes = allTypes
+        .filter(t => !mappedNames.has(t.name) && t.depth <= 1)
+        .map(t => ({ name: t.name, label: t.label, emoji: guessTypeEmoji(t.label) }))
+        .slice(0, 30);
+
+      // ── Queryable Vault Objects ─────────────────────────────
+      const KNOWN_OBJ_LABELS = {
+        'capa__v': 'CAPA', 'deviation__v': 'Deviation', 'quality_event__v': 'Quality Event',
+        'change_control__v': 'Change Control', 'audit__v': 'Audit',
+        'non_conformance__v': 'Non-Conformance', 'risk__v': 'Risk Assessment',
+        'submission__v': 'Submission', 'application__v': 'Application',
+        'tmf_reference__v': 'TMF Reference', 'tmf_artifact__v': 'TMF Artifact',
+        'adverse_event_report__v': 'Adverse Event Report',
+      };
+      const queryableObjects = vaultObjects
+        .map(o => ({
+          name:  o.name,
+          label: KNOWN_OBJ_LABELS[o.name] || (o.label || o.name),
+          emoji: guessTypeEmoji(KNOWN_OBJ_LABELS[o.name] || o.label || ''),
+        }))
+        .slice(0, 25);
+
+      return {
+        timestamp:         new Date().toISOString(),
+        vault_domain:      state.vaultDomain,
+        api_version:       state.apiVersion,
+        app_type:          appType.id,
+        app_label:         appType.label,
+        app_emoji:         appType.emoji,
+        doc_types:         allTypes,
+        object_types:      vaultObjects.slice(0, 60),
+        fields:            fieldNames,
+        lifecycle_states:  stateValues,
+        config,
+        extra_doc_types:   extraDocTypes,
+        queryable_objects: queryableObjects,
+      };
+    }
+
+    function renderDiscoveryResults(schema) {
+      const panel = document.getElementById('disc-results');
+      if (!panel) return;
+
+      const types    = schema.doc_types?.length    || 0;
+      const objects  = schema.object_types?.length || 0;
+      const states   = schema.lifecycle_states?.length || 0;
+      const extras   = schema.extra_doc_types || [];
+      const overrides = Object.keys(schema.config || {}).filter(k => !k.includes('is_object')).length;
+
+      panel.innerHTML = `
+        <div class="app-type-card">
+          <div class="app-type-emoji">${escHtml(schema.app_emoji || '🔷')}</div>
+          <div class="app-type-info">
+            <div class="app-type-sub">Detected application</div>
+            <div class="app-type-name">${escHtml(schema.app_label || 'Vault')}</div>
+          </div>
+        </div>
+        <div class="disc-stats">
+          <div class="disc-stat">
+            <div class="disc-stat-num">${types}</div>
+            <div class="disc-stat-label">Doc Types</div>
+          </div>
+          <div class="disc-stat">
+            <div class="disc-stat-num">${objects}</div>
+            <div class="disc-stat-label">Objects</div>
+          </div>
+          <div class="disc-stat">
+            <div class="disc-stat-num">${overrides}</div>
+            <div class="disc-stat-label">Config Keys</div>
+          </div>
+        </div>
+        ${states > 0 ? `<p style="font-size:12.5px;color:var(--c-text-3);margin:8px 0 4px;">${states} lifecycle states mapped · Query templates rebuilt for <strong style="color:var(--c-text);">${escHtml(schema.app_label)}</strong></p>` : ''}
+        ${extras.length > 0 ? `
+        <div class="extra-types-wrap">
+          <h4>Additional document types discovered (${extras.length})</h4>
+          <div class="extra-types-list">
+            ${extras.map(t => `<span class="extra-type-chip">${escHtml(t.emoji)} ${escHtml(t.label)}</span>`).join('')}
+          </div>
+        </div>` : ''}
+      `;
+      panel.style.display = 'block';
+    }
+
     function openSearch() {
       if (state.sessionToken) {
         // Live: pass credentials via sessionStorage (tab-scoped, cleared on close)
@@ -1688,6 +2111,14 @@
           sessionStorage.setItem('vault_proxy_url', state.proxyUrl);
         } else {
           sessionStorage.removeItem('vault_proxy_url');
+        }
+        // Schema is already in localStorage from discovery; tag it with domain for freshness check
+        const existingSchema = localStorage.getItem('vault_schema');
+        if (existingSchema) {
+          try {
+            const s = JSON.parse(existingSchema);
+            if (s.vault_domain !== state.vaultDomain) localStorage.removeItem('vault_schema');
+          } catch {}
         }
         window.open('search-panel.html', '_blank');
       } else {

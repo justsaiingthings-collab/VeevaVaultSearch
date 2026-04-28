@@ -2165,10 +2165,16 @@ const VAULT_CONFIG_DEFAULTS = {
   api_version: 'v26.1',   // bump here when Vault releases a new API version
 };
 
-// Merge localStorage overrides
+// Merge overrides: (1) vault_schema.config from schema discovery, (2) manual vault_config
 const VAULT_CONFIG = (() => {
   const cfg = { ...VAULT_CONFIG_DEFAULTS };
   try {
+    // Layer 1: schema discovery config (auto-generated at connect time)
+    const schema = JSON.parse(localStorage.getItem('vault_schema') || '{}');
+    if (schema.config && typeof schema.config === 'object') Object.assign(cfg, schema.config);
+  } catch {}
+  try {
+    // Layer 2: manual overrides (user-edited, highest priority)
     const saved = JSON.parse(localStorage.getItem('vault_config') || '{}');
     Object.assign(cfg, saved);
   } catch {}
@@ -2177,6 +2183,111 @@ const VAULT_CONFIG = (() => {
 
 // Convenience accessor — short alias
 const VC = key => VAULT_CONFIG[key] || VAULT_CONFIG_DEFAULTS[key] || '';
+
+/* ── SCHEMA APPLICATION ──────────────────────────────────────
+   Reads vault_schema (set by connect.html discovery) and:
+   1. Adds discovered document type filter chips
+   2. Populates lifecycle state filter sidebar
+   3. Shows detected application badge in header
+   4. Adds "Vault Objects" section for queryable objects
+   Called once after DOM is ready.
+──────────────────────────────────────────────────────────── */
+function applyVaultSchema() {
+  let schema;
+  try { schema = JSON.parse(localStorage.getItem('vault_schema') || 'null'); } catch {}
+  if (!schema) return;
+
+  // ── App type badge in header ─────────────────────────────────
+  const gearBtn = document.getElementById('configGearBtn');
+  if (gearBtn && schema.app_emoji && schema.app_label) {
+    const badge = document.createElement('span');
+    badge.id = 'appTypeBadge';
+    badge.title = `Detected: ${schema.app_label}`;
+    badge.style.cssText = 'font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.25);white-space:nowrap;flex-shrink:0;cursor:default;';
+    badge.textContent = `${schema.app_emoji} ${schema.app_label}`;
+    gearBtn.insertAdjacentElement('beforebegin', badge);
+  }
+
+  // ── Populate lifecycle states in filter sidebar ──────────────
+  const states = schema.lifecycle_states || [];
+  if (states.length > 0) {
+    const stateBody = document.querySelector('.filter-section input[name="state"]')?.closest('.filter-body');
+    if (stateBody) {
+      // Only replace if we have more/different states than the defaults
+      const existingVals = [...stateBody.querySelectorAll('input[name="state"]')].map(el => el.value);
+      const newVals = states.filter(s => !existingVals.includes(s));
+      if (newVals.length > 0) {
+        newVals.forEach(s => {
+          const rawLabel = s.replace(/__[vc]$/, '').replace(/_/g, ' ');
+          const label = rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1);
+          const dotColor = s.toLowerCase().includes('approv') || s.toLowerCase().includes('effect') ? '#1E7E45'
+            : s.toLowerCase().includes('draft') || s.toLowerCase().includes('review') ? '#0060B9'
+            : s.toLowerCase().includes('open') || s.toLowerCase().includes('progress') ? '#D95800'
+            : s.toLowerCase().includes('clos') || s.toLowerCase().includes('obsole') ? '#9CA3AF'
+            : '#6B7280';
+          const lbl = document.createElement('label');
+          lbl.className = 'filter-option';
+          lbl.innerHTML = `<input type="checkbox" name="state" value="${s}"><span class="filter-dot" style="background:${dotColor}"></span><span class="filter-option-label">${label}</span><span class="filter-count"></span>`;
+          stateBody.appendChild(lbl);
+        });
+      }
+    }
+  }
+
+  // ── Add extra discovered document types as filter options ────
+  const extras = schema.extra_doc_types || [];
+  if (extras.length > 0) {
+    const typeBody = document.querySelector('.filter-section input[name="type"]')?.closest('.filter-body');
+    if (typeBody) {
+      const existingVals = [...typeBody.querySelectorAll('input[name="type"]')].map(el => el.value);
+      // Use the actual API name as value (so VQL can use it directly)
+      extras.forEach(t => {
+        if (existingVals.includes(t.name)) return;
+        const lbl = document.createElement('label');
+        lbl.className = 'filter-option';
+        const color = '#6B7280'; // neutral for unknown types
+        lbl.innerHTML = `<input type="checkbox" name="type" value="${t.name}" data-discovered="true"><span class="filter-dot" style="background:${color}"></span><span class="filter-option-label">${t.emoji} ${t.label}</span><span class="filter-count"></span>`;
+        typeBody.appendChild(lbl);
+      });
+    }
+  }
+
+  // ── Add Vault Objects section to sidebar ─────────────────────
+  const queryableObjs = schema.queryable_objects || [];
+  if (queryableObjs.length > 0) {
+    const savedSection = document.getElementById('saved-section');
+    if (savedSection) {
+      const objSection = document.createElement('div');
+      objSection.className = 'filter-section';
+      objSection.id = 'vault-objects-section';
+      objSection.innerHTML = `
+        <button class="filter-section-toggle" onclick="toggleSection(this)">
+          <span class="filter-section-label">Vault Objects</span>
+          <span class="filter-chevron open">▼</span>
+        </button>
+        <div class="filter-body">
+          <p style="font-size:11px;color:var(--v-ink-60);margin-bottom:8px;line-height:1.5;">Click an object type to search it directly via VQL.</p>
+          ${queryableObjs.map(o => `
+            <label class="filter-option" onclick="searchVaultObject('${o.name}','${o.label.replace(/'/g,"\\'")}')">
+              <span style="font-size:14px;line-height:1;">${o.emoji}</span>
+              <span class="filter-option-label">${o.label}</span>
+              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--v-ink-40)"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            </label>`).join('')}
+        </div>`;
+      savedSection.insertAdjacentElement('beforebegin', objSection);
+    }
+  }
+}
+
+// Search a Vault Object type (e.g. capa__v)
+function searchVaultObject(objectName, objectLabel) {
+  const ps = VC('default_page_size') || 50;
+  const vql = `SELECT id, name__v, status__v, created_date__v, modified_date__v, owner__v FROM ${objectName} LIMIT ${ps}`;
+  // Run as a custom query template
+  const tid = `obj_${objectName.replace('__v','').replace('__c','')}`;
+  document.getElementById('mainSearchInput').value = objectLabel;
+  runQuery(tid, { customVQL: vql, customLabel: objectLabel });
+}
 
 /* ── LIVE CONNECTION ───────────────────────────────────────── */
 const LIVE = (() => {
@@ -2939,7 +3050,7 @@ function renderChips(role) {
 // Pagination state — reset on each new query, advanced by loadMore()
 const PAGE = { nextUrl: null, total: 0, loaded: 0, tid: null, vql: null };
 
-async function runQuery(tid, { append = false } = {}) {
+async function runQuery(tid, { append = false, customVQL = null, customLabel = null } = {}) {
   const t0 = Date.now();
   if (!append) {
     S.currentTid = tid;
@@ -2957,7 +3068,7 @@ async function runQuery(tid, { append = false } = {}) {
 
   if (LIVE) {
     // ── Live path: execute real VQL against Vault ──────────────
-    let vql = VQL_RAW[tid] || VQL_RAW.doc_all_accessible;
+    let vql = customVQL || VQL_RAW[tid] || VQL_RAW.doc_all_accessible;
     if (tid === 'name_search') {
       const safe = (S.searchText || '').replace(/'/g, "''");
       // v26.1: prefer FIND clause for simple single/double-word queries (no special chars).
@@ -3578,6 +3689,7 @@ if (_savedRole && ROLE_ACL[_savedRole]) {
 
 renderChips(S.role);
 initConnectionBanner();
+applyVaultSchema();    // apply auto-discovered schema from connect.html
 renderHistory();       // render any history from previous session actions
 renderSavedSearches(); // render saved searches from localStorage
 
