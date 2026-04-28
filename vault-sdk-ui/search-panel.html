@@ -12,6 +12,33 @@
        VAULT SMARTSEARCH — PREMIUM DESIGN SYSTEM
        Veeva-aligned enterprise pharma UI
     ═══════════════════════════════════════════════════════ */
+    /* ── P3-3 WCAG 2.1 AA — Skip navigation ─────────────────── */
+    .skip-nav {
+      position: absolute;
+      left: -9999px;
+      top: auto;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+    .skip-nav:focus {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      z-index: 99999;
+      width: auto;
+      height: auto;
+      padding: 10px 18px;
+      background: var(--v-blue);
+      color: #fff;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      outline: 3px solid #FFF;
+      outline-offset: 2px;
+    }
+
     :root {
       /* Core Brand */
       --v-blue:          #0060B9;
@@ -691,6 +718,16 @@
 
     .doc-name:hover { color: var(--v-blue-dark); text-decoration: underline; }
 
+    /* P3-1: Search term highlight */
+    mark.hl {
+      background: #FEF08A;
+      color: inherit;
+      border-radius: 2px;
+      padding: 0 1px;
+      font-weight: 700;
+      font-style: normal;
+    }
+
     .doc-pills {
       display: flex;
       align-items: center;
@@ -886,7 +923,7 @@
 
     .ver-history-head {
       display: grid;
-      grid-template-columns: 1fr 70px 110px 100px;
+      grid-template-columns: 1fr 70px 110px 100px 20px;
       padding: 6px 14px 4px 60px;
       font-size: 10.5px;
       font-weight: 700;
@@ -898,7 +935,7 @@
 
     .ver-row {
       display: grid;
-      grid-template-columns: 1fr 70px 110px 100px;
+      grid-template-columns: 1fr 70px 110px 100px 20px;
       padding: 7px 14px 7px 60px;
       border-bottom: 1px solid var(--v-border);
       align-items: center;
@@ -907,6 +944,12 @@
 
     .ver-row:last-child { border-bottom: none; }
     .ver-row:hover { background: var(--v-white); }
+
+    /* Latest version row — subtle highlight to distinguish it from history */
+    .ver-row-latest {
+      background: var(--v-blue-10);
+    }
+    .ver-row-latest:hover { background: var(--v-blue-20); }
 
     .ver-row-name {
       font-size: 12px;
@@ -963,8 +1006,45 @@
     .empty-body {
       font-size: 13px;
       color: var(--v-ink-60);
-      max-width: 300px;
+      max-width: 340px;
       line-height: 1.55;
+    }
+
+    /* Zero-results: active filter chips + suggestions */
+    .empty-active-filters {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+      margin: 14px 0 4px; justify-content: center; max-width: 420px;
+    }
+    .empty-filter-label, .empty-suggest-label {
+      font-size: 10px; color: var(--v-ink-40); text-transform: uppercase;
+      letter-spacing: .06em; white-space: nowrap;
+    }
+    .empty-filter-chip {
+      background: var(--v-blue-10, #EFF6FF); color: var(--v-blue, #2563EB);
+      border: 1px solid var(--v-blue-20, #BFDBFE); border-radius: 10px;
+      padding: 2px 9px; font-size: 11px; font-weight: 500;
+    }
+    .empty-clear-btn {
+      background: transparent; border: 1px solid var(--v-border);
+      border-radius: 10px; color: var(--v-ink-60); cursor: pointer;
+      font-size: 11px; padding: 2px 9px;
+      transition: border-color .15s, color .15s;
+    }
+    .empty-clear-btn:hover { border-color: #DC2626; color: #DC2626; }
+    .empty-suggestions {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+      margin-top: 16px; justify-content: center; max-width: 420px;
+    }
+    .chip-suggest {
+      background: var(--v-surface); border: 1px solid var(--v-border);
+      border-radius: 12px; color: var(--v-ink-80); cursor: pointer;
+      font-size: 12px; padding: 5px 13px;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .chip-suggest:hover {
+      background: var(--v-blue-10, #EFF6FF);
+      border-color: var(--v-blue, #2563EB);
+      color: var(--v-blue, #2563EB);
     }
 
     /* Loading skeleton */
@@ -1340,7 +1420,7 @@
       /* ── Version history: simplified on mobile ── */
       .ver-history-head { display: none; }
       .ver-row {
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 1fr auto auto;
         padding: 9px 14px 9px 14px;
         gap: 6px;
       }
@@ -1415,8 +1495,13 @@
       from { opacity: 0; } to { opacity: 1; }
     }
   </style>
+  <!-- VaultParser + VaultRecommender (browser-safe IIFE, no bundler required) -->
+  <script src="browser-bundle.js"></script>
 </head>
 <body>
+
+<!-- WCAG 2.4.1: Skip navigation -->
+<a href="#mainContent" class="skip-nav">Skip to main content</a>
 
 <div class="app-shell">
 
@@ -1452,6 +1537,8 @@
       </div>
       <input type="text" id="mainSearchInput" class="header-search-input"
         placeholder="Search documents… (e.g. open CAPAs, approved SOPs, audit package)"
+        aria-label="Search Vault documents"
+        role="searchbox"
         autocomplete="off" spellcheck="false">
       <button class="search-clear-btn" id="clearSearchBtn" aria-label="Clear">✕</button>
     </div>
@@ -1459,10 +1546,10 @@
     <div class="header-divider"></div>
 
     <div class="role-switcher" role="group" aria-label="Switch role">
-      <button class="role-btn active" data-role="QA_ADMIN">QA Admin</button>
-      <button class="role-btn" data-role="QA_USER">QA</button>
-      <button class="role-btn" data-role="CLINICAL_USER">Clinical</button>
-      <button class="role-btn" data-role="REGULATORY_USER">Regulatory</button>
+      <button class="role-btn active" data-role="QA_ADMIN" aria-pressed="true">QA Admin</button>
+      <button class="role-btn" data-role="QA_USER" aria-pressed="false">QA</button>
+      <button class="role-btn" data-role="CLINICAL_USER" aria-pressed="false">Clinical</button>
+      <button class="role-btn" data-role="REGULATORY_USER" aria-pressed="false">Regulatory</button>
     </div>
 
     <!-- G-01: Config gear -->
@@ -1478,14 +1565,16 @@
   </header>
 
   <!-- G-01: VAULT_CONFIG editor modal -->
-  <div id="configModalBackdrop" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.5);">
-    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;width:min(640px,94vw);max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+  <div id="configModalBackdrop" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.5);"
+       role="presentation">
+    <div role="dialog" aria-modal="true" aria-labelledby="configModalTitle"
+         style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;width:min(640px,94vw);max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
       <div style="padding:18px 22px 0;border-bottom:1px solid var(--v-border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">
         <div>
-          <h2 style="font-size:16px;font-weight:700;color:var(--v-ink);margin:0;">Vault Configuration</h2>
+          <h2 id="configModalTitle" style="font-size:16px;font-weight:700;color:var(--v-ink);margin:0;">Vault Configuration</h2>
           <p style="font-size:12px;color:var(--v-ink-60);margin:3px 0 14px;">Override document type and field names to match your Vault tenant's schema. Changes are saved to localStorage and take effect immediately.</p>
         </div>
-        <button onclick="closeConfigModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--v-ink-60);padding:4px 8px;border-radius:4px;">✕</button>
+        <button onclick="closeConfigModal()" aria-label="Close dialog" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--v-ink-60);padding:4px 8px;border-radius:4px;">✕</button>
       </div>
       <div style="padding:18px 22px;" id="configModalBody">
         <!-- Injected by openConfigModal() -->
@@ -1557,6 +1646,50 @@
           <span class="filter-dot" style="background:#D95800"></span>
           <span class="filter-option-label">Regulatory</span>
           <span class="filter-count">10</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Document Subtype -->
+    <div class="filter-section" id="subtype-filter-section">
+      <button class="filter-section-toggle" onclick="toggleSection(this)">
+        <span class="filter-section-label">Subtype / Category</span>
+        <span class="filter-chevron">▼</span>
+      </button>
+      <div class="filter-body" style="display:none;">
+        <!-- Deviation subtypes -->
+        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--v-ink-40);margin:4px 0 4px;">Deviation</p>
+        <label class="filter-option">
+          <input type="checkbox" name="subtype" value="Procedural__v">
+          <span class="filter-dot" style="background:#C8001E"></span>
+          <span class="filter-option-label">Procedural (SOP violation)</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="subtype" value="Process__v">
+          <span class="filter-dot" style="background:#D95800"></span>
+          <span class="filter-option-label">Process</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="subtype" value="Equipment__v">
+          <span class="filter-dot" style="background:#8A6200"></span>
+          <span class="filter-option-label">Equipment</span>
+        </label>
+        <!-- SOP subtypes -->
+        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--v-ink-40);margin:8px 0 4px;">SOP</p>
+        <label class="filter-option">
+          <input type="checkbox" name="subtype" value="GMP__v">
+          <span class="filter-dot" style="background:#0060B9"></span>
+          <span class="filter-option-label">GMP</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="subtype" value="Clinical__v">
+          <span class="filter-dot" style="background:#1E7E45"></span>
+          <span class="filter-option-label">Clinical</span>
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="subtype" value="Quality__v">
+          <span class="filter-dot" style="background:#5B3FA6"></span>
+          <span class="filter-option-label">Quality</span>
         </label>
       </div>
     </div>
@@ -1728,12 +1861,26 @@
         <span class="filter-chevron open">▼</span>
       </button>
       <div class="filter-body" id="saved-list"></div>
+      <!-- P3-2: Export / Import saved searches -->
+      <div style="display:flex;gap:6px;padding:6px 0 2px;border-top:1px solid var(--v-border);margin-top:6px;">
+        <button onclick="exportSavedSearches()" title="Export saved searches as JSON"
+          style="flex:1;padding:5px 8px;border:1px solid var(--v-border);border-radius:5px;background:var(--v-surface);color:var(--v-ink-60);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v8M5 7l3 3 3-3M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1"/></svg>
+          Export
+        </button>
+        <button onclick="document.getElementById('importSavedInput').click()" title="Import saved searches from JSON"
+          style="flex:1;padding:5px 8px;border:1px solid var(--v-border);border-radius:5px;background:var(--v-surface);color:var(--v-ink-60);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 12V4M5 7l3-3 3 3M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1"/></svg>
+          Import
+        </button>
+        <input type="file" id="importSavedInput" accept=".json" style="display:none;" onchange="importSavedSearches(this)">
+      </div>
     </div>
 
   </aside>
 
   <!-- ══════════ MAIN CONTENT ════════════════════════════════ -->
-  <main class="main-content" aria-label="Search results">
+  <main class="main-content" id="mainContent" aria-label="Search results">
 
     <!-- Loading overlay -->
     <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
@@ -1750,7 +1897,28 @@
     <div id="connectionBanner" style="display:none; align-items:center; gap:10px; padding:8px 16px; font-size:12.5px; font-weight:500; border-radius:8px; margin-bottom:12px; border:1px solid;">
       <span id="connectionBannerDot" style="width:8px;height:8px;border-radius:50%;flex-shrink:0;"></span>
       <span id="connectionBannerText"></span>
-      <a id="connectionBannerLink" href="connect.html" style="margin-left:auto; color:inherit; opacity:.7; font-size:11px; text-decoration:underline;">Reconnect</a>
+      <!-- P3-4: Multi-vault instance switcher skeleton -->
+      <div id="vaultSwitcherContainer" style="display:none;margin-left:auto;position:relative;">
+        <button id="vaultSwitcherBtn" onclick="toggleVaultMenu()"
+                aria-haspopup="listbox" aria-expanded="false"
+                style="background:none;border:1px solid currentColor;border-radius:5px;color:inherit;cursor:pointer;font-size:11px;padding:3px 9px;opacity:.8;display:flex;align-items:center;gap:4px;">
+          <span id="vaultSwitcherLabel">—</span>
+          <svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true"><path d="M1 3l4 4 4-4"/></svg>
+        </button>
+        <div id="vaultSwitcherMenu" role="listbox" aria-label="Vault instances"
+             style="display:none;position:absolute;right:0;top:calc(100% + 4px);min-width:240px;background:#fff;border:1px solid var(--v-border-mid);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:3000;overflow:hidden;">
+          <!-- Populated by renderVaultMenu() -->
+        </div>
+      </div>
+      <button id="connectionBannerDisconnect"
+              onclick="disconnectVault()"
+              style="display:none; background:none; border:1px solid currentColor; border-radius:5px;
+                     color:inherit; cursor:pointer; font-size:11px; padding:3px 9px; opacity:.8;
+                     font-family:inherit;"
+              title="Clear session and return to connect page">
+        Disconnect
+      </button>
+      <a id="connectionBannerLink" href="connect.html" style="color:inherit; opacity:.7; font-size:11px; text-decoration:underline;">Reconnect</a>
     </div>
 
     <!-- Chips toolbar -->
@@ -1765,8 +1933,10 @@
       <span class="qib-badge" id="qibTemplate">—</span>
       <span class="qib-rule" id="qibRule"></span>
       <span class="qib-spacer"></span>
-      <button class="vql-toggle-btn" id="vqlToggleBtn">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+      <button class="vql-toggle-btn" id="vqlToggleBtn"
+              aria-expanded="false" aria-controls="vqlPreview"
+              aria-label="Show VQL query">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
           <polyline points="4,6 8,10 12,6"/>
         </svg>
         <span class="action-label">Show VQL</span>
@@ -1775,7 +1945,7 @@
 
     <!-- VQL Preview (FIXED: padding inside .open only) -->
     <div class="vql-preview" id="vqlPreview" aria-hidden="true">
-      <div id="vqlContent"></div>
+      <div id="vqlContent" role="region" aria-label="Generated VQL query"></div>
     </div>
 
     <!-- Ambiguity bar -->
@@ -1790,7 +1960,7 @@
     <div class="results-area" id="resultsArea">
 
       <div class="results-meta-bar" id="resultsMetaBar">
-        <div class="results-left">
+        <div class="results-left" role="status" aria-live="polite" aria-atomic="true">
           <span class="results-count" id="resultsCount">—</span>
           <span class="results-sublabel" id="resultsSublabel"></span>
         </div>
@@ -1804,9 +1974,13 @@
             <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.655 2.23c.19-.28.51-.448.845-.448s.656.168.845.449l1.56 2.277 2.644.594c.344.077.626.304.783.617.157.312.15.677-.02.984l-1.716 2.994.18 2.738c.023.35-.127.69-.395.905-.268.214-.62.283-.944.183l-2.661-.779-2.66.779c-.324.1-.676.03-.944-.183-.268-.214-.418-.555-.395-.905l.18-2.738-1.716-2.994c-.17-.307-.176-.672-.02-.984.158-.313.44-.54.783-.617l2.645-.594L7.655 2.23z"/></svg>
             <span class="action-label">Save</span>
           </button>
-          <button class="action-btn" id="exportCsvBtn" onclick="exportCSV()" title="Export results as CSV" style="display:none">
+          <button class="action-btn" id="exportCsvBtn" onclick="exportCSV()" title="Export current page as CSV" style="display:none">
             <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
             <span class="action-label">CSV</span>
+          </button>
+          <button class="action-btn" id="exportAllBtn" onclick="exportAllCSV()" title="Export all results (all pages) as CSV" style="display:none">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 9.293a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/><path d="M5 5h2V3H5v2zm8 0h2V3h-2v2z" fill-rule="evenodd"/></svg>
+            <span class="action-label">Export All</span>
           </button>
           <div class="view-toggle">
             <button class="view-btn active" id="viewList">List</button>
@@ -1825,10 +1999,10 @@
         </div>
       </div>
 
-      <div id="resultsList">
+      <div id="resultsList" role="list" aria-live="polite" aria-atomic="false" aria-label="Search results">
         <div class="empty-state">
           <div class="empty-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
           </div>
@@ -1955,6 +2129,34 @@ const MOCK_DOCS = [
   { id:'100095', name__v:'POL-VAL-001: Validation Master Plan Policy',                type__v:'Policy__c',     lifecycle_state__v:'Approved__v',    major:1, minor:0, modified:'2026-01-05', owner:'Jennifer Walsh',   severity:null,          gxp:true,  capa:null                                            },
 ];
 
+/* ── P3-4: Demo data timestamp refresh ────────────────────────
+   Shifts all MOCK_DOCS date fields so the most-recently modified
+   document always appears as "yesterday". This keeps demo data
+   evergreen — "Last 30 days" and "Review Overdue" queries stay
+   populated regardless of when the page is opened.
+─────────────────────────────────────────────────────────────── */
+(function normalizeMockDates() {
+  const fieldKeys = ['modified', 'expiry', 'review_due'];
+  // Find the latest modified date across all docs
+  let maxTs = -Infinity;
+  MOCK_DOCS.forEach(d => {
+    const ts = new Date(d.modified).getTime();
+    if (!isNaN(ts) && ts > maxTs) maxTs = ts;
+  });
+  if (!isFinite(maxTs)) return;
+  // Shift so the latest document is "1 day ago" relative to today
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const target = new Date(today); target.setDate(today.getDate() - 1);
+  const shiftMs = target.getTime() - maxTs;
+  MOCK_DOCS.forEach(doc => {
+    fieldKeys.forEach(key => {
+      if (!doc[key]) return;
+      const shifted = new Date(new Date(doc[key]).getTime() + shiftMs);
+      doc[key] = shifted.toISOString().slice(0, 10);
+    });
+  });
+})();
+
 const MOCK_VERSIONS = {
   '100001': [ /* SOP-MFG-001 */
     { ver:'v3.0', state:'Effective__v',   date:'Mar 15, 2025', by:'Sarah Chen'      },
@@ -2071,6 +2273,21 @@ const QT = {
   deviation_without_capa:  d => d.type__v === 'Deviation__c' && ['Open__v','In Progress__v'].includes(d.lifecycle_state__v) && !d.capa,
   // v26.1: archived_documents — demo uses Obsolete/Superseded as proxy for archived
   doc_archived: d => ['Obsolete__v','Superseded__v'].includes(d.lifecycle_state__v),
+  /* ── eTMF pack — study-linked docs as proxy in demo ── */
+  etmf_all_docs:         d => !!d.study,
+  etmf_by_study:         d => !!d.study && ['Approved__v','Effective__v','In Review__v','Draft__v'].includes(d.lifecycle_state__v),
+  /* ── RIM pack — Regulatory type docs ── */
+  rim_submissions:       d => d.type__v === 'Regulatory__c' && ['Submitted__v','Pending Approval__v','In Review__v'].includes(d.lifecycle_state__v),
+  rim_approved_labels:   d => d.type__v === 'Regulatory__c' && ['Approved__v','Effective__v'].includes(d.lifecycle_state__v),
+  /* ── Safety pack — Report__c as proxy in demo ── */
+  safety_adverse_events: d => d.type__v === 'Report__c' && ['Open__v','In Progress__v'].includes(d.lifecycle_state__v),
+  safety_open_cases:     d => d.type__v === 'Report__c' && d.lifecycle_state__v !== 'Closed__v',
+  /* ── PromoMats pack — Policy__c as proxy in demo ── */
+  promomats_approved:    d => d.type__v === 'Policy__c' && ['Approved__v','Effective__v'].includes(d.lifecycle_state__v),
+  promomats_expiring:    d => d.type__v === 'Policy__c' && !!d.expiry && (() => { const ex = new Date(d.expiry); const now = new Date(); return ex > now && ex <= new Date(now.getTime() + 90*24*60*60*1000); })(),
+  /* ── Additional Deviation templates ── */
+  deviation_linked_capa:  d => d.type__v === 'Deviation__c' && !!d.capa,
+  deviation_sop_violations: d => d.type__v === 'Deviation__c' && ['Open__v','In Progress__v'].includes(d.lifecycle_state__v),
   /* ── Free-text name / owner / product / study search ── */
   name_search: d => {
     const t = (S.searchText || '').toLowerCase();
@@ -2098,7 +2315,23 @@ const TNAMES = {
   labelling_expiring_60:    'Labelling Expiring ≤60d',
   deviation_without_capa:   'Deviations Without CAPA',
   name_search:              'Search Results',
-  doc_archived:             'Archived Documents',   // v26.1
+  name_search_fulltext:     'Full-Text Search Results',   // v26.1 SCOPE DOCUMENTS
+  doc_archived:             'Archived Documents',         // v26.1
+  // eTMF
+  etmf_all_docs:            'eTMF Documents',
+  etmf_by_study:            'eTMF by Study',
+  // RIM
+  rim_submissions:          'Regulatory Submissions',
+  rim_approved_labels:      'Approved Labels',
+  // Safety
+  safety_adverse_events:    'Adverse Event Cases',
+  safety_open_cases:        'Open Safety Cases',
+  // PromoMats
+  promomats_approved:       'Approved Promotional Content',
+  promomats_expiring:       'Promotional Content Expiring',
+  // Additional Deviation
+  deviation_linked_capa:    'Deviations with CAPA',
+  deviation_sop_violations: 'SOP Violation Deviations',
 };
 
 /* ── VQL DISPLAY STRINGS ───────────────────────────────────── */
@@ -2109,6 +2342,22 @@ const VQLS = {
   audit_ready_docs: `<span class="vql-kw">SELECT</span> id, name__v, type__v, effective_date__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Approved__v'</span>, <span class="vql-str">'Effective__v'</span>)\n  <span class="vql-kw">AND</span> gxp_relevant__c <span class="vql-op">=</span> <span class="vql-lit">true</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">ORDER BY</span> type__v <span class="vql-kw">ASC</span>`,
   doc_all_accessible: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n<span class="vql-kw">ORDER BY</span> last_modified_date__v <span class="vql-kw">DESC</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">100</span>`,
   name_search: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> name__v <span class="vql-fn">CONTAINS</span>(<span class="vql-str">'{QUERY}'</span>)\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">ORDER BY</span> last_modified_date__v <span class="vql-kw">DESC</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">50</span>`,
+  name_search_fulltext: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">FIND</span> <span class="vql-str">'{QUERY}'</span>\n<span class="vql-kw">SCOPE</span> <span class="vql-kw">DOCUMENTS</span>\n<span class="vql-kw">WHERE</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">50</span>`,
+  // eTMF
+  etmf_all_docs: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v, clinical_study__c\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'TMF__c'</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">ORDER BY</span> clinical_study__c, name__v <span class="vql-kw">ASC</span>`,
+  etmf_by_study: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v, clinical_study__c\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'TMF__c'</span>\n  <span class="vql-kw">AND</span> clinical_study__c <span class="vql-op">!=</span> <span class="vql-kw">null</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">NOT IN</span> (<span class="vql-str">'Obsolete__v'</span>, <span class="vql-str">'Closed__v'</span>)\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>`,
+  // RIM
+  rim_submissions: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'Regulatory__c'</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Submitted__v'</span>, <span class="vql-str">'Pending Approval__v'</span>, <span class="vql-str">'In Review__v'</span>)\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>`,
+  rim_approved_labels: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'Regulatory__c'</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Approved__v'</span>, <span class="vql-str">'Effective__v'</span>)\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>`,
+  // Safety
+  safety_adverse_events: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v, severity__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'AdverseEvent__c'</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Open__v'</span>, <span class="vql-str">'In Progress__v'</span>)\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">ORDER BY</span> severity__v <span class="vql-kw">ASC</span>`,
+  safety_open_cases: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v, severity__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-kw">IN</span> (<span class="vql-str">'AdverseEvent__c'</span>, <span class="vql-str">'SafetyCase__c'</span>)\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Closed__v'</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>`,
+  // PromoMats
+  promomats_approved: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'PromotionalMaterial__c'</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Approved__v'</span>, <span class="vql-str">'Effective__v'</span>)\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>`,
+  promomats_expiring: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v, expiration_date__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'PromotionalMaterial__c'</span>\n  <span class="vql-kw">AND</span> expiration_date__v <span class="vql-op">&gt;</span> <span class="vql-fn">now()</span>\n  <span class="vql-kw">AND</span> expiration_date__v <span class="vql-op">&lt;=</span> <span class="vql-fn">dateadd(now(), 90, 'day')</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Approved__v'</span>, <span class="vql-str">'Effective__v'</span>)\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>`,
+  // Additional Deviation
+  deviation_linked_capa: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v, severity__v, capa_link__c\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'Deviation__c'</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Open__v'</span>, <span class="vql-str">'In Progress__v'</span>)\n  <span class="vql-kw">AND</span> capa_link__c <span class="vql-op">!=</span> <span class="vql-kw">null</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>`,
+  deviation_sop_violations: `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v, severity__v, deviation_type__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">WHERE</span> type__v <span class="vql-op">=</span> <span class="vql-str">'Deviation__c'</span>\n  <span class="vql-kw">AND</span> deviation_type__v <span class="vql-op">=</span> <span class="vql-str">'Procedural__v'</span>\n  <span class="vql-kw">AND</span> lifecycle_state__v <span class="vql-kw">IN</span> (<span class="vql-str">'Open__v'</span>, <span class="vql-str">'In Progress__v'</span>)\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>`,
 };
 VQLS.capa_closed = VQLS.capa_open.replace("'Open__v', 'In Progress__v'", "'Closed__v'").replace('IN (', '= ').replace(')', '');
 VQLS.capa_high_severity = VQLS.capa_open.replace("lifecycle_state__v IN ('Open__v', 'In Progress__v')\n  AND","severity__v IN ('Critical__v', 'Major__v')\n  AND lifecycle_state__v IN ('Open__v', 'In Progress__v')\n  AND");
@@ -2279,10 +2528,47 @@ function applyVaultSchema() {
   }
 }
 
-// Search a Vault Object type (e.g. capa__v)
+// ── Object-type → enriched field set mapping ───────────────────
+// Keys match Vault object API names (lowercase). Unknown objects
+// fall back to the generic field list so new object types auto-work.
+const VAULT_OBJECT_FIELD_MAP = {
+  // Quality Management
+  'capa__v':            'id, name__v, status__v, severity__v, priority__v, due_date__v, assigned_to__v, created_date__v, owner__v',
+  'deviation__v':       'id, name__v, status__v, severity__v, deviation_type__v, product__v, created_date__v, closed_date__v, owner__v',
+  'change_control__v':  'id, name__v, status__v, change_type__v, risk_level__v, effective_date__v, created_date__v, owner__v',
+  'complaint__v':       'id, name__v, status__v, severity__v, product__v, reported_date__v, resolution_date__v, owner__v',
+  'audit__v':           'id, name__v, status__v, audit_type__v, audit_scope__v, scheduled_date__v, lead_auditor__v, owner__v',
+  // Clinical / eTMF
+  'clinical_study__v':  'id, name__v, status__v, phase__v, sponsor__v, start_date__v, end_date__v, principal_investigator__v, owner__v',
+  'study_site__v':      'id, name__v, status__v, clinical_study__v, investigator__v, country__v, activation_date__v, owner__v',
+  'protocol_amendment__v': 'id, name__v, status__v, clinical_study__v, amendment_number__v, effective_date__v, created_date__v, owner__v',
+  // Regulatory / RIM
+  'regulatory_submission__v': 'id, name__v, status__v, submission_type__v, region__v, agency__v, submission_date__v, approval_date__v, owner__v',
+  'product__v':         'id, name__v, status__v, product_code__v, therapeutic_area__v, sponsor__v, created_date__v, owner__v',
+  // Safety / Pharmacovigilance
+  'adverse_event__v':   'id, name__v, status__v, severity__v, seriousness__v, reported_date__v, patient_id__v, product__v, owner__v',
+  'safety_case__v':     'id, name__v, status__v, case_type__v, priority__v, received_date__v, due_date__v, assigned_to__v, owner__v',
+};
+const VAULT_OBJECT_FIELD_FALLBACK = 'id, name__v, status__v, created_date__v, modified_date__v, owner__v';
+
+// Search a Vault Object type (e.g. capa__v) with enriched, object-specific field sets.
 function searchVaultObject(objectName, objectLabel) {
-  const ps = VC('default_page_size') || 50;
-  const vql = `SELECT id, name__v, status__v, created_date__v, modified_date__v, owner__v FROM ${objectName} LIMIT ${ps}`;
+  const ps     = VC('default_page_size') || 50;
+  const key    = (objectName || '').toLowerCase();
+  const fields = VAULT_OBJECT_FIELD_MAP[key] || VAULT_OBJECT_FIELD_FALLBACK;
+
+  // Build an ORDER BY clause when we know what the primary sort field is
+  const orderMap = {
+    'capa__v':          'due_date__v ASC',
+    'deviation__v':     'severity__v ASC',
+    'complaint__v':     'reported_date__v DESC',
+    'adverse_event__v': 'severity__v ASC',
+    'safety_case__v':   'due_date__v ASC',
+    'audit__v':         'scheduled_date__v ASC',
+  };
+  const orderBy  = orderMap[key] ? ` ORDER BY ${orderMap[key]}` : ' ORDER BY created_date__v DESC';
+  const vql = `SELECT ${fields} FROM ${objectName}${orderBy} LIMIT ${ps}`;
+
   // Run as a custom query template
   const tid = `obj_${objectName.replace('__v','').replace('__c','')}`;
   document.getElementById('mainSearchInput').value = objectLabel;
@@ -2368,6 +2654,41 @@ function buildVQLRAW() {
       `${SEL_BASE} FIND '{QUERY}' SCOPE document_number__v, name__v WHERE lifecycle_state__v != '${OBS}' AND is_latest_version__v = true LIMIT ${ps}`,
     name_search_fuzzy:
       `${SEL_BASE} FIND '{QUERY}' DISTANCE(1) SCOPE document_number__v, name__v WHERE lifecycle_state__v != '${OBS}' AND is_latest_version__v = true LIMIT ${ps}`,
+    // v26.1: FIND SCOPE DOCUMENTS — searches full document body text via Vault's full-text index.
+    // Used as a zero-result fallback when metadata FIND returns nothing.
+    // Broader than name/number scope but slower; only triggered automatically on 0-result retry.
+    name_search_fulltext:
+      `${SEL_BASE} FIND '{QUERY}' SCOPE DOCUMENTS WHERE lifecycle_state__v != '${OBS}' AND is_latest_version__v = true LIMIT ${ps}`,
+
+    // ── eTMF (Trial Master File) pack ─────────────────────────────────────────
+    etmf_all_docs:
+      `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, ${STU}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'TMF__c' AND is_latest_version__v = true ORDER BY ${STU}, name__v ASC LIMIT ${ps}`,
+    etmf_by_study:
+      `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, ${STU}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'TMF__c' AND ${STU} != null AND lifecycle_state__v NOT IN ('${OBS}','${VC('state_closed')}') AND is_latest_version__v = true ORDER BY ${STU}, type__v ASC LIMIT ${ps}`,
+
+    // ── RIM (Regulatory Information Management) pack ──────────────────────────
+    rim_submissions:
+      `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' AND lifecycle_state__v IN ('Submitted__v','Pending Approval__v','${VC('state_in_review')}') AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+    rim_approved_labels:
+      `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' AND lifecycle_state__v IN ${APPROVED_STATES} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
+
+    // ── Safety pack ───────────────────────────────────────────────────────────
+    safety_adverse_events:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'AdverseEvent__c' AND lifecycle_state__v IN ${OPEN_STATES} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+    safety_open_cases:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v IN ('AdverseEvent__c','SafetyCase__c') AND lifecycle_state__v != '${VC('state_closed')}' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+
+    // ── PromoMats pack ────────────────────────────────────────────────────────
+    promomats_approved:
+      `${SEL_BASE} WHERE type__v = 'PromotionalMaterial__c' AND lifecycle_state__v IN ${APPROVED_STATES} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
+    promomats_expiring:
+      `SELECT id, name__v, type__v, lifecycle_state__v, major_version_number__v, ${EXP}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'PromotionalMaterial__c' AND ${EXP} > now() AND ${EXP} <= dateadd(now(), 90, 'day') AND lifecycle_state__v IN ${APPROVED_STATES} AND is_latest_version__v = true ORDER BY ${EXP} ASC LIMIT ${ps}`,
+
+    // ── Additional Deviation templates ────────────────────────────────────────
+    deviation_linked_capa:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${SEV}, ${CAPA}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND lifecycle_state__v IN ${OPEN_STATES} AND ${CAPA} != null AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+    deviation_sop_violations:
+      `SELECT id, name__v, type__v, lifecycle_state__v, ${SEV}, ${VC('field_dev_type')}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND ${VC('field_dev_type')} = 'Procedural__v' AND lifecycle_state__v IN ${OPEN_STATES} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
   };
 }
 
@@ -2503,6 +2824,8 @@ function initConnectionBanner() {
   const dot    = document.getElementById('connectionBannerDot');
   const text   = document.getElementById('connectionBannerText');
   if (!banner) return;
+  const disconnectBtn = document.getElementById('connectionBannerDisconnect');
+  const reconnectLink = document.getElementById('connectionBannerLink');
   if (LIVE) {
     const host = LIVE.baseUrl.replace('https://','');
     banner.style.display      = 'flex';
@@ -2511,6 +2834,11 @@ function initConnectionBanner() {
     banner.style.color        = '#166534';
     dot.style.background      = '#22C55E';
     text.textContent          = `Live — connected to ${host} (${LIVE.apiVer})`;
+    // Show Disconnect, hide Reconnect link
+    if (disconnectBtn) disconnectBtn.style.display = 'block';
+    if (reconnectLink) reconnectLink.style.display  = 'none';
+    // P3-4: Show multi-vault switcher in the banner
+    setTimeout(renderVaultSwitcher, 0);
   } else {
     banner.style.display      = 'flex';
     banner.style.background   = '#FEFCE8';
@@ -2518,8 +2846,158 @@ function initConnectionBanner() {
     banner.style.color        = '#854D0E';
     dot.style.background      = '#EAB308';
     text.textContent          = 'Demo mode — 95 simulated pharma docs (Vexatrol · Lumivance · Cardiplex) · Connect a real Vault to enable live VQL and Open-in-Vault links.';
-    document.getElementById('connectionBannerLink').textContent = 'Connect Vault →';
+    if (reconnectLink) reconnectLink.textContent = 'Connect Vault →';
+    if (disconnectBtn) disconnectBtn.style.display = 'none';
   }
+}
+
+/* ── Disconnect ───────────────────────────────────────────────
+   Clears all vault session keys from sessionStorage and returns
+   the user to connect.html. Does NOT touch localStorage so saved
+   connections (quick-reconnect) remain available.
+─────────────────────────────────────────────────────────────── */
+function disconnectVault() {
+  const VAULT_KEYS = [
+    'vault_session_token',
+    'vault_base_url',
+    'vault_api_version',
+    'vault_proxy_url',
+    'vault_user_role',
+    'vault_username',
+    'vault_schema',
+    'vault_object_source',
+  ];
+  VAULT_KEYS.forEach(k => sessionStorage.removeItem(k));
+  window.location.href = 'connect.html';
+}
+
+/* ── P3-4: Multi-vault instance switcher (skeleton) ──────────
+   Persists a list of recently-connected Vault instances (up to 5)
+   in localStorage under "vault_instances". Shows a tenant picker
+   button inside the connection banner when in live mode.
+
+   Full tenant switching requires re-running OAuth from connect.html
+   — this skeleton shows the UI surface and data model only.
+─────────────────────────────────────────────────────────────── */
+const VAULT_INSTANCES_KEY = 'vault_instances';
+
+function loadVaultInstances() {
+  try { return JSON.parse(localStorage.getItem(VAULT_INSTANCES_KEY) || '[]'); } catch { return []; }
+}
+
+function saveVaultInstances(arr) {
+  localStorage.setItem(VAULT_INSTANCES_KEY, JSON.stringify(arr.slice(0, 5)));
+}
+
+/** Records the current live connection as a known instance. */
+function registerCurrentVaultInstance() {
+  if (!LIVE) return;
+  const host = LIVE.baseUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const schema = (() => {
+    try { return JSON.parse(localStorage.getItem('vault_schema') || 'null'); } catch { return null; }
+  })();
+  const instances = loadVaultInstances().filter(i => i.host !== host);
+  instances.unshift({
+    host,
+    baseUrl:    LIVE.baseUrl,
+    apiVer:     LIVE.apiVer,
+    appLabel:   schema?.app_label  || null,
+    appEmoji:   schema?.app_emoji  || '🏢',
+    connectedAt: new Date().toISOString(),
+    isCurrent:  true,
+  });
+  // Mark all others as not current
+  instances.forEach((inst, i) => { inst.isCurrent = i === 0; });
+  saveVaultInstances(instances);
+}
+
+/** Renders the vault tenant picker button + dropdown. */
+function renderVaultSwitcher() {
+  if (!LIVE) return;
+  registerCurrentVaultInstance();
+  const instances  = loadVaultInstances();
+  const host       = LIVE.baseUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const container  = document.getElementById('vaultSwitcherContainer');
+  const label      = document.getElementById('vaultSwitcherLabel');
+  if (!container || !label) return;
+
+  // Shorten label: show first subdomain segment only (e.g. "acme" from "acme.veevavault.com")
+  const shortHost = host.split('.')[0];
+  label.textContent = `🏢 ${shortHost}`;
+  container.style.display = 'block';
+}
+
+function renderVaultMenu() {
+  const menu      = document.getElementById('vaultSwitcherMenu');
+  if (!menu) return;
+  const instances = loadVaultInstances();
+  const current   = LIVE?.baseUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+  menu.innerHTML = `
+    <div style="padding:10px 14px 6px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--v-ink-40);border-bottom:1px solid var(--v-border);">
+      Vault Instances
+    </div>
+    ${instances.map(inst => `
+      <div role="option" aria-selected="${inst.host === current}"
+           style="padding:9px 14px;display:flex;align-items:center;gap:10px;cursor:${inst.host === current ? 'default' : 'pointer'};background:${inst.host === current ? 'var(--v-blue-10,#EFF6FF)' : 'transparent'};"
+           ${inst.host !== current ? `onclick="switchToVault('${inst.baseUrl}')"` : ''}>
+        <span style="font-size:16px;flex-shrink:0;">${inst.appEmoji || '🏢'}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:600;color:var(--v-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${inst.host}</div>
+          <div style="font-size:10px;color:var(--v-ink-60);">${inst.appLabel || 'Vault'} · ${inst.apiVer}</div>
+        </div>
+        ${inst.host === current ? `<span style="font-size:10px;font-weight:700;color:var(--v-blue);">ACTIVE</span>` : ''}
+      </div>`).join('')}
+    <div style="padding:8px 14px;border-top:1px solid var(--v-border);">
+      <a href="connect.html"
+         style="font-size:12px;color:var(--v-blue);text-decoration:none;font-weight:500;display:flex;align-items:center;gap:4px;">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M8 2v8M5 7l3 3 3-3M2 12v1a1 1 0 001 1h10a1 1 0 001-1v-1"/>
+        </svg>
+        Add / switch vault connection
+      </a>
+    </div>`;
+}
+
+function toggleVaultMenu() {
+  const menu = document.getElementById('vaultSwitcherMenu');
+  const btn  = document.getElementById('vaultSwitcherBtn');
+  if (!menu) return;
+  const open = menu.style.display === 'none' || !menu.style.display;
+  if (open) {
+    renderVaultMenu();
+    menu.style.display = 'block';
+    btn?.setAttribute('aria-expanded', 'true');
+    // Close on outside click
+    setTimeout(() => {
+      document.addEventListener('click', function handler(e) {
+        if (!menu.contains(e.target) && e.target !== btn) {
+          menu.style.display = 'none';
+          btn?.setAttribute('aria-expanded', 'false');
+          document.removeEventListener('click', handler);
+        }
+      });
+    }, 10);
+  } else {
+    menu.style.display = 'none';
+    btn?.setAttribute('aria-expanded', 'false');
+  }
+}
+
+/**
+ * Skeleton: switching to a different Vault requires clearing the current
+ * session and re-connecting. Redirect to connect.html with the target
+ * base URL pre-filled so the user just needs to authenticate.
+ */
+function switchToVault(targetBaseUrl) {
+  const menu = document.getElementById('vaultSwitcherMenu');
+  if (menu) menu.style.display = 'none';
+  // Preserve the target for connect.html to pick up
+  sessionStorage.setItem('vault_switch_target', targetBaseUrl);
+  // Clearing the current session tokens will force a fresh login
+  sessionStorage.removeItem('vault_session_token');
+  sessionStorage.removeItem('vault_base_url');
+  window.location.href = `connect.html?prefill_url=${encodeURIComponent(targetBaseUrl)}`;
 }
 
 /* ── G-02: Object source detection ────────────────────────────
@@ -2600,6 +3078,21 @@ function parseToTemplate(raw) {
   if ((q.includes('deviati')||q.includes('incident')) && (q.includes('no capa')||q.includes('without capa')||q.includes('missing capa')||q.includes('unlinked'))) return { tid: 'deviation_without_capa', rule: 'RULE-042' };
   // v26.1: archived_documents support
   if (q.includes('archiv'))                                                                                                                             return { tid: 'doc_archived',            rule: 'RULE-043' };
+  // ── eTMF rules ─────────────────────────────────────────────────────────
+  if ((q.includes('tmf')||q.includes('trial master')) && q.includes('study'))                                                                          return { tid: 'etmf_by_study',           rule: 'RULE-050' };
+  if (q.includes('etmf')||q.includes('trial master file')||(q.includes('tmf')&&!q.includes('missing')&&!q.includes('incomplet')&&!q.includes('gap'))) return { tid: 'etmf_all_docs',           rule: 'RULE-051' };
+  // ── RIM / Regulatory rules ─────────────────────────────────────────────
+  if ((q.includes('submiss')||q.includes('submit'))&&(q.includes('regulatory')||q.includes('nda')||q.includes('bla')||q.includes('ma')))               return { tid: 'rim_submissions',         rule: 'RULE-052' };
+  if ((q.includes('label')||q.includes('spc')||q.includes('pi '))&&(q.includes('approved')||q.includes('current')))                                   return { tid: 'rim_approved_labels',     rule: 'RULE-053' };
+  // ── Safety rules ───────────────────────────────────────────────────────
+  if (q.includes('adverse event')||q.includes('ae ')||(q.includes('adverse')&&q.includes('event')))                                                   return { tid: 'safety_adverse_events',   rule: 'RULE-054' };
+  if ((q.includes('safety')&&(q.includes('open')||q.includes('case')||q.includes('report')))||(q.includes('icsr')||q.includes('susar')))              return { tid: 'safety_open_cases',       rule: 'RULE-055' };
+  // ── PromoMats rules ────────────────────────────────────────────────────
+  if ((q.includes('promo')||q.includes('promotional')||q.includes('marketing'))&&(q.includes('expir')||q.includes('renew')))                          return { tid: 'promomats_expiring',      rule: 'RULE-056' };
+  if (q.includes('promo')||q.includes('promotional')||(q.includes('marketing')&&(q.includes('material')||q.includes('content')||q.includes('approv')))) return { tid: 'promomats_approved',    rule: 'RULE-057' };
+  // ── Additional Deviation rules ─────────────────────────────────────────
+  if ((q.includes('deviati')||q.includes('deviation'))&&(q.includes('sop')||q.includes('procedure')||q.includes('procedural')))                       return { tid: 'deviation_sop_violations', rule: 'RULE-058' };
+  if ((q.includes('deviati')||q.includes('deviation'))&&(q.includes('linked')||q.includes('with capa')||q.includes('has capa')||q.includes('capa link'))) return { tid: 'deviation_linked_capa', rule: 'RULE-059' };
   // ── Existing rules ─────────────────────────────────────────────────────
   if ((q.includes('overdue')||q.includes('past due')) && (q.includes('capa')||q.includes('capas')))   return { tid: 'capa_overdue',             rule: 'RULE-004' };
   if (q.includes('expir') && (q.includes('sop')||q.includes('sops')))                                 return { tid: 'sop_expiring_soon',        rule: 'RULE-005' };
@@ -2646,15 +3139,18 @@ function applyACL(docs, role) {
 }
 
 function applySidebarFilters(docs) {
-  const types   = [...document.querySelectorAll('input[name="type"]:checked')].map(i=>i.value);
-  const states  = [...document.querySelectorAll('input[name="state"]:checked')].map(i=>i.value);
-  const sevs    = [...document.querySelectorAll('input[name="severity"]:checked')].map(i=>i.value);
-  const gxpOnly = document.getElementById('gxpFilter').checked;
+  const types    = [...document.querySelectorAll('input[name="type"]:checked')].map(i=>i.value);
+  const states   = [...document.querySelectorAll('input[name="state"]:checked')].map(i=>i.value);
+  const sevs     = [...document.querySelectorAll('input[name="severity"]:checked')].map(i=>i.value);
+  const subtypes = [...document.querySelectorAll('input[name="subtype"]:checked')].map(i=>i.value);
+  const gxpOnly  = document.getElementById('gxpFilter').checked;
   return docs.filter(d => {
     const tk = (TYPE_KEY[d.type__v]||'').toLowerCase();
-    if (types.length  && !types.includes(tk))      return false;
-    if (states.length && !states.includes(d.lifecycle_state__v)) return false;
-    if (sevs.length   && !sevs.includes(d.severity)) return false;
+    if (types.length    && !types.includes(tk))              return false;
+    if (states.length   && !states.includes(d.lifecycle_state__v)) return false;
+    if (sevs.length     && !sevs.includes(d.severity))       return false;
+    // Subtype filter: in demo mode use deviation_type__v as the subtype proxy
+    if (subtypes.length && !subtypes.includes(d.deviation_type__v||d.subtype__v||'')) return false;
     if (gxpOnly && !d.gxp) return false;
     return true;
   });
@@ -2692,6 +3188,21 @@ function applyCompositionFilters(vql) {
   if (COMPOSE.dateFrom) extras.push(`last_modified_date__v >= '${COMPOSE.dateFrom}'`);
   if (COMPOSE.dateTo)   extras.push(`last_modified_date__v <= '${COMPOSE.dateTo}'`);
   if (COMPOSE.owner)    extras.push(`owner__v CONTAINS('${COMPOSE.owner.replace(/'/g,"''")}')` );
+
+  // Subtype filter — uses deviation_type__v for Deviation docs, subtype__v for others.
+  // Determined at query-time from the sidebar checkboxes.
+  const subtypes = [...document.querySelectorAll('input[name="subtype"]:checked')].map(i=>i.value);
+  if (subtypes.length) {
+    // Build IN list — works for any field that holds the subtype value
+    const vals = subtypes.map(s => `'${s}'`).join(',');
+    // Deviation-specific type field; for other types fall back to subtype__v
+    if (v.toLowerCase().includes("type__v = 'deviation__c'")) {
+      extras.push(`deviation_type__v IN (${vals})`);
+    } else {
+      extras.push(`subtype__v IN (${vals})`);
+    }
+  }
+
   if (!extras.length) return v;
   const inject = ' AND ' + extras.join(' AND ');
   // Insert before ORDER BY, LIMIT, or end
@@ -2748,6 +3259,215 @@ function clearCompose() {
   if (S.currentTid) runQuery(S.currentTid);
 }
 
+/* ── P2-4: Zero-results UX helpers ────────────────────────── */
+
+/** Returns human-readable labels for every currently active sidebar filter. */
+function getActiveFilterLabels() {
+  const labels = [];
+  const types    = [...document.querySelectorAll('input[name="type"]:checked')]
+    .map(i => (i.closest('label')?.textContent || i.value).trim());
+  const states   = [...document.querySelectorAll('input[name="state"]:checked')]
+    .map(i => (i.closest('label')?.textContent || i.value).trim());
+  const sevs     = [...document.querySelectorAll('input[name="severity"]:checked')]
+    .map(i => (i.closest('label')?.textContent || i.value).trim());
+  const subtypes = [...document.querySelectorAll('input[name="subtype"]:checked')]
+    .map(i => (i.closest('label')?.textContent || i.value).trim());
+  const gxpOnly  = document.getElementById('gxpFilter')?.checked;
+  if (types.length)    labels.push(`Type: ${types.join(', ')}`);
+  if (states.length)   labels.push(`Status: ${states.join(', ')}`);
+  if (sevs.length)     labels.push(`Severity: ${sevs.join(', ')}`);
+  if (subtypes.length) labels.push(`Subtype: ${subtypes.join(', ')}`);
+  if (gxpOnly)         labels.push('GxP Only');
+  if (COMPOSE.dateFrom) labels.push(`From: ${COMPOSE.dateFrom}`);
+  if (COMPOSE.dateTo)   labels.push(`To: ${COMPOSE.dateTo}`);
+  if (COMPOSE.owner)    labels.push(`Owner: "${COMPOSE.owner}"`);
+  return labels;
+}
+
+/** Resets ALL sidebar filters (checkboxes + composition inputs) then re-runs the query. */
+function clearAllFilters() {
+  document.querySelectorAll(
+    'input[name="type"], input[name="state"], input[name="severity"], input[name="subtype"]'
+  ).forEach(i => { i.checked = false; });
+  const gxp = document.getElementById('gxpFilter');
+  if (gxp) gxp.checked = false;
+  // clearCompose resets COMPOSE and triggers runQuery internally
+  clearCompose();
+}
+
+/**
+ * Context-aware "try instead" suggestions shown on zero-results.
+ * Keys map to current template IDs; _default is the universal fallback.
+ */
+const ZERO_RESULT_SUGGESTIONS = {
+  sop_approved:          [{ label:'All SOPs',          tid:'sop_all_latest'       }, { label:'Awaiting Approval', tid:'awaiting_approval'    }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  sop_all_latest:        [{ label:'Approved SOPs',     tid:'sop_approved'         }, { label:'Stale Drafts',      tid:'stale_drafts'         }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  sop_expiring_soon:     [{ label:'Approved SOPs',     tid:'sop_approved'         }, { label:'Periodic Review',   tid:'periodic_review_overdue'},{ label:'All Documents',   tid:'doc_all_accessible' }],
+  deviation_all_open:    [{ label:'All Deviations',    tid:'deviation_by_type'    }, { label:'Open CAPAs',        tid:'capa_open'            }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  deviation_by_type:     [{ label:'Open Deviations',   tid:'deviation_all_open'  }, { label:'Devs w/o CAPA',     tid:'deviation_without_capa'},{ label:'All Documents',   tid:'doc_all_accessible' }],
+  deviation_high_severity:[{ label:'Open Deviations',  tid:'deviation_all_open'  }, { label:'Open CAPAs',        tid:'capa_open'            }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  capa_open:             [{ label:'Closed CAPAs',      tid:'capa_closed'          }, { label:'High-Sev CAPAs',    tid:'capa_high_severity'   }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  capa_closed:           [{ label:'Open CAPAs',        tid:'capa_open'            }, { label:'High-Sev CAPAs',    tid:'capa_high_severity'   }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  capa_high_severity:    [{ label:'Open CAPAs',        tid:'capa_open'            }, { label:'Open Deviations',   tid:'deviation_all_open'   }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  capa_overdue:          [{ label:'Open CAPAs',        tid:'capa_open'            }, { label:'High-Sev CAPAs',    tid:'capa_high_severity'   }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  audit_ready_docs:      [{ label:'Docs in Review',    tid:'docs_in_review'       }, { label:'Approved SOPs',     tid:'sop_approved'         }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  awaiting_approval:     [{ label:'Docs in Review',    tid:'docs_in_review'       }, { label:'Approved SOPs',     tid:'sop_approved'         }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  periodic_review_overdue:[{ label:'Review Due Soon',  tid:'periodic_review_due_soon'},{ label:'Approved SOPs', tid:'sop_approved'         }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  etmf_by_study:         [{ label:'All eTMF Docs',     tid:'etmf_all_docs'        }, { label:'Awaiting Approval', tid:'awaiting_approval'    }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  rim_submissions:       [{ label:'Approved Labels',   tid:'rim_approved_labels'  }, { label:'Awaiting Approval', tid:'awaiting_approval'    }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  safety_open_cases:     [{ label:'Adverse Events',    tid:'safety_adverse_events'}, { label:'Open Deviations',   tid:'deviation_all_open'   }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  promomats_expiring:    [{ label:'Approved Promo',    tid:'promomats_approved'   }, { label:'SOPs Expiring',     tid:'sop_expiring_soon'    }, { label:'All Documents',    tid:'doc_all_accessible' }],
+  name_search:           [{ label:'All Documents',     tid:'doc_all_accessible'   }, { label:'Approved SOPs',     tid:'sop_approved'         }, { label:'Open Deviations',  tid:'deviation_all_open' }],
+  name_search_fulltext:  [{ label:'All Documents',     tid:'doc_all_accessible'   }, { label:'Approved SOPs',     tid:'sop_approved'         }, { label:'Open Deviations',  tid:'deviation_all_open' }],
+  _default:              [{ label:'All Documents',     tid:'doc_all_accessible'   }, { label:'Approved SOPs',     tid:'sop_approved'         }, { label:'Open Deviations',  tid:'deviation_all_open' }],
+};
+
+/** Builds the full HTML for the zero-results empty state, including active filter chips and suggestions. */
+function buildEmptyStateHtml(tid) {
+  const filterLabels = getActiveFilterLabels();
+  const hasFilters   = filterLabels.length > 0;
+  const suggestions  = ZERO_RESULT_SUGGESTIONS[tid] || ZERO_RESULT_SUGGESTIONS._default;
+
+  const filterSection = hasFilters ? `
+    <div class="empty-active-filters">
+      <span class="empty-filter-label">Active filters:</span>
+      ${filterLabels.map(f => `<span class="empty-filter-chip">${f}</span>`).join('')}
+      <button class="empty-clear-btn" onclick="clearAllFilters()">✕ Clear all</button>
+    </div>` : '';
+
+  const bodyMsg = hasFilters
+    ? 'No documents match the active filter combination. Clear some filters or try a broader query below.'
+    : 'No documents match this query. Your role may restrict certain document types.';
+
+  const suggestSection = `
+    <div class="empty-suggestions">
+      <span class="empty-suggest-label">Try instead:</span>
+      ${suggestions.map(s =>
+          `<button class="chip chip-suggest" onclick="runQuery('${s.tid}')">${s.label}</button>`
+        ).join('')}
+    </div>`;
+
+  return `
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+      </div>
+      <p class="empty-title">No results found</p>
+      <p class="empty-body">${bodyMsg}</p>
+      ${filterSection}
+      ${suggestSection}
+    </div>`;
+}
+
+/* ── P2-5: Schema discovery retry banner ──────────────────── */
+/**
+ * In live mode, if vault_schema was never set (schema discovery skipped or
+ * failed at connect time), show a small top banner with a link back to
+ * connect.html so the user can re-run discovery without losing their session.
+ */
+function checkSchemaDiscovery() {
+  if (!LIVE) return;
+  try { if (localStorage.getItem('vault_schema')) return; } catch {}
+  if (document.getElementById('schemaRetryBanner')) return;
+  const b = document.createElement('div');
+  b.id = 'schemaRetryBanner';
+  b.style.cssText = [
+    'position:fixed;top:0;left:0;right:0;z-index:9998;',
+    'padding:8px 20px;background:#1E3A5F;color:#dbeafe;',
+    'font-size:12px;display:flex;align-items:center;',
+    'justify-content:space-between;gap:12px;',
+  ].join('');
+  b.innerHTML = `
+    <span>🔍 Vault schema not discovered — document type and state filters may be incomplete.</span>
+    <span style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+      <a href="connect.html" style="color:#93C5FD;font-weight:600;text-decoration:underline;white-space:nowrap;">
+        Re-run discovery →
+      </a>
+      <button
+        onclick="document.getElementById('schemaRetryBanner').remove()"
+        style="background:none;border:none;color:#93C5FD;cursor:pointer;font-size:18px;line-height:1;padding:0 2px;"
+        title="Dismiss">✕</button>
+    </span>`;
+  document.body.prepend(b);
+}
+
+/* ── P2-5: Discovered schema → MDL comment export ─────────── */
+
+/** Returns the MDL-formatted config block derived from vault_schema. */
+function buildMdlConfigBlock(schema) {
+  if (!schema) return '// No schema discovered yet.';
+  const tenant  = schema.vault_domain  || 'unknown-tenant';
+  const appLbl  = schema.app_label     || 'Unknown App';
+  const date    = new Date().toISOString().slice(0, 10);
+
+  // Build the config lines from schema.config (the auto-generated overrides)
+  const cfg = schema.config || {};
+  const cfgLines = Object.entries(cfg)
+    .map(([k, v]) => ` *   ${k.padEnd(22)}: '${v}',`)
+    .join('\n');
+
+  // Extra doc types as VQL WHERE clause helper comments
+  const docTypes = (schema.extra_doc_types || [])
+    .map(t => ` *   ${t.name.padEnd(28)} // ${t.label}`)
+    .join('\n');
+
+  const states = (schema.lifecycle_states || [])
+    .map(s => ` *   '${s}'`)
+    .join('\n');
+
+  const objs = (schema.queryable_objects || [])
+    .map(o => ` *   ${o.name.padEnd(28)} // ${o.label}`)
+    .join('\n');
+
+  return `/*
+ * ═══════════════════════════════════════════════════════════
+ * DISCOVERED VAULT SCHEMA  ·  ${tenant}
+ * Application type : ${appLbl}
+ * Discovered on    : ${date}
+ * ═══════════════════════════════════════════════════════════
+ *
+ * MDL VAULT_CONFIG overrides (paste into VAULT_CONFIG_DEFAULTS
+ * inside query-templates.js to lock in this tenant's schema):
+ *
+${cfgLines || ' *   // (no config differences from defaults)'}
+ *
+ * Document types found (use as type__v WHERE clause values):
+ *
+${docTypes || ' *   (none additional beyond defaults)'}
+ *
+ * Lifecycle states found (use in lifecycle_state__v IN (...)):
+ *
+${states || ' *   (none additional beyond defaults)'}
+ *
+ * Queryable Vault Objects (use in FROM clause):
+ *
+${objs || ' *   (none discovered)'}
+ * ═══════════════════════════════════════════════════════════
+ */`;
+}
+
+/** Copies the MDL block for the discovered schema to clipboard. */
+function copyMdlBlock() {
+  let schema;
+  try { schema = JSON.parse(localStorage.getItem('vault_schema') || 'null'); } catch {}
+  const block = buildMdlConfigBlock(schema);
+  navigator.clipboard?.writeText(block).then(() => {
+    const btn = document.getElementById('copyMdlBtn');
+    if (btn) { btn.textContent = '✓ Copied!'; setTimeout(() => { btn.textContent = 'Copy MDL block'; }, 2000); }
+  }).catch(() => {
+    // Fallback: open in a small textarea
+    const ta = document.createElement('textarea');
+    ta.value = block;
+    ta.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;width:80vw;height:70vh;font-family:monospace;font-size:12px;padding:12px;border:2px solid #2563EB;border-radius:8px;';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    setTimeout(() => ta.remove(), 3000);
+  });
+}
+
 /* ── G-01: VAULT_CONFIG modal ──────────────────────────────── */
 const CONFIG_FIELD_LABELS = {
   type_sop:        'SOP type name',
@@ -2789,9 +3509,8 @@ const CONFIG_SECTIONS = {
   'Query Settings':  ['default_page_size'],
 };
 
-function openConfigModal() {
-  const body = document.getElementById('configModalBody');
-  body.innerHTML = Object.entries(CONFIG_SECTIONS).map(([section, keys]) => `
+function _renderConfigFields() {
+  return Object.entries(CONFIG_SECTIONS).map(([section, keys]) => `
     <div style="margin-bottom:18px;">
       <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--v-ink-60);margin-bottom:8px;">${section}</div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
@@ -2804,11 +3523,123 @@ function openConfigModal() {
           </div>`).join('')}
       </div>
     </div>`).join('');
+}
+
+function _renderDiscoveredSchemaTab() {
+  let schema;
+  try { schema = JSON.parse(localStorage.getItem('vault_schema') || 'null'); } catch {}
+  if (!schema) {
+    return `<div style="text-align:center;padding:32px 20px;color:var(--v-ink-60);">
+      <p style="font-size:15px;font-weight:600;margin-bottom:8px;">No schema discovered yet</p>
+      <p style="font-size:13px;line-height:1.6;max-width:320px;margin:0 auto 16px;">
+        Run schema discovery during Vault connection to auto-populate type and field names for your tenant.
+      </p>
+      <a href="connect.html" style="display:inline-block;padding:8px 18px;background:var(--v-blue);color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:600;">
+        Go to schema discovery →
+      </a>
+    </div>`;
+  }
+
+  const docTypes = schema.extra_doc_types || [];
+  const states   = schema.lifecycle_states || [];
+  const objects  = schema.queryable_objects || [];
+  const cfg      = schema.config || {};
+  const cfgKeys  = Object.keys(cfg);
+  const tenant   = schema.vault_domain || '—';
+
+  return `
+    <div style="margin-bottom:16px;padding:10px 14px;background:var(--v-blue-10,#EFF6FF);border-radius:8px;border:1px solid var(--v-blue-20,#BFDBFE);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div>
+        <span style="font-size:12px;font-weight:700;color:var(--v-blue);">${schema.app_emoji || '🏢'} ${schema.app_label || 'Vault'}</span>
+        <span style="font-size:11px;color:var(--v-ink-60);margin-left:8px;">${tenant}</span>
+      </div>
+      <button id="copyMdlBtn" onclick="copyMdlBlock()"
+        style="padding:6px 14px;border:1px solid var(--v-blue);border-radius:6px;background:#fff;color:var(--v-blue);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+        Copy MDL block
+      </button>
+    </div>
+
+    ${cfgKeys.length ? `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--v-ink-60);margin-bottom:8px;">
+        Config Overrides (${cfgKeys.length})
+        <span style="font-weight:400;text-transform:none;color:var(--v-ink-40);margin-left:4px;">— differs from defaults</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
+        ${cfgKeys.map(k => `
+          <div style="display:flex;align-items:flex-start;gap:6px;background:var(--v-surface);border:1px solid var(--v-border);border-radius:5px;padding:6px 9px;">
+            <div>
+              <div style="font-size:10px;color:var(--v-ink-40);letter-spacing:.03em;">${k}</div>
+              <div style="font-size:12px;font-family:monospace;color:var(--v-ink);">${cfg[k]}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>` : `<p style="font-size:12px;color:var(--v-ink-60);margin-bottom:16px;">No config differences from defaults — this tenant uses standard Vault API names.</p>`}
+
+    ${docTypes.length ? `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--v-ink-60);margin-bottom:8px;">Document Types (${docTypes.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${docTypes.map(t => `<span style="font-size:11px;background:var(--v-surface);border:1px solid var(--v-border);border-radius:5px;padding:3px 8px;font-family:monospace;" title="${t.name}">${t.emoji} ${t.label}</span>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${states.length ? `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--v-ink-60);margin-bottom:8px;">Lifecycle States (${states.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${states.map(s => `<span style="font-size:11px;background:var(--v-surface);border:1px solid var(--v-border);border-radius:5px;padding:3px 8px;font-family:monospace;">${s}</span>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${objects.length ? `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--v-ink-60);margin-bottom:8px;">Vault Objects (${objects.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${objects.map(o => `<span style="font-size:11px;background:var(--v-surface);border:1px solid var(--v-border);border-radius:5px;padding:3px 8px;" title="${o.name}">${o.emoji} ${o.label}</span>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <p style="font-size:11px;color:var(--v-ink-40);line-height:1.5;margin-top:4px;">
+      Click <strong>Copy MDL block</strong> to copy a formatted comment block for pasting into
+      <code>query-templates.js</code> — the block documents all discovered field names and types for this tenant.
+    </p>`;
+}
+
+function openConfigModal(tab) {
+  const activeTab = tab || 'config';
+  let schema;
+  try { schema = JSON.parse(localStorage.getItem('vault_schema') || 'null'); } catch {}
+
+  const tabBar = schema ? `
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--v-border);margin:-0px -22px 18px;padding:0 22px;">
+      <button id="cfgTab_config" onclick="openConfigModal('config')"
+        style="padding:10px 18px;border:none;border-bottom:2px solid ${activeTab==='config'?'var(--v-blue)':'transparent'};background:none;font-size:13px;font-weight:${activeTab==='config'?700:400};color:${activeTab==='config'?'var(--v-blue)':'var(--v-ink-60)'};cursor:pointer;">
+        Field Config
+      </button>
+      <button id="cfgTab_schema" onclick="openConfigModal('schema')"
+        style="padding:10px 18px;border:none;border-bottom:2px solid ${activeTab==='schema'?'var(--v-blue)':'transparent'};background:none;font-size:13px;font-weight:${activeTab==='schema'?700:400};color:${activeTab==='schema'?'var(--v-blue)':'var(--v-ink-60)'};cursor:pointer;">
+        Discovered Schema
+        <span style="margin-left:5px;font-size:10px;padding:1px 6px;border-radius:9px;background:var(--v-blue-10,#EFF6FF);color:var(--v-blue);">✓</span>
+      </button>
+    </div>` : '';
+
+  const body = document.getElementById('configModalBody');
+  body.innerHTML = tabBar + (activeTab === 'schema' ? _renderDiscoveredSchemaTab() : _renderConfigFields());
   document.getElementById('configModalBackdrop').style.display = '';
+  // WCAG 2.4.3: move focus inside the dialog on open
+  requestAnimationFrame(() => {
+    const modal = document.querySelector('[role="dialog"]');
+    const first = modal?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (first) first.focus();
+  });
 }
 
 function closeConfigModal() {
   document.getElementById('configModalBackdrop').style.display = 'none';
+  // WCAG 2.4.3: return focus to the gear button that opened the modal
+  const gearBtn = document.getElementById('configGearBtn');
+  if (gearBtn) gearBtn.focus();
 }
 
 function saveConfig() {
@@ -2840,6 +3671,27 @@ function resetConfig() {
 // Close on backdrop click
 document.getElementById('configModalBackdrop')
   ?.addEventListener('click', e => { if (e.target === e.currentTarget) closeConfigModal(); });
+
+// WCAG 2.1.2: Escape key closes modal; Tab key is trapped within it
+document.getElementById('configModalBackdrop')
+  ?.addEventListener('keydown', e => {
+    const backdrop = document.getElementById('configModalBackdrop');
+    if (backdrop.style.display === 'none') return;
+    if (e.key === 'Escape') { closeConfigModal(); return; }
+    if (e.key !== 'Tab') return;
+    const modal    = backdrop.querySelector('[role="dialog"]');
+    const focusable = [...modal.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )].filter(el => !el.closest('[style*="display:none"]') && !el.closest('[style*="display: none"]'));
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last  = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault(); first.focus();
+    }
+  });
 
 /* ── G-03: Pagination bar update ─────────────────────────── */
 function updatePaginationBar() {
@@ -2921,31 +3773,50 @@ const KPI_CARDS = [
   },
 ];
 
+// ── KPI dashboard page-level cache ──────────────────────────────
+// Prevents repeated COUNT(*) queries when the user opens/closes the
+// dashboard within the same session. TTL matches the VQL cache (60s).
+let _kpiCacheTs   = 0;
+let _kpiCacheHtml = '';
+const KPI_CACHE_TTL = 60_000;
+
 async function loadKpiDashboard() {
   const grid = document.getElementById('kpiGrid');
   if (!grid) return;
 
-  // Compute counts
+  // Serve from page-level cache if fresh
+  const now = Date.now();
+  if (_kpiCacheHtml && (now - _kpiCacheTs) < KPI_CACHE_TTL) {
+    grid.innerHTML = _kpiCacheHtml;
+    return;
+  }
+
+  // ── Batch all COUNT queries in parallel via Promise.all ─────────
+  // Routes through executeVQL() which applies the 60s VQL cache, so
+  // repeat calls within a minute are served from memory — no Vault round-trips.
   const counts = await Promise.all(KPI_CARDS.map(async card => {
     if (LIVE && card.liveVql) {
       try {
-        const res = await fetch(
-          `${LIVE.baseUrl}/api/${LIVE.apiVersion}/query?q=${encodeURIComponent(card.liveVql)}`,
-          { headers: { Authorization: LIVE.token, Accept: 'application/json' } }
-        );
-        const json = await res.json();
-        return (json.data && json.data[0]) ? (json.data[0]['COUNT(*)'] || 0) : 0;
-      } catch { /* fall through to demo */ }
+        const res = await executeVQL(card.liveVql);
+        return (res.data && res.data[0]) ? (res.data[0]['COUNT(*)'] ?? res.data[0].count ?? 0) : 0;
+      } catch { /* fall through to demo count */ }
     }
     return card.countFn(MOCK_DOCS);
   }));
 
-  grid.innerHTML = KPI_CARDS.map((card, i) => `
+  const fromCache = LIVE && counts.every((_, i) => {
+    const key = KPI_CARDS[i].liveVql ? KPI_CARDS[i].liveVql.trim().replace(/\s+/g,' ') : null;
+    return key && VQL_CACHE.has(key);
+  });
+
+  _kpiCacheHtml = KPI_CARDS.map((card, i) => `
     <div class="kpi-card" onclick="hideDashboard();runQuery('${card.tid}')" title="Click to run: ${card.label}">
       <div class="kpi-card-label">${card.label}</div>
       <div class="kpi-card-value" style="color:${card.color}">${counts[i]}</div>
-      <div class="kpi-card-sub">${LIVE ? 'live count' : 'demo'} · click to filter</div>
+      <div class="kpi-card-sub">${LIVE ? (fromCache ? '◎ cached' : '● live') : 'demo'} · click to filter</div>
     </div>`).join('');
+  _kpiCacheTs = Date.now();
+  grid.innerHTML = _kpiCacheHtml;
 }
 
 /* ── CHIPS ─────────────────────────────────────────────────── */
@@ -3022,21 +3893,43 @@ const E = {
 
 /* ── RENDER CHIPS ──────────────────────────────────────────── */
 function renderChips(role) {
-  const list = CHIPS[role] || CHIPS.QA_ADMIN;
+  // Prefer VaultRecommender from browser-bundle.js when loaded (richer role-aware logic).
+  // Falls back to the static CHIPS catalog if the bundle hasn't loaded yet.
+  let list;
+  if (window.VaultRecommender) {
+    const recs = window.VaultRecommender.getStarterRecommendations(role);
+    list = recs.map(r => ({
+      label: r.label,
+      tid:   r.templateId,
+      cat:   r.category  || 'general',
+      icon:  r.icon      || '📄',
+    }));
+    // Graceful fallback: if recommender returned nothing, use static chips
+    if (!list.length) list = CHIPS[role] || CHIPS.QA_ADMIN;
+  } else {
+    list = CHIPS[role] || CHIPS.QA_ADMIN;
+  }
   E.chipsRow.innerHTML = '';
   list.forEach(c => {
     const btn = document.createElement('button');
     btn.className = `rec-chip cat-${c.cat}`;
-    btn.innerHTML = `<span class="chip-icon">${c.icon}</span>${c.label}`;
+    btn.setAttribute('aria-pressed', 'false');       // WCAG 4.1.2
+    btn.setAttribute('aria-label', c.label);
+    btn.innerHTML = `<span class="chip-icon" aria-hidden="true">${c.icon}</span>${c.label}`;
     btn.onclick = () => {
       if (S.activeChip === c.tid) {
         btn.classList.remove('active');
+        btn.setAttribute('aria-pressed', 'false');
         S.activeChip = null;
         runQuery('doc_all_accessible');
         return;
       }
-      E.chipsRow.querySelectorAll('.rec-chip').forEach(b => b.classList.remove('active'));
+      E.chipsRow.querySelectorAll('.rec-chip').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
       btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
       S.activeChip = c.tid;
       E.input.value = '';
       E.clearBtn.style.display = 'none';
@@ -3069,6 +3962,9 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
   if (LIVE) {
     // ── Live path: execute real VQL against Vault ──────────────
     let vql = customVQL || VQL_RAW[tid] || VQL_RAW.doc_all_accessible;
+    // Track whether a SCOPE DOCUMENTS full-text fallback is available for 0-result retry
+    let fulltextFallbackVql = null;
+
     if (tid === 'name_search') {
       const safe = (S.searchText || '').replace(/'/g, "''");
       // v26.1: prefer FIND clause for simple single/double-word queries (no special chars).
@@ -3078,6 +3974,8 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
         // Use fuzzy FIND with DISTANCE(1) for short terms, exact FIND for longer ones
         const findTemplate = safe.length <= 8 ? VQL_RAW.name_search_fuzzy : VQL_RAW.name_search_find;
         vql = findTemplate.replace('{QUERY}', safe);
+        // Prepare SCOPE DOCUMENTS fallback for zero-result retry (v26.1 full-text index)
+        fulltextFallbackVql = VQL_RAW.name_search_fulltext.replace('{QUERY}', safe);
       } else {
         vql = vql.replace('{QUERY}', safe);
       }
@@ -3096,15 +3994,37 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
       fromCache    = res.fromCache;
       // v26.1 facets: update filter sidebar with live counts (first-page requests only)
       if (!append && res.facets) updateFacetCounts(res.facets);
+
+      // ── v26.1 SCOPE DOCUMENTS zero-result retry ─────────────────
+      // When a metadata FIND returns 0 results and a full-text fallback VQL is ready,
+      // automatically retry with FIND SCOPE DOCUMENTS to search document body content.
+      // This surfaces results that live in document text but not in name/number fields.
+      if (!append && raw.length === 0 && fulltextFallbackVql) {
+        try {
+          const res2 = await executeVQL(fulltextFallbackVql, null);
+          if (res2.data.length > 0) {
+            raw          = res2.data;
+            PAGE.nextUrl = res2.nextPageUrl;
+            PAGE.total   = res2.total;
+            PAGE.loaded  = raw.length;
+            fromCache    = res2.fromCache;
+            // Switch the displayed tid to reflect full-text search was used
+            tid          = 'name_search_fulltext';
+            PAGE.tid     = tid;
+          }
+        } catch (_) { /* ignore fallback error — show zero results from primary */ }
+      }
     } catch (err) {
       liveError = err.message;
       if (err.message.includes('INVALID_SESSION_ID')) {
         showSessionExpiredBanner();
       }
-      raw = MOCK_DOCS.filter(QT[tid] || QT.doc_all_accessible);
+      // Never show demo data when a live session is present but fails —
+      // return empty so the UI shows the real error state, not mock docs.
+      raw = [];
     }
   } else {
-    // ── Demo path: filter mock data ────────────────────────────
+    // ── Demo path: filter mock data (only reached when !LIVE) ──
     await new Promise(r => setTimeout(r, 120 + Math.random() * 100));
     let pool = MOCK_DOCS.filter(QT[tid] || QT.doc_all_accessible);
     pool = applyCompositionFiltersMock(pool);
@@ -3125,22 +4045,35 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
   E.qibTemplate.textContent = tid;
   let liveLabel = '';
   if (LIVE && !liveError) liveLabel = fromCache ? `◎ cached` : '● live';
-  else if (LIVE && liveError) liveLabel = '⚠ demo fallback';
+  else if (LIVE && liveError) liveLabel = '⚠ error';
   E.qibRule.textContent = liveLabel;
   E.qib.classList.add('visible');
 
+  /* ── resultsSub mode badge ───────────────────────────────── */
+  // Only say "(demo)" in true demo mode (!LIVE).
+  // In live mode with an error, say "(error)" — never "(demo)".
+  let modeBadge = '';
+  if (!LIVE)              modeBadge = ' (demo)';
+  else if (liveError)     modeBadge = ' (error)';
+  // else: live+success → no badge
+
   /* Update VQL preview */
-  if (tid === 'name_search') {
+  if (tid === 'name_search' || tid === 'name_search_fulltext') {
     const safeDisplay = (S.searchText || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    const useFIND = LIVE && S.searchText && /^[a-z0-9\s\-]+$/i.test(S.searchText);
-    if (useFIND) {
-      const isFuzzy = S.searchText.length <= 8;
-      const findVql = isFuzzy
-        ? `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">FIND</span> <span class="vql-str">'${safeDisplay}'</span> <span class="vql-fn">DISTANCE</span>(<span class="vql-lit">1</span>)\n<span class="vql-kw">SCOPE</span> document_number__v, name__v\n<span class="vql-kw">WHERE</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">50</span>`
-        : `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">FIND</span> <span class="vql-str">'${safeDisplay}'</span>\n<span class="vql-kw">SCOPE</span> document_number__v, name__v\n<span class="vql-kw">WHERE</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">50</span>`;
-      E.vqlContent.innerHTML = findVql;
+    if (tid === 'name_search_fulltext') {
+      // Full-text retry was used — show SCOPE DOCUMENTS variant
+      E.vqlContent.innerHTML = VQLS.name_search_fulltext.replace(/{QUERY}/g, safeDisplay);
     } else {
-      E.vqlContent.innerHTML = VQLS.name_search.replace(/{QUERY}/g, safeDisplay);
+      const useFIND = LIVE && S.searchText && /^[a-z0-9\s\-]+$/i.test(S.searchText);
+      if (useFIND) {
+        const isFuzzy = S.searchText.length <= 8;
+        const findVql = isFuzzy
+          ? `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">FIND</span> <span class="vql-str">'${safeDisplay}'</span> <span class="vql-fn">DISTANCE</span>(<span class="vql-lit">1</span>)\n<span class="vql-kw">SCOPE</span> document_number__v, name__v\n<span class="vql-kw">WHERE</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">50</span>`
+          : `<span class="vql-kw">SELECT</span> id, name__v, type__v, lifecycle_state__v\n<span class="vql-kw">FROM</span> documents\n<span class="vql-kw">FIND</span> <span class="vql-str">'${safeDisplay}'</span>\n<span class="vql-kw">SCOPE</span> document_number__v, name__v\n<span class="vql-kw">WHERE</span> lifecycle_state__v <span class="vql-op">!=</span> <span class="vql-str">'Obsolete__v'</span>\n  <span class="vql-kw">AND</span> is_latest_version__v <span class="vql-op">=</span> <span class="vql-lit">true</span>\n<span class="vql-kw">LIMIT</span> <span class="vql-lit">50</span>`;
+        E.vqlContent.innerHTML = findVql;
+      } else {
+        E.vqlContent.innerHTML = VQLS.name_search.replace(/{QUERY}/g, safeDisplay);
+      }
     }
   } else {
     E.vqlContent.innerHTML = VQLS[tid] || VQLS.doc_all_accessible;
@@ -3152,14 +4085,14 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
     ? `${PAGE.loaded} of ${PAGE.total} documents`
     : `${final.length} document${final.length !== 1 ? 's' : ''}`;
   E.resultsCount.textContent = countLabel;
-  E.resultsSub.textContent   = `• ${name}${LIVE && !liveError ? '' : ' (demo)'}`;
+  E.resultsSub.textContent   = `• ${name}${modeBadge}`;
   E.execTime.innerHTML       = `<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 15A7 7 0 108 1a7 7 0 000 14zm.75-10.25a.75.75 0 00-1.5 0v3.5c0 .414.336.75.75.75h2.5a.75.75 0 000-1.5H8.75v-2.75z" clip-rule="evenodd"/></svg>${ms}ms`;
 
   /* Show session-expired warning inline */
   if (liveError && !liveError.includes('INVALID_SESSION_ID')) {
     const warn = document.createElement('div');
     warn.style.cssText = 'margin-bottom:10px;padding:9px 12px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;font-size:12.5px;color:#92400E;';
-    warn.innerHTML = `<strong>Vault query failed:</strong> ${liveError} — showing demo data. <a href="connect.html" style="color:inherit;font-weight:600;text-decoration:underline;">Reconnect →</a>`;
+    warn.innerHTML = `<strong>Vault query failed:</strong> ${liveError}. <a href="connect.html" style="color:inherit;font-weight:600;text-decoration:underline;">Reconnect →</a>`;
     E.resultsList.before ? E.resultsList.before(warn) : E.resultsList.parentNode.insertBefore(warn, E.resultsList);
     setTimeout(() => warn.remove(), 8000);
   }
@@ -3169,10 +4102,13 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
   updatePaginationBar();
 
   // Show action buttons once there are results
-  const saveBtn   = document.getElementById('saveSearchBtn');
-  const exportBtn = document.getElementById('exportCsvBtn');
-  if (saveBtn)   saveBtn.style.display   = 'inline-flex';
-  if (exportBtn) exportBtn.style.display = final.length ? 'inline-flex' : 'none';
+  const saveBtn      = document.getElementById('saveSearchBtn');
+  const exportBtn    = document.getElementById('exportCsvBtn');
+  const exportAllBtn = document.getElementById('exportAllBtn');
+  if (saveBtn)      saveBtn.style.display      = 'inline-flex';
+  if (exportBtn)    exportBtn.style.display    = final.length ? 'inline-flex' : 'none';
+  // Show Export All button only in live mode when there are more pages to fetch
+  if (exportAllBtn) exportAllBtn.style.display = (LIVE && PAGE.total > PAGE.loaded && final.length) ? 'inline-flex' : 'none';
 
   E.loading.classList.remove('active');
 }
@@ -3213,6 +4149,33 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
 }
 
+/* ── P3-1: Search term highlighting ───────────────────────── */
+function escapeHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Returns the text with every occurrence of any query term wrapped in
+ * <mark class="hl">…</mark>. Safe against XSS — HTML-escapes input first.
+ * Only highlights when searchText is non-empty; skips terms under 2 chars.
+ */
+function highlightText(text, query) {
+  const safe = escapeHtml(text);
+  if (!query || !query.trim()) return safe;
+  const terms = query.trim().split(/\s+/).filter(t => t.length >= 2);
+  if (!terms.length) return safe;
+  const pattern = terms.map(escapeRegex).join('|');
+  try {
+    return safe.replace(new RegExp(`(${pattern})`, 'gi'), '<mark class="hl">$1</mark>');
+  } catch (_) {
+    return safe; // regex compile error (exotic chars) — degrade gracefully
+  }
+}
+
 function renderResults(docs, append = false) {
   // In append mode, accumulate for CSV; in fresh mode, replace.
   if (append) {
@@ -3222,16 +4185,7 @@ function renderResults(docs, append = false) {
   }
 
   if (!append && !docs.length) {
-    E.resultsList.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-        </div>
-        <p class="empty-title">No results found</p>
-        <p class="empty-body">Try adjusting your filters or search terms. Your role may also restrict certain document types.</p>
-      </div>`;
+    E.resultsList.innerHTML = buildEmptyStateHtml(PAGE.tid || S.currentTid || 'name_search');
     return;
   }
 
@@ -3264,7 +4218,7 @@ function renderResults(docs, append = false) {
           <div class="doc-main">
             <a class="doc-name"
                ${LIVE ? `href="${LIVE.baseUrl}/ui/#doc:${doc.id}" target="_blank" rel="noopener noreferrer" onclick="recordAccess('${doc.id}')"` : `href="#" onclick="return false"`}
-               title="${LIVE ? 'Open in Vault' : doc.name__v}">${doc.name__v}${LIVE ? ` <svg style="display:inline-block;vertical-align:middle;margin-left:3px;opacity:.5" width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3H3a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1v-3M10 2h4v4M14 2L7 9"/></svg>` : ''}</a>
+               title="${LIVE ? 'Open in Vault' : escapeHtml(doc.name__v)}">${highlightText(doc.name__v, S.searchText)}${LIVE ? ` <svg style="display:inline-block;vertical-align:middle;margin-left:3px;opacity:.5" width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3H3a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1v-3M10 2h4v4M14 2L7 9"/></svg>` : ''}</a>
             <div class="doc-pills">
               <span class="pill pill-type">${tm.label}</span>
               <span class="pill pill-ver">${vLabel}</span>
@@ -3309,12 +4263,17 @@ async function fetchVersionHistory(docId) {
   if (VERSION_CACHE.has(docId)) return VERSION_CACHE.get(docId);
 
   if (LIVE) {
-    const vql = `SELECT id, major_version_number__v, minor_version_number__v, ` +
+    // SELECT id returns the base doc ID; version_id is the per-version identifier.
+    // We store version_id as `id` in the mapped object so renderVersionPanel can
+    // build deep-links to specific document versions in Vault.
+    const vql = `SELECT id, version_id, major_version_number__v, minor_version_number__v, ` +
                 `version_creation_date__v, lifecycle_state__v, created_by__v ` +
-                `FROM documents WHERE id = '${docId}'`;
+                `FROM documents WHERE id = '${docId}' ` +
+                `ORDER BY major_version_number__v DESC, minor_version_number__v DESC`;
     try {
       const res = await executeVQL(vql);
       const vers = (res.data || []).map(v => ({
+        id:    v.version_id || v.id,   // version_id for deep-link; fall back to doc id
         ver:   `v${v.major_version_number__v}.${v.minor_version_number__v}`,
         state: v.lifecycle_state__v,
         date:  v.version_creation_date__v ? new Date(v.version_creation_date__v).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—',
@@ -3338,17 +4297,36 @@ function renderVersionPanel(panel, vers) {
     panel.innerHTML = `<div style="padding:12px;font-size:12px;color:var(--v-ink-60);">No version history available.</div>`;
     return;
   }
+
+  // Versions arrive sorted DESC from Vault (newest first).
+  // The first row is the current/latest version — badge it distinctly.
   panel.innerHTML = `
     <div class="ver-history-head">
-      <span>Version</span><span>Status</span><span>Date</span><span>Author</span>
+      <span>Version</span><span>Status</span><span>Date</span><span>Author</span><span></span>
     </div>` +
-    vers.map(v => {
-      const vsm = STATE_META[v.state] || { cls:'pill-state-closed', label: v.state };
-      return `<div class="ver-row">
-        <span class="ver-row-num">${v.ver}</span>
+    vers.map((v, idx) => {
+      const vsm      = STATE_META[v.state] || { cls:'pill-state-closed', label: v.state };
+      const isLatest = idx === 0;
+      const latestBadge = isLatest
+        ? `<span style="font-size:9px;font-weight:600;padding:1px 5px;background:var(--v-blue-10);color:var(--v-blue);border:1px solid var(--v-blue-20);border-radius:10px;margin-left:4px;">current</span>`
+        : '';
+      // Deep-link to specific version in Vault when in live mode
+      const versionLink = (LIVE && v.id)
+        ? `<a href="${LIVE.baseUrl}/ui/#doc:${v.id}" target="_blank" rel="noopener noreferrer"
+              title="Open v${v.ver} in Vault"
+              style="display:inline-flex;align-items:center;color:var(--v-ink-40);opacity:.8;"
+              onclick="event.stopPropagation()">
+             <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+               <path d="M6 3H3a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1v-3M10 2h4v4M14 2L7 9"/>
+             </svg>
+           </a>`
+        : '';
+      return `<div class="ver-row${isLatest ? ' ver-row-latest' : ''}">
+        <span class="ver-row-num">${v.ver}${latestBadge}</span>
         <span class="pill ${vsm.cls}" style="font-size:10px;"><span class="pill-dot"></span>${vsm.label}</span>
         <span class="ver-row-date">${v.date}</span>
         <span class="ver-row-name" style="color:var(--v-ink-60);">${v.by || '—'}</span>
+        <span>${versionLink}</span>
       </div>`;
     }).join('');
 }
@@ -3382,9 +4360,12 @@ async function toggleVer(id, btn) {
 E.vqlToggle.addEventListener('click', () => {
   S.vqlOpen = !S.vqlOpen;
   E.vqlPreview.classList.toggle('open', S.vqlOpen);
+  E.vqlPreview.setAttribute('aria-hidden', String(!S.vqlOpen));
   E.vqlToggle.classList.toggle('open', S.vqlOpen);
+  E.vqlToggle.setAttribute('aria-expanded', String(S.vqlOpen));
+  E.vqlToggle.setAttribute('aria-label', S.vqlOpen ? 'Hide VQL query' : 'Show VQL query');
   E.vqlToggle.innerHTML = `
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
       <polyline points="4,6 8,10 12,6"/>
     </svg>
     <span class="action-label">${S.vqlOpen ? 'Hide VQL' : 'Show VQL'}</span>`;
@@ -3397,7 +4378,29 @@ function triggerSearch(raw) {
   const trimmed = (raw || '').trim();
   S.searchText = trimmed;
   if (!trimmed) { runQuery('doc_all_accessible'); return; }
-  const { tid } = parseToTemplate(trimmed);
+
+  let tid;
+
+  // Prefer VaultParser from browser-bundle.js — more comprehensive signal extraction.
+  // Falls back to the inline parseToTemplate if the bundle hasn't loaded.
+  if (window.VaultParser) {
+    const result = window.VaultParser.parseQuery(trimmed, { userRole: S.role });
+    tid = result.intent?.templateId || 'name_search';
+
+    // Show/hide ambiguity bar if VaultParser detected multiple matching rules
+    if (E.ambiguity && E.ambiguityTxt) {
+      const amb = result.ambiguity;
+      if (amb && amb.isAmbiguous && amb.reasons && amb.reasons.length) {
+        E.ambiguityTxt.textContent = amb.reasons.join(' · ');
+        E.ambiguity.classList.add('visible');
+      } else {
+        E.ambiguity.classList.remove('visible');
+      }
+    }
+  } else {
+    ({ tid } = parseToTemplate(trimmed));
+  }
+
   runQuery(tid);
 }
 
@@ -3427,8 +4430,12 @@ E.clearBtn.addEventListener('click', () => {
 /* ── ROLE SWITCHER ─────────────────────────────────────────── */
 document.querySelectorAll('.role-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.role-btn').forEach(b => {
+      b.classList.remove('active');
+      b.setAttribute('aria-pressed', 'false');    // WCAG 4.1.2
+    });
     btn.classList.add('active');
+    btn.setAttribute('aria-pressed', 'true');
     S.role = btn.dataset.role;
 
     const draftLabel = document.getElementById('draftOpt')?.closest('label');
@@ -3445,6 +4452,10 @@ document.querySelectorAll('.role-btn').forEach(btn => {
 
 /* ── SIDEBAR FILTER CHANGES ─────────────────────────────────── */
 document.querySelectorAll('.filter-sidebar input').forEach(inp => {
+  inp.addEventListener('change', () => { if (S.currentTid) runQuery(S.currentTid); });
+});
+// Subtype filter section — toggled open/closed separately; wire change events
+document.querySelectorAll('input[name="subtype"]').forEach(inp => {
   inp.addEventListener('change', () => { if (S.currentTid) runQuery(S.currentTid); });
 });
 
@@ -3516,8 +4527,19 @@ function updateFacetCounts(facets) {
 function toggleSection(btn) {
   const body    = btn.nextElementSibling;
   const chevron = btn.querySelector('.filter-chevron');
-  const open    = body.classList.toggle('collapsed');
+  const open    = body.classList.toggle('collapsed');   // true = now collapsed
   chevron.classList.toggle('open', !open);
+  // WCAG 4.1.2: expose expanded state to assistive technologies
+  btn.setAttribute('aria-expanded', String(!open));
+}
+
+/** Sets initial aria-expanded on all filter-section-toggle buttons based on chevron state. */
+function initFilterAriaExpanded() {
+  document.querySelectorAll('.filter-section-toggle').forEach(btn => {
+    const chevron = btn.querySelector('.filter-chevron');
+    const isOpen  = chevron && chevron.classList.contains('open');
+    btn.setAttribute('aria-expanded', String(!!isOpen));
+  });
 }
 
 /* ── SEARCH HISTORY (sessionStorage, 10 entries) ──────────── */
@@ -3616,12 +4638,69 @@ function renderSavedSearches() {
     </div>`).join('');
 }
 
+/* ── P3-2: Saved search export / import ─────────────────────── */
+
+/** Downloads all saved searches as a timestamped JSON file. */
+function exportSavedSearches() {
+  const saved = loadSavedSearches();
+  if (!saved.length) { alert('No saved searches to export.'); return; }
+  const payload = {
+    _schema: 'vault-search-saved-v1',
+    exportedAt: new Date().toISOString(),
+    count: saved.length,
+    searches: saved,
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `vault-saved-searches-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Reads a JSON file produced by exportSavedSearches() and merges its
+ * searches into localStorage, skipping duplicates by name. Called by
+ * the hidden <input type="file"> onchange handler.
+ */
+function importSavedSearches(inputEl) {
+  const file = inputEl?.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    let payload;
+    try { payload = JSON.parse(e.target.result); } catch {
+      alert('Invalid file — could not parse JSON.'); return;
+    }
+    // Accept both raw array and the {_schema, searches} envelope
+    const incoming = Array.isArray(payload) ? payload
+      : Array.isArray(payload.searches) ? payload.searches
+      : null;
+    if (!incoming) { alert('Unrecognised format — expected a saved-searches JSON file.'); return; }
+
+    const existing  = loadSavedSearches();
+    const existNames = new Set(existing.map(s => s.name));
+    const toAdd     = incoming.filter(s => s && s.id && s.name && s.tid && !existNames.has(s.name));
+    if (!toAdd.length) { alert('Nothing new to import — all searches already exist.'); return; }
+
+    const merged = [...toAdd, ...existing].slice(0, 20);
+    storeSavedSearches(merged);
+    renderSavedSearches();
+    alert(`Imported ${toAdd.length} saved search${toAdd.length !== 1 ? 'es' : ''}.`);
+  };
+  reader.readAsText(file);
+  // Reset so the same file can be re-imported after a delete
+  inputEl.value = '';
+}
+
 /* ── CSV EXPORT ─────────────────────────────────────────────── */
-function exportCSV() {
-  if (!currentResults.length) return;
+function _buildCSV(docs) {
   const headers = ['ID','Name','Type','Status','Version','Modified','Owner','Severity','GxP','Product','Study'];
   const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const rows = currentResults.map(d => [
+  const rows = docs.map(d => [
     d.id,
     d.name__v,
     (TYPE_META[d.type__v] || {}).label || d.type__v,
@@ -3634,16 +4713,70 @@ function exportCSV() {
     d.product || '',
     d.study   || '',
   ].map(esc).join(','));
-  const csv  = [headers.map(esc).join(','), ...rows].join('\r\n');
+  return [headers.map(esc).join(','), ...rows].join('\r\n');
+}
+
+function _triggerDownload(csv, filename) {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = `vault-search-${S.currentTid || 'results'}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+function exportCSV() {
+  if (!currentResults.length) return;
+  _triggerDownload(
+    _buildCSV(currentResults),
+    `vault-search-${S.currentTid || 'results'}-${new Date().toISOString().slice(0,10)}.csv`
+  );
+}
+
+/* ── EXPORT ALL — fetches every page via cursor then downloads CSV ─
+   In demo mode this is the same as exportCSV() since demo data is already
+   fully loaded. In live mode it iterates next_page cursors until exhausted.
+   Caps at 5000 rows to protect against runaway exports on large vaults.
+─────────────────────────────────────────────────────────────────────── */
+async function exportAllCSV() {
+  const MAX_ROWS = 5000;
+  const btn = document.getElementById('exportAllBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Fetching…'; }
+
+  try {
+    if (!LIVE || !PAGE.vql) {
+      // Demo or no VQL stored — export whatever is in currentResults
+      exportCSV();
+      return;
+    }
+
+    let allDocs = [...currentResults];
+    let nextUrl = PAGE.nextUrl;
+
+    // Loop through remaining pages
+    while (nextUrl && allDocs.length < MAX_ROWS) {
+      const res = await executeVQL(PAGE.vql, nextUrl);
+      allDocs   = allDocs.concat(res.data || []);
+      nextUrl   = res.nextPageUrl;
+    }
+
+    // Normalise raw Vault records that weren't yet through normalizeVaultDoc
+    const normalised = allDocs.map(d =>
+      d.name__v !== undefined && d.major !== undefined
+        ? d                          // already normalised by runQuery
+        : normalizeVaultDoc(d)       // raw Vault API record
+    );
+
+    _triggerDownload(
+      _buildCSV(normalised),
+      `vault-search-ALL-${S.currentTid || 'results'}-${new Date().toISOString().slice(0,10)}.csv`
+    );
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Export All'; }
+  }
 }
 
 /* ── INIT ───────────────────────────────────────────────────── */
@@ -3652,7 +4785,9 @@ const _savedRole = sessionStorage.getItem('vault_user_role');
 if (_savedRole && ROLE_ACL[_savedRole]) {
   S.role = _savedRole;
   document.querySelectorAll('.role-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.role === _savedRole);
+    const isActive = b.dataset.role === _savedRole;
+    b.classList.toggle('active', isActive);
+    b.setAttribute('aria-pressed', String(isActive));  // WCAG 4.1.2
   });
   // Apply draft visibility for restored role
   const draftLabel = document.getElementById('draftOpt')?.closest('label');
@@ -3690,6 +4825,8 @@ if (_savedRole && ROLE_ACL[_savedRole]) {
 renderChips(S.role);
 initConnectionBanner();
 applyVaultSchema();    // apply auto-discovered schema from connect.html
+checkSchemaDiscovery(); // P2-5: show retry banner in live mode if schema is absent
+initFilterAriaExpanded(); // P3-3: WCAG — set initial aria-expanded on filter toggles
 renderHistory();       // render any history from previous session actions
 renderSavedSearches(); // render saved searches from localStorage
 

@@ -744,6 +744,35 @@
   </div>
 
   <!-- ── Quick Reconnect (shown when a saved connection exists) ── -->
+  <!-- ── Already-connected banner ────────────────────────────
+       Shown when the user arrives at connect.html while a live
+       session is already stored in sessionStorage. They can
+       return to search or disconnect to start fresh.
+  ──────────────────────────────────────────────────────────── -->
+  <div id="already-connected-banner" style="display:none; width:100%; max-width:520px; margin-bottom:20px;">
+    <div class="card" style="border:1.5px solid var(--c-success); background:var(--c-success-lt);">
+      <div class="card-header" style="padding-bottom:0;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:var(--c-success);flex-shrink:0;"></span>
+          <h1 style="font-size:17px; color:#065F46;">Connected</h1>
+        </div>
+        <p id="already-connected-host" style="margin-top:6px; font-size:13px; color:#047857;"></p>
+      </div>
+      <div class="card-footer" style="background:transparent; border-top:1px solid #A7F3D0;">
+        <button class="btn btn-secondary" id="already-disconnect-btn"
+                onclick="disconnectFromConnectPage()"
+                style="font-size:13px; border-color:var(--c-error); color:var(--c-error);">
+          Disconnect
+        </button>
+        <div class="spacer"></div>
+        <a href="search-panel.html" class="btn btn-primary" style="text-decoration:none; display:inline-flex; align-items:center; gap:8px;">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          Return to Search
+        </a>
+      </div>
+    </div>
+  </div>
+
   <div id="quick-reconnect" style="display:none; width:100%; max-width:520px; margin-bottom:20px;">
     <div class="card">
       <div class="card-header">
@@ -1815,15 +1844,49 @@
 
     async function runSchemaDiscovery() {
       const token   = state.sessionToken;
-      const BASE    = `${state.vaultUrl}/api/${state.apiVersion}`;
-      const headers = { Authorization: token, Accept: 'application/json' };
+      const apiVer  = state.apiVersion;
+
+      // ── Discovery fetch helper ───────────────────────────────
+      // When a proxy URL is configured, route all metadata calls through it
+      // (POST /meta) to avoid Vault's CORS policy blocking browser requests.
+      // Falls back to direct fetch for same-origin / local dev scenarios.
+      async function discFetch(metaPath, { method = 'GET', postBody = '', extraHeaders = {} } = {}) {
+        if (state.proxyUrl) {
+          // Via proxy — browser → Lambda → Vault (no CORS issue)
+          return fetch(`${state.proxyUrl}/meta`, {
+            method: 'POST',
+            headers: {
+              'Content-Type':         'application/json',
+              'X-Vault-URL':          state.vaultUrl,
+              'X-Vault-Token':        token,
+              'X-Vault-API-Version':  apiVer,
+            },
+            body: JSON.stringify({
+              path:         metaPath,
+              method,
+              postBody,
+              extraHeaders,
+              apiVersion:   apiVer,
+            }),
+          });
+        }
+        // Direct fetch — only works if Vault allows CORS from this origin
+        const BASE = `${state.vaultUrl}/api/${apiVer}`;
+        const hdrs = { Authorization: token, Accept: 'application/json', ...extraHeaders };
+        if (method === 'POST') hdrs['Content-Type'] = 'application/x-www-form-urlencoded';
+        return fetch(`${BASE}${metaPath}`, {
+          method,
+          headers: hdrs,
+          body: method === 'POST' ? postBody : undefined,
+        });
+      }
 
       let docTypes = [], docFields = [], vaultObjects = [], facets = null;
 
       // ── 1. Document types ───────────────────────────────────
       discSetItem('doctypes', 'running', 'Fetching document type tree…');
       try {
-        const r    = await fetch(`${BASE}/metadata/objects/documents/types`, { headers });
+        const r    = await discFetch('/metadata/objects/documents/types');
         const json = await r.json();
         if (json.responseStatus === 'SUCCESS') {
           docTypes = json.types || [];
@@ -1837,7 +1900,7 @@
       // ── 2. Document fields ──────────────────────────────────
       discSetItem('fields', 'running', 'Reading field definitions…');
       try {
-        const r    = await fetch(`${BASE}/metadata/objects/documents/properties`, { headers });
+        const r    = await discFetch('/metadata/objects/documents/properties');
         const json = await r.json();
         if (json.responseStatus === 'SUCCESS') {
           docFields = json.properties || [];
@@ -1850,7 +1913,7 @@
       // ── 3. Vault Objects ────────────────────────────────────
       discSetItem('objects', 'running', 'Discovering Vault Object types…');
       try {
-        const r    = await fetch(`${BASE}/metadata/vobjects`, { headers });
+        const r    = await discFetch('/metadata/vobjects');
         const json = await r.json();
         if (json.responseStatus === 'SUCCESS') {
           vaultObjects = json.objects || [];
@@ -1863,11 +1926,13 @@
       // ── 4. Lifecycle states (facet probe) ───────────────────
       discSetItem('states', 'running', 'Querying live lifecycle states…');
       try {
-        const r = await fetch(`${BASE}/query`, {
-          method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/x-www-form-urlencoded',
-                     'X-VaultAPI-Facets': 'lifecycle_state__v', 'X-VaultAPI-DescribeQuery': 'false' },
-          body: 'q=SELECT+id+FROM+documents+LIMIT+1',
+        const r = await discFetch('/query', {
+          method:       'POST',
+          postBody:     'q=SELECT+id+FROM+documents+LIMIT+1',
+          extraHeaders: {
+            'X-VaultAPI-Facets':        'lifecycle_state__v',
+            'X-VaultAPI-DescribeQuery': 'false',
+          },
         });
         const json = await r.json();
         if (json.responseStatus === 'SUCCESS') {
@@ -2246,7 +2311,39 @@
     // The most-recently-saved connection, loaded on page init
     let quickConn = null;
 
+    // ── Disconnect helper (called from the already-connected banner) ───────────
+    function disconnectFromConnectPage() {
+      const VAULT_KEYS = [
+        'vault_session_token', 'vault_base_url', 'vault_api_version',
+        'vault_proxy_url', 'vault_user_role', 'vault_username',
+        'vault_schema', 'vault_object_source',
+      ];
+      VAULT_KEYS.forEach(k => sessionStorage.removeItem(k));
+      // Hide banner, show the normal connect flow
+      document.getElementById('already-connected-banner').style.display = 'none';
+      // Re-run init to show quick-reconnect or step wizard
+      initQuickReconnect();
+    }
+
     function initQuickReconnect() {
+      // ── If a session is already active, show the connected banner ────────
+      const existingToken = sessionStorage.getItem('vault_session_token');
+      const existingUrl   = sessionStorage.getItem('vault_base_url');
+      if (existingToken && existingUrl) {
+        const host = existingUrl.replace('https://', '');
+        const apiVer = sessionStorage.getItem('vault_api_version') || 'v26.1';
+        document.getElementById('already-connected-host').textContent =
+          `${host} · API ${apiVer}`;
+        document.getElementById('already-connected-banner').style.display = 'block';
+        // Hide the stepped wizard and quick-reconnect when already connected
+        document.getElementById('steps').style.display             = 'none';
+        document.getElementById('quick-reconnect').style.display   = 'none';
+        ['step1','step2','step3','step4'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
+        return;
+      }
       const conns = loadConnections();
       if (!conns.length) return;
 

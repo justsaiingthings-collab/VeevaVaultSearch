@@ -38,6 +38,49 @@ Parameters:
     Default: 30
     Description: CloudWatch log retention in days (30 = within free tier).
 
+  # ── Rate limiting (P3-2) ──────────────────────────────────────────────────
+  # These values protect both the free-tier budget and the upstream Vault API
+  # from accidental or malicious request floods.
+  #
+  # ThrottlingRateLimit  — steady-state requests per second (tokens refilled)
+  # ThrottlingBurstLimit — maximum concurrent in-flight requests
+  # LambdaReservedConcurrency — hard cap on simultaneous Lambda executions;
+  #   0 = throttle Lambda entirely (useful for emergency kill-switch);
+  #   -1 = unreserved (shares account pool); set a positive int for a hard cap.
+  #
+  # Recommended sizing:
+  #   Dev / internal:    Rate=10  Burst=25  Reserved=-1
+  #   Regulated prod:    Rate=30  Burst=50  Reserved=20
+  #   High-volume prod:  Rate=100 Burst=200 Reserved=50
+
+  ThrottlingRateLimit:
+    Type: Number
+    Default: 10
+    MinValue: 1
+    MaxValue: 10000
+    Description: >
+      Steady-state requests/second allowed through API Gateway (token bucket refill rate).
+      Default 10 rps keeps costs well inside the free tier for normal Vault search workloads.
+
+  ThrottlingBurstLimit:
+    Type: Number
+    Default: 25
+    MinValue: 1
+    MaxValue: 5000
+    Description: >
+      Maximum concurrent requests API Gateway will pass to Lambda before throttling.
+      Burst absorbs brief spikes; keep ≤2-3× your RateLimit for a regulated environment.
+
+  LambdaReservedConcurrency:
+    Type: Number
+    Default: -1
+    MinValue: -1
+    MaxValue: 1000
+    Description: >
+      Reserved Lambda concurrency. -1 = use account shared pool (default, cheapest).
+      Set a positive integer for a hard execution ceiling independent of API GW throttle.
+      Set to 0 to completely disable the function (emergency kill-switch).
+
 Globals:
   Function:
     Runtime: nodejs20.x
@@ -51,6 +94,10 @@ Globals:
         ALLOWED_ORIGIN:     !Ref AllowedOrigin
         ALLOW_ANY_HOST:     !Ref AllowAnyHost
         REQUEST_TIMEOUT_MS: !Ref RequestTimeoutMs
+
+Conditions:
+  # True when the operator has set a specific concurrency cap (≥0)
+  HasReservedConcurrency: !Not [!Equals [!Ref LambdaReservedConcurrency, '-1']]
 
 Resources:
 
@@ -73,10 +120,12 @@ Resources:
           - GET
           - OPTIONS
         MaxAge: 300
-      # Throttle to protect free tier (500 req/s burst is generous for MVP)
+      # Throttle to protect free tier and upstream Vault API.
+      # Values are parameterised — override at deploy time:
+      #   sam deploy --parameter-overrides ThrottlingRateLimit=30 ThrottlingBurstLimit=50
       DefaultRouteSettings:
-        ThrottlingBurstLimit: 100
-        ThrottlingRateLimit:  50
+        ThrottlingRateLimit:  !Ref ThrottlingRateLimit
+        ThrottlingBurstLimit: !Ref ThrottlingBurstLimit
 
   # ── Lambda function ───────────────────────────────────────────────────────
   VaultProxyFunction:
@@ -85,6 +134,14 @@ Resources:
       FunctionName: vault-search-proxy
       Description:  Forwards VQL queries from the browser to any Vault tenant
       CodeUri: .
+      # ── Reserved concurrency (P3-2 rate limiting) ─────────────────────────
+      # -1 = unreserved (shares account pool).
+      # Set LambdaReservedConcurrency=0 at deploy time for an emergency
+      # kill-switch that will throttle ALL function invocations immediately.
+      ReservedConcurrentExecutions: !If
+        - HasReservedConcurrency
+        - !Ref LambdaReservedConcurrency
+        - !Ref AWS::NoValue
       # No VPC needed — Veeva SaaS Vault is publicly accessible via HTTPS.
       # For on-prem Vault inside a customer VPC, add VpcConfig here.
       Events:
@@ -111,6 +168,15 @@ Resources:
           Properties:
             ApiId: !Ref VaultProxyApi
             Path:  /oauth/session
+            Method: POST
+        # /meta — schema discovery proxy (document types, fields, vault objects,
+        #         lifecycle states). Browser cannot call Vault metadata endpoints
+        #         directly due to CORS; this route acts as the CORS bridge.
+        MetaRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VaultProxyApi
+            Path:  /meta
             Method: POST
         # Explicit OPTIONS routes so API GW forwards preflight to Lambda
         # (only needed if you want custom preflight logic; CorsConfiguration above
@@ -149,3 +215,11 @@ Outputs:
   FunctionArn:
     Description: Lambda function ARN
     Value: !GetAtt VaultProxyFunction.Arn
+
+  RateLimitSummary:
+    Description: >
+      Active rate-limit settings. Override with --parameter-overrides at deploy time.
+    Value: !Sub >-
+      RateLimit=${ThrottlingRateLimit} req/s |
+      BurstLimit=${ThrottlingBurstLimit} concurrent |
+      LambdaConcurrency=${LambdaReservedConcurrency} (-1 = unreserved)

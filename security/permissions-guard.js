@@ -156,18 +156,7 @@ class VQLSanitizer {
     const str = String(value);
 
     // Check for injection patterns
-    const injectionPatterns = [
-      /('|")\s*(OR|AND)\s*('|")\d*('|")\s*=\s*('|")\d*/i,  // ' OR '1'='1
-      /--/,                                                    // SQL comment
-      /\/\*/,                                                  // Block comment
-      /\bSELECT\b/i,                                          // Nested SELECT
-      /\bDROP\b/i,                                            // DROP
-      /\bDELETE\b/i,                                          // DELETE
-      /\bUPDATE\b/i,                                          // UPDATE
-      /\bINSERT\b/i,                                          // INSERT
-      /\bEXEC\b/i,                                            // EXEC
-      /\bUNION\b/i,                                           // UNION
-    ];
+    const injectionPatterns = SHARED_INJECTION_PATTERNS;
 
     for (const pattern of injectionPatterns) {
       if (pattern.test(str)) {
@@ -244,10 +233,92 @@ class VQLSanitizer {
 // Logs every search query for compliance and audit trail
 // ─────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────
+// SHARED INJECTION PATTERNS
+// Single source of truth — used by both VQLSanitizer (server-side)
+// and proxy/handler.mjs (edge layer). Update here, deploy both.
+// ─────────────────────────────────────────────────────────────
+const SHARED_INJECTION_PATTERNS = [
+  /('|")\s*(OR|AND)\s*('|")\d*('|")\s*=\s*('|")\d*/i,  // ' OR '1'='1
+  /--/,                                                    // SQL line comment
+  /\/\*/,                                                  // Block comment
+  /\bSELECT\b/i,                                          // Nested SELECT
+  /\bDROP\b/i,                                            // DROP
+  /\bDELETE\b/i,                                          // DELETE
+  /\bUPDATE\b/i,                                          // UPDATE
+  /\bINSERT\b/i,                                          // INSERT
+  /\bEXEC\b/i,                                            // EXEC
+  /\bUNION\b/i,                                           // UNION
+  /;\s*(DROP|DELETE|INSERT|UPDATE|TRUNCATE|ALTER|CREATE|GRANT|REVOKE)\b/i, // chained write ops
+  /\bUNION\s+SELECT\b/i,                                  // UNION SELECT
+  /%27|%22|%3B/i,                                         // URL-encoded quote/semicolon
+];
+
+// ─────────────────────────────────────────────────────────────
+// LOCALSTORAGE AUDIT ADAPTER
+// Persists the last 500 audit entries in localStorage as a ring
+// buffer. Use as the default adapter in browser/Lambda cold-start
+// scenarios. Inject a SIEM/CloudWatch adapter in production.
+// ─────────────────────────────────────────────────────────────
+class LocalStorageAuditAdapter {
+  constructor(maxEntries = 500) {
+    this.key = 'vault_audit_log';
+    this.maxEntries = maxEntries;
+    // Only available in browser — gracefully no-op in Node.js Lambda
+    this._hasLocalStorage = (typeof localStorage !== 'undefined');
+  }
+
+  write(entry) {
+    // Always write to console (Lambda CloudWatch picks this up)
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'test') {
+      console.log('[AUDIT]', JSON.stringify({
+        ...entry,
+        vqlExecuted: entry.vqlExecuted ? '[VQL_PRESENT]' : null,
+      }));
+    }
+
+    // Additionally persist in localStorage when running in browser
+    if (!this._hasLocalStorage) return;
+    try {
+      const raw = localStorage.getItem(this.key);
+      const log = raw ? JSON.parse(raw) : [];
+      log.push(entry);
+      // Ring buffer: keep only the last maxEntries
+      const trimmed = log.length > this.maxEntries ? log.slice(log.length - this.maxEntries) : log;
+      localStorage.setItem(this.key, JSON.stringify(trimmed));
+    } catch {
+      // Storage quota exceeded or unavailable — fail silently
+    }
+  }
+
+  /**
+   * Retrieve stored audit entries (browser only).
+   * @param {number} [limit=100] - Max entries to return, newest first
+   * @returns {Object[]}
+   */
+  retrieve(limit = 100) {
+    if (!this._hasLocalStorage) return [];
+    try {
+      const raw = localStorage.getItem(this.key);
+      const log = raw ? JSON.parse(raw) : [];
+      return log.slice(-limit).reverse();
+    } catch {
+      return [];
+    }
+  }
+
+  /** Clear the stored audit log. */
+  clear() {
+    if (this._hasLocalStorage) {
+      try { localStorage.removeItem(this.key); } catch {}
+    }
+  }
+}
+
 class AuditLogger {
   constructor(storageAdapter = null) {
-    // Default: console logging (production should inject a persistent adapter)
-    this.storage = storageAdapter || this._defaultStorage();
+    // Default: LocalStorageAuditAdapter (persists in browser + logs to console for Lambda)
+    this.storage = storageAdapter || new LocalStorageAuditAdapter();
     this.logs = [];  // In-memory ring buffer (last 1000 entries)
     this.maxLogs = 1000;
   }
@@ -329,19 +400,6 @@ class AuditLogger {
     return `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   }
 
-  _defaultStorage() {
-    return {
-      write: (entry) => {
-        if (process.env.NODE_ENV !== 'test') {
-          // In production, replace this with write to Vault audit object or external SIEM
-          console.log('[AUDIT]', JSON.stringify({
-            ...entry,
-            vqlExecuted: entry.vqlExecuted ? '[VQL_PRESENT]' : null,
-          }));
-        }
-      },
-    };
-  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -542,5 +600,7 @@ module.exports = {
   RoleValidator,
   VQLSanitizer,
   AuditLogger,
+  LocalStorageAuditAdapter,
   VersionAccessController,
+  SHARED_INJECTION_PATTERNS,
 };

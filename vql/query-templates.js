@@ -15,6 +15,38 @@
  *
  * Usage:
  *   const rendered = VQLTemplateLibrary.render('sop_approved', { product: 'Drug-A' });
+ *
+ * ─────────────────────────────────────────────────────────────
+ * MDL SCHEMA BLOCK (P2-5)
+ * ─────────────────────────────────────────────────────────────
+ * After connecting to a Vault tenant and running schema discovery
+ * (connect.html → Step 4), the search panel automatically detects
+ * your tenant's real type/field/state names and stores them in
+ * localStorage under "vault_schema".
+ *
+ * To permanently bake those names into this file so they become
+ * the compile-time defaults (useful for CI/CD or server-side
+ * rendering), do the following:
+ *
+ *   1. Open search-panel.html in a browser connected to Vault.
+ *   2. Click the ⚙ (gear) icon → "Discovered Schema" tab.
+ *   3. Click "Copy MDL block".
+ *   4. Paste the copied block here, replacing the PLACEHOLDER
+ *      block below.
+ *   5. Update VAULT_CONFIG_DEFAULTS with the overrides listed
+ *      inside the block.
+ *
+ * PLACEHOLDER — paste your tenant's discovered MDL block here:
+ *
+ * ╔══════════════════════════════════════════════════════════╗
+ * ║  DISCOVERED VAULT SCHEMA  ·  (not yet discovered)       ║
+ * ║  Run schema discovery in connect.html to populate this. ║
+ * ╚══════════════════════════════════════════════════════════╝
+ *
+ * VAULT_CONFIG_DEFAULTS overrides to add:
+ *   (none — using VQL API default field names)
+ *
+ * ─────────────────────────────────────────────────────────────
  */
 
 'use strict';
@@ -766,7 +798,190 @@ const TIME_BASED_TEMPLATES = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// SECTION 7: FULL TEMPLATE LIBRARY INDEX
+// SECTION 7: SPECIALTY TEMPLATE PACKS
+//   eTMF | RIM | Safety | PromoMats
+// ─────────────────────────────────────────────────────────────
+
+const ETMF_TEMPLATES = [
+  {
+    id: 'etmf_all_docs',
+    category: 'eTMF',
+    name: 'All eTMF Documents',
+    description: 'All Trial Master File documents, grouped by study. Used for TMF oversight and health checks.',
+    filters: {},
+    vql: `
+      SELECT id, name__v, title__v, type__v, lifecycle_state__v,
+             major_version_number__v, clinical_study__c, last_modified_date__v,
+             owner__v
+      FROM documents
+      WHERE type__v = 'TMF__c'
+        AND is_latest_version__v = true
+      ORDER BY clinical_study__c ASC, name__v ASC
+    `,
+    explanation: `
+      - type__v = 'TMF__c'              → Trial Master File document type
+      - is_latest_version__v = true      → Latest versions only
+      - Grouped by study then name        → Structured TMF review
+    `,
+  },
+  {
+    id: 'etmf_by_study',
+    category: 'eTMF',
+    name: 'eTMF Documents by Study',
+    description: 'Active TMF documents grouped by clinical study — excludes obsolete and closed.',
+    filters: {},
+    vql: `
+      SELECT id, name__v, title__v, type__v, lifecycle_state__v,
+             major_version_number__v, clinical_study__c, last_modified_date__v
+      FROM documents
+      WHERE type__v = 'TMF__c'
+        AND clinical_study__c != null
+        AND lifecycle_state__v NOT IN ('Obsolete__v', 'Closed__v')
+        AND is_latest_version__v = true
+      ORDER BY clinical_study__c ASC, type__v ASC, name__v ASC
+    `,
+    explanation: `
+      - clinical_study__c != null        → Study-linked documents only
+      - Excludes Obsolete and Closed      → Active TMF content only
+    `,
+  },
+];
+
+const RIM_TEMPLATES = [
+  {
+    id: 'rim_submissions',
+    category: 'RIM',
+    name: 'Regulatory Submissions',
+    description: 'Documents in submitted, pending, or under-review lifecycle states — regulatory dossiers in flight.',
+    filters: {},
+    vql: `
+      SELECT id, name__v, title__v, type__v, lifecycle_state__v,
+             major_version_number__v, last_modified_date__v, owner__v
+      FROM documents
+      WHERE type__v = 'Regulatory__c'
+        AND lifecycle_state__v IN ('Submitted__v', 'Pending Approval__v', 'In Review__v')
+        AND is_latest_version__v = true
+      ORDER BY last_modified_date__v DESC
+    `,
+    explanation: `
+      - type__v = 'Regulatory__c'        → Regulatory document type
+      - Submitted/Pending/In Review       → Documents actively in regulatory pipeline
+    `,
+  },
+  {
+    id: 'rim_approved_labels',
+    category: 'RIM',
+    name: 'Approved Product Labels',
+    description: 'Regulatory documents in approved or effective state — current authorized labels.',
+    filters: {},
+    vql: `
+      SELECT id, name__v, title__v, type__v, lifecycle_state__v,
+             major_version_number__v, last_modified_date__v, owner__v
+      FROM documents
+      WHERE type__v = 'Regulatory__c'
+        AND lifecycle_state__v IN ('Approved__v', 'Effective__v')
+        AND is_latest_version__v = true
+      ORDER BY name__v ASC
+    `,
+    explanation: `
+      - Approved/Effective states         → Current authorized labels only
+      - is_latest_version__v = true       → No superseded versions
+    `,
+  },
+];
+
+const SAFETY_TEMPLATES = [
+  {
+    id: 'safety_adverse_events',
+    category: 'Safety',
+    name: 'Open Adverse Event Cases',
+    description: 'Adverse event documents currently under investigation — sorted by severity.',
+    filters: {},
+    vql: `
+      SELECT id, name__v, title__v, type__v, lifecycle_state__v,
+             severity__v, last_modified_date__v, owner__v
+      FROM documents
+      WHERE type__v = 'AdverseEvent__c'
+        AND lifecycle_state__v IN ('Open__v', 'In Progress__v')
+        AND is_latest_version__v = true
+      ORDER BY severity__v ASC, last_modified_date__v DESC
+    `,
+    explanation: `
+      - type__v = 'AdverseEvent__c'      → Adverse event documents
+      - Open/In Progress                  → Active investigations
+      - ORDER BY severity__v ASC          → Critical cases first
+    `,
+  },
+  {
+    id: 'safety_open_cases',
+    category: 'Safety',
+    name: 'Open Safety Cases (All Types)',
+    description: 'All open safety documents: adverse events and safety cases combined — for pharmacovigilance oversight.',
+    filters: {},
+    vql: `
+      SELECT id, name__v, title__v, type__v, lifecycle_state__v,
+             severity__v, last_modified_date__v, owner__v
+      FROM documents
+      WHERE type__v IN ('AdverseEvent__c', 'SafetyCase__c')
+        AND lifecycle_state__v != 'Closed__v'
+        AND is_latest_version__v = true
+      ORDER BY last_modified_date__v DESC
+    `,
+    explanation: `
+      - type__v IN (AdverseEvent, SafetyCase) → All pharmacovigilance document types
+      - Not Closed                             → Open investigations only
+    `,
+  },
+];
+
+const PROMOMATS_TEMPLATES = [
+  {
+    id: 'promomats_approved',
+    category: 'PromoMats',
+    name: 'Approved Promotional Content',
+    description: 'All currently approved promotional materials — safe to use for marketing and sales.',
+    filters: {},
+    vql: `
+      SELECT id, name__v, title__v, type__v, lifecycle_state__v,
+             major_version_number__v, last_modified_date__v, owner__v
+      FROM documents
+      WHERE type__v = 'PromotionalMaterial__c'
+        AND lifecycle_state__v IN ('Approved__v', 'Effective__v')
+        AND is_latest_version__v = true
+      ORDER BY name__v ASC
+    `,
+    explanation: `
+      - type__v = 'PromotionalMaterial__c' → Promotional content type
+      - Approved/Effective                  → Only currently approved content
+    `,
+  },
+  {
+    id: 'promomats_expiring',
+    category: 'PromoMats',
+    name: 'Promotional Content Expiring in 90 Days',
+    description: 'Approved promotional materials whose approval expires within 90 days — requires renewal.',
+    filters: {},
+    vql: `
+      SELECT id, name__v, title__v, type__v, lifecycle_state__v,
+             major_version_number__v, expiration_date__v, last_modified_date__v, owner__v
+      FROM documents
+      WHERE type__v = 'PromotionalMaterial__c'
+        AND expiration_date__v > now()
+        AND expiration_date__v <= dateadd(now(), 90, 'day')
+        AND lifecycle_state__v IN ('Approved__v', 'Effective__v')
+        AND is_latest_version__v = true
+      ORDER BY expiration_date__v ASC
+    `,
+    explanation: `
+      - expiration window <= 90 days       → Due for renewal
+      - Approved/Effective only            → Active content that must be renewed
+      - ORDER BY expiration_date__v ASC    → Most urgent first
+    `,
+  },
+];
+
+// ─────────────────────────────────────────────────────────────
+// SECTION 8: FULL TEMPLATE LIBRARY INDEX
 // ─────────────────────────────────────────────────────────────
 
 const ALL_TEMPLATES = [
@@ -776,6 +991,10 @@ const ALL_TEMPLATES = [
   ...CAPA_TEMPLATES,
   ...AUDIT_TEMPLATES,
   ...TIME_BASED_TEMPLATES,
+  ...ETMF_TEMPLATES,
+  ...RIM_TEMPLATES,
+  ...SAFETY_TEMPLATES,
+  ...PROMOMATS_TEMPLATES,
 ];
 
 // Build lookup map for O(1) access by template ID
@@ -785,7 +1004,7 @@ const TEMPLATE_MAP = ALL_TEMPLATES.reduce((map, t) => {
 }, {});
 
 // ─────────────────────────────────────────────────────────────
-// SECTION 8: PUBLIC API
+// SECTION 9: PUBLIC API
 // ─────────────────────────────────────────────────────────────
 
 const VQLTemplateLibrary = {
@@ -876,5 +1095,9 @@ module.exports = {
   CAPA_TEMPLATES,
   AUDIT_TEMPLATES,
   TIME_BASED_TEMPLATES,
+  ETMF_TEMPLATES,
+  RIM_TEMPLATES,
+  SAFETY_TEMPLATES,
+  PROMOMATS_TEMPLATES,
   ALL_TEMPLATES,
 };

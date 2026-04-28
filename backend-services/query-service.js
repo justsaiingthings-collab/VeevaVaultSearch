@@ -34,7 +34,7 @@ class VQLExecutionService {
    */
   constructor(vaultBaseUrl) {
     this.vaultBaseUrl = vaultBaseUrl.replace(/\/$/, '');
-    this.vqlEndpoint = `${this.vaultBaseUrl}/api/v24.1/query`;
+    this.vqlEndpoint = `${this.vaultBaseUrl}/api/v26.1/query`;
   }
 
   /**

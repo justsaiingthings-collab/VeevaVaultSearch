@@ -27,11 +27,22 @@ const REQUEST_TIMEOUT_MS  = parseInt(process.env.REQUEST_TIMEOUT_MS || '10000', 
 
 // ── Injection guard ───────────────────────────────────────────────────────────
 // VQL is read-only by design, but we block any attempt to chain write operations.
+// SYNC NOTE: Keep this list in sync with SHARED_INJECTION_PATTERNS in
+// security/permissions-guard.js — the proxy is ESM with no bundler so we
+// duplicate rather than import, but both must match.
 const INJECTION_PATTERNS = [
+  /('|")\s*(OR|AND)\s*('|")\d*('|")\s*=\s*('|")\d*/i,  // ' OR '1'='1 classic
+  /--/,                                                    // SQL line comment
+  /\/\*/,                                                  // Block comment start
+  /\bSELECT\b/i,                                          // Nested SELECT
+  /\bDROP\b/i,                                            // DROP
+  /\bDELETE\b/i,                                          // DELETE
+  /\bUPDATE\b/i,                                          // UPDATE
+  /\bINSERT\b/i,                                          // INSERT
+  /\bEXEC\b/i,                                            // EXEC
+  /\bUNION\b/i,                                           // UNION
   /;\s*(DROP|DELETE|INSERT|UPDATE|TRUNCATE|ALTER|CREATE|GRANT|REVOKE)\b/i,
   /\bUNION\s+SELECT\b/i,
-  /--[\s\S]/,          // SQL line comment
-  /\/\*[\s\S]*?\*\//,  // block comment
   /%27|%22|%3B/i,      // URL-encoded quote/semicolon
 ];
 
@@ -107,7 +118,7 @@ async function handleQuery(event) {
   const body       = parseBody(event);
   const headers    = event.headers || {};
   const vql        = body.vql;
-  const apiVersion = body.apiVersion || headers['x-vault-api-version'] || 'v24.1';
+  const apiVersion = body.apiVersion || headers['x-vault-api-version'] || 'v26.1';
   const vaultUrl   = headers['x-vault-url'];
   const token      = headers['x-vault-token'];
 
@@ -174,7 +185,7 @@ async function handleQuery(event) {
 async function handleAuth(event) {
   const body       = parseBody(event);
   const headers    = event.headers || {};
-  const { username, password, apiVersion = 'v24.1' } = body;
+  const { username, password, apiVersion = 'v26.1' } = body;
   const vaultUrl   = headers['x-vault-url'];
 
   // ── Input validation
@@ -217,6 +228,88 @@ async function handleAuth(event) {
     }
     console.error(JSON.stringify({ event: 'vault_auth_error', error: err.message }));
     return respond(502, { error: 'Vault auth unreachable', detail: err.message });
+  }
+}
+
+// ── Metadata proxy ───────────────────────────────────────────────────────────
+// Routes browser schema-discovery requests through Lambda so Vault's CORS
+// policy never blocks them. The browser cannot call Vault metadata endpoints
+// directly — Vault only allows cross-origin requests from its own UI origin.
+//
+// Request  POST /meta
+// Headers  X-Vault-URL, X-Vault-Token, X-Vault-API-Version (optional)
+// Body     JSON { path, method?, postBody?, extraHeaders? }
+//
+// path must match one of ALLOWED_META_PATHS (prevents SSRF abuse).
+
+const ALLOWED_META_PATHS = [
+  '/metadata/objects/documents/types',
+  '/metadata/objects/documents/properties',
+  '/metadata/vobjects',
+  '/query',   // used by the facet probe for lifecycle states
+];
+
+async function handleMeta(event) {
+  const body       = parseBody(event);
+  const hdrs       = event.headers || {};
+  const metaPath   = body.path;
+  const apiVersion = body.apiVersion || hdrs['x-vault-api-version'] || 'v26.1';
+  const vaultUrl   = hdrs['x-vault-url'];
+  const token      = hdrs['x-vault-token'];
+
+  if (!metaPath)  return respond(400, { error: 'Missing required field: path' });
+  if (!vaultUrl)  return respond(400, { error: 'Missing required header: X-Vault-URL' });
+  if (!token)     return respond(400, { error: 'Missing required header: X-Vault-Token' });
+  if (token.length < 20) return respond(400, { error: 'X-Vault-Token appears invalid' });
+
+  // Security: only allow whitelisted metadata paths
+  const allowed = ALLOWED_META_PATHS.some(p => metaPath.startsWith(p));
+  if (!allowed) {
+    return respond(403, { error: `Metadata path not in allowlist: ${metaPath}` });
+  }
+
+  const urlCheck = validateVaultUrl(vaultUrl);
+  if (!urlCheck.ok) return respond(400, { error: urlCheck.reason });
+
+  const isPost   = (body.method || 'GET').toUpperCase() === 'POST';
+  const endpoint = `${vaultUrl.replace(/\/$/, '')}/api/${apiVersion}${metaPath}`;
+
+  const upstreamHeaders = {
+    'Authorization': token,
+    'Accept':        'application/json',
+    ...(body.extraHeaders || {}),
+  };
+  if (isPost) upstreamHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
+
+  try {
+    const upstream = await fetchWithTimeout(
+      endpoint,
+      {
+        method:  isPost ? 'POST' : 'GET',
+        headers: upstreamHeaders,
+        body:    isPost ? (body.postBody || '') : undefined,
+      },
+      REQUEST_TIMEOUT_MS,
+    );
+
+    const data = await upstream.json();
+
+    console.log(JSON.stringify({
+      event:          'vault_meta',
+      vaultHost:      new URL(vaultUrl).hostname,
+      metaPath,
+      apiVersion,
+      responseStatus: upstream.status,
+    }));
+
+    return respond(upstream.status, data);
+
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return respond(504, { error: 'Vault metadata request timed out', timeoutMs: REQUEST_TIMEOUT_MS });
+    }
+    console.error(JSON.stringify({ event: 'vault_meta_error', metaPath, error: err.message }));
+    return respond(502, { error: 'Vault metadata unreachable', detail: err.message });
   }
 }
 
@@ -306,6 +399,7 @@ export const handler = async (event) => {
   if (path === '/query'         && method === 'POST') return handleQuery(event);
   if (path === '/auth'          && method === 'POST') return handleAuth(event);
   if (path === '/oauth/session' && method === 'POST') return handleOAuthSession(event);
+  if (path === '/meta'          && method === 'POST') return handleMeta(event);
 
   return respond(404, { error: `Route not found: ${method} ${path}` });
 };
