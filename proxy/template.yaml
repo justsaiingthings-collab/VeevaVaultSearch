@@ -178,6 +178,15 @@ Resources:
             ApiId: !Ref VaultProxyApi
             Path:  /meta
             Method: POST
+        # /versions — returns the list of API versions supported by the target
+        # Vault tenant. No session token required (Vault GET /api is public).
+        # Used by connect.html to auto-detect the latest API version.
+        VersionsRoute:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref VaultProxyApi
+            Path:  /versions
+            Method: GET
         # Explicit OPTIONS routes so API GW forwards preflight to Lambda
         # (only needed if you want custom preflight logic; CorsConfiguration above
         #  handles it automatically for most cases)

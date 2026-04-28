@@ -877,12 +877,17 @@
       </div>
 
       <div class="field">
-        <label for="api-version">API version <span class="opt">(optional)</span></label>
-        <div class="input-wrap">
-          <span class="input-prefix">v</span>
-          <input type="text" id="api-version" class="has-prefix-sm" value="24.1" style="max-width:110px;" />
+        <label for="api-version">API version</label>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div class="input-wrap" style="flex:0 0 auto;">
+            <span class="input-prefix">v</span>
+            <input type="text" id="api-version" class="has-prefix-sm" value="26.1" style="max-width:110px;" />
+          </div>
+          <span id="api-version-status" style="font-size:12px; color:var(--c-text-3);"></span>
         </div>
-        <div class="hint">Default: v26.1 (GA Feb 2026) · Check <a href="https://general.veevavault.dev/vault-api/api-reference" target="_blank" style="color:var(--c-brand)">developer portal</a> for latest.</div>
+        <div class="hint" id="api-version-hint">
+          Enter your Vault URL above to auto-detect the latest supported version.
+        </div>
       </div>
 
       <div class="field">
@@ -1193,6 +1198,8 @@
     const domainPreviewUrl = document.getElementById('domain-preview-url');
     const step1Next = document.getElementById('step1-next');
 
+    let _versionProbeTimer = null;
+
     domainInput.addEventListener('input', () => {
       const raw = domainInput.value.trim();
       const resolved = resolveDomain(raw);
@@ -1200,9 +1207,14 @@
         domainPreviewUrl.textContent = `https://${resolved}.veevavault.com`;
         domainPreview.classList.add('visible');
         step1Next.disabled = false;
+        // Debounce: probe API version 600ms after the user stops typing
+        clearTimeout(_versionProbeTimer);
+        _versionProbeTimer = setTimeout(() => probeApiVersion(`https://${resolved}.veevavault.com`), 600);
       } else {
         domainPreview.classList.remove('visible');
         step1Next.disabled = true;
+        clearTimeout(_versionProbeTimer);
+        setVersionStatus('', '');
       }
     });
 
@@ -1221,6 +1233,45 @@
       // Must be non-empty and look like a valid subdomain
       if (!s || !/^[a-zA-Z0-9]([a-zA-Z0-9\-]*[a-zA-Z0-9])?$/.test(s)) return null;
       return s;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // API VERSION AUTO-DETECT
+    // Calls GET {proxy}/versions?X-Vault-URL={vault} to fetch the
+    // list of API versions supported by the target tenant, then picks
+    // the latest one and auto-fills the api-version field.
+    // Falls back to the current field value if the probe fails.
+    // ─────────────────────────────────────────────────────────
+    function setVersionStatus(text, color) {
+      const el = document.getElementById('api-version-status');
+      const hint = document.getElementById('api-version-hint');
+      if (el) { el.textContent = text; el.style.color = color || 'var(--c-text-3)'; }
+      if (hint) {
+        hint.textContent = text
+          ? ''
+          : 'Enter your Vault URL above to auto-detect the latest supported version.';
+      }
+    }
+
+    async function probeApiVersion(vaultUrl) {
+      if (!PROXY_URL) return;   // no proxy configured — keep manual default
+      setVersionStatus('Detecting…', 'var(--c-text-3)');
+      try {
+        const res = await fetch(`${PROXY_URL}/versions`, {
+          method:  'GET',
+          headers: { 'X-Vault-URL': vaultUrl },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const latest = data.latest;
+        if (!latest) throw new Error('No version returned');
+        // Strip the leading 'v' for the input field display
+        document.getElementById('api-version').value = latest.replace(/^v/, '');
+        setVersionStatus(`✓ Auto-detected: ${latest}`, 'var(--c-success)');
+      } catch (err) {
+        // Non-fatal — fall back to whatever the user has in the field
+        setVersionStatus('Could not detect — using field value', 'var(--c-warn)');
+      }
     }
 
     // ─────────────────────────────────────────────────────────

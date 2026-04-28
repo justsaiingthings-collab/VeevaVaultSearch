@@ -76,7 +76,7 @@ function parseArgs() {
  */
 function executeVQL(baseUrl, token, vql, timeoutMs) {
   return new Promise((resolve, reject) => {
-    const url = new URL(`${baseUrl}/api/v24.1/query`);
+    const url = new URL(`${baseUrl}/api/v26.1/query`);
     const body = `q=${encodeURIComponent(vql)}`;
     const lib  = url.protocol === 'https:' ? https : http;
 
@@ -144,7 +144,7 @@ function classifyError(vaultResponse, vql) {
     return {
       type: 'FIELD_NAME_MISMATCH',
       detail: `Field "${badField}" does not exist in this tenant.`,
-      fix:    `Run GET /api/v24.1/metadata/objects/documents/properties and update the field "${badField}" in mdl/document-schema.mdl.js and vql/query-templates.js.`,
+      fix:    `Run GET /api/v26.1/metadata/objects/documents/properties and update the field "${badField}" in mdl/document-schema.mdl.js and vql/query-templates.js.`,
       badField,
     };
   }
@@ -155,7 +155,7 @@ function classifyError(vaultResponse, vql) {
     return {
       type:   'DOCUMENT_TYPE_MISMATCH',
       detail: `Document type "${badType}" does not exist in this tenant.`,
-      fix:    `Run GET /api/v24.1/metadata/objects/documents/types and update the type name "${badType}" in vql/query-templates.js and recommendation-engine/recommender.js.`,
+      fix:    `Run GET /api/v26.1/metadata/objects/documents/types and update the type name "${badType}" in vql/query-templates.js and recommendation-engine/recommender.js.`,
       badType,
     };
   }
@@ -166,7 +166,7 @@ function classifyError(vaultResponse, vql) {
     return {
       type:   'LIFECYCLE_STATE_MISMATCH',
       detail: `Lifecycle state "${badState}" does not exist in this tenant.`,
-      fix:    `Run GET /api/v24.1/metadata/objects/documents/properties and check lifecycle_state__v allowed values. Update query-templates.js.`,
+      fix:    `Run GET /api/v26.1/metadata/objects/documents/properties and check lifecycle_state__v allowed values. Update query-templates.js.`,
       badState,
     };
   }

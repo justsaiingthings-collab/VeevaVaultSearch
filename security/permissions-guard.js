@@ -557,13 +557,16 @@ class VersionAccessController {
    * @param {boolean}  includeVersionHistory - Did user explicitly request history?
    * @returns {Object[]} Permitted versions
    */
-  filterVersions(versions, userRole, includeVersionHistory = false) {
+  // approvedStates: configurable list of lifecycle states considered "approved".
+  // Defaults match Vault's standard Base Document Lifecycle names (lowercase __v).
+  // Override per-tenant when calling this method if your lifecycle uses custom state names.
+  filterVersions(versions, userRole, includeVersionHistory = false, approvedStates = ['approved__v', 'effective__v']) {
     const guard = new PermissionsGuard();
 
     // If user can't view version history, show latest approved only
     if (!includeVersionHistory && !guard.canViewVersionHistory(userRole)) {
       const latestApproved = versions
-        .filter(v => ['approved__v', 'effective__v'].includes(v.lifecycleState || v.lifecycle_state__v))
+        .filter(v => approvedStates.includes(v.lifecycleState || v.lifecycle_state__v))
         .sort((a, b) => {
           const ma = a.majorVersion || a.major_version_number__v || 0;
           const mb = b.majorVersion || b.major_version_number__v || 0;

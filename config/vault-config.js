@@ -19,7 +19,7 @@ const VAULT_CONFIG = {
   // ── VAULT INSTANCE ──────────────────────────────────────────
   // Set via connect.html UI or environment variables.
   baseUrl:    process.env.VAULT_BASE_URL    || 'https://your-tenant.veevavault.com',
-  apiVersion: process.env.VAULT_API_VERSION || 'v24.1',
+  apiVersion: process.env.VAULT_API_VERSION || 'v26.1',
 
   // ── AUTH ─────────────────────────────────────────────────────
   // Supported: 'password' | 'oauth'
@@ -38,12 +38,12 @@ const VAULT_CONFIG = {
 
   // ── ENDPOINTS ────────────────────────────────────────────────
   endpoints: {
-    query:         '/api/v24.1/query',
-    auth:          '/api/v24.1/auth',
+    query:         '/api/v26.1/query',
+    auth:          '/api/v26.1/auth',
     discovery:     '/auth/discovery',
-    objects:       '/api/v24.1/objects',
-    documents:     '/api/v24.1/documents',
-    auditTrail:    '/api/v24.1/audittrail',
+    objects:       '/api/v26.1/objects',
+    documents:     '/api/v26.1/documents',
+    auditTrail:    '/api/v26.1/audittrail',
   },
 
   // ── QUERY SETTINGS ───────────────────────────────────────────

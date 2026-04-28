@@ -382,6 +382,67 @@ async function handleOAuthSession(event) {
   }
 }
 
+// ── API versions probe ────────────────────────────────────────────────────────
+// Returns the list of API versions supported by the target Vault tenant.
+//
+// Vault's GET /api endpoint is public (no session token required) and returns:
+//   { "responseStatus": "SUCCESS", "values": ["v1.0", ..., "v26.1"] }
+//
+// The browser cannot call this directly due to CORS; this route acts as the
+// CORS bridge. No token is needed — only X-Vault-URL.
+//
+// Request:  GET /versions
+// Headers:  X-Vault-URL
+// Response: { values: string[], latest: string }
+
+async function handleVersions(event) {
+  const hdrs     = event.headers || {};
+  const vaultUrl = hdrs['x-vault-url'];
+
+  if (!vaultUrl) return respond(400, { error: 'Missing required header: X-Vault-URL' });
+
+  const urlCheck = validateVaultUrl(vaultUrl);
+  if (!urlCheck.ok) return respond(400, { error: urlCheck.reason });
+
+  const endpoint = `${vaultUrl.replace(/\/$/, '')}/api`;
+
+  try {
+    const upstream = await fetchWithTimeout(
+      endpoint,
+      { method: 'GET', headers: { 'Accept': 'application/json' } },
+      REQUEST_TIMEOUT_MS,
+    );
+
+    const data = await upstream.json();
+
+    // Pick the latest version: sort by major then minor descending
+    const versions = Array.isArray(data?.values) ? data.values : [];
+    const latest = versions
+      .filter(v => /^v\d+\.\d+$/.test(v))
+      .sort((a, b) => {
+        const [aMaj, aMin] = a.slice(1).split('.').map(Number);
+        const [bMaj, bMin] = b.slice(1).split('.').map(Number);
+        return bMaj !== aMaj ? bMaj - aMaj : bMin - aMin;
+      })[0] || 'v26.1';
+
+    console.log(JSON.stringify({
+      event:      'vault_versions',
+      vaultHost:  new URL(vaultUrl).hostname,
+      latest,
+      count:      versions.length,
+    }));
+
+    return respond(upstream.status, { ...data, latest });
+
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return respond(504, { error: 'Vault versions request timed out' });
+    }
+    console.error(JSON.stringify({ event: 'vault_versions_error', error: err.message }));
+    return respond(502, { error: 'Vault versions unreachable', detail: err.message });
+  }
+}
+
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 export const handler = async (event) => {
@@ -397,6 +458,7 @@ export const handler = async (event) => {
   }
 
   if (path === '/health'        && method === 'GET')  return respond(200, { status: 'ok', version: '1.0.0', ts: new Date().toISOString() });
+  if (path === '/versions'      && method === 'GET')  return handleVersions(event);
   if (path === '/query'         && method === 'POST') return handleQuery(event);
   if (path === '/auth'          && method === 'POST') return handleAuth(event);
   if (path === '/oauth/session' && method === 'POST') return handleOAuthSession(event);
