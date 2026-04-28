@@ -122,7 +122,7 @@ const VERSION_ENTITY = {
    */
   versionHierarchyRules: {
     defaultSort: ['major_version_number__v DESC', 'minor_version_number__v DESC'],
-    suppressedStates: ['Obsolete__v', 'Superseded__v', 'Archived__v'],
+    suppressedStates: ['obsolete__v', 'superseded__v', 'archived__v'],
     latestApprovedFirst: true,
     collapseMinorVersions: true,
     groupByDocumentId: true,
@@ -137,26 +137,26 @@ const VERSION_ENTITY = {
 const LIFECYCLE_STATES = {
   // Standard QualityDocs Lifecycle
   QualityDocs: {
-    states: ['Draft__v', 'In Review__v', 'Approved__v', 'Effective__v', 'Superseded__v', 'Obsolete__v'],
-    searchableStates: ['Draft__v', 'In Review__v', 'Approved__v', 'Effective__v'],
-    approvedStates: ['Approved__v', 'Effective__v'],
-    draftStates: ['Draft__v', 'In Review__v'],
-    terminalStates: ['Superseded__v', 'Obsolete__v'],
+    states: ['draft__v', 'in_review__v', 'approved__v', 'effective__v', 'superseded__v', 'obsolete__v'],
+    searchableStates: ['draft__v', 'in_review__v', 'approved__v', 'effective__v'],
+    approvedStates: ['approved__v', 'effective__v'],
+    draftStates: ['draft__v', 'in_review__v'],
+    terminalStates: ['superseded__v', 'obsolete__v'],
   },
   // Standard Submission Lifecycle
   Submission: {
-    states: ['Draft__v', 'Under Review__v', 'Approved__v', 'Submitted__v', 'Accepted__v', 'Rejected__v'],
-    searchableStates: ['Draft__v', 'Under Review__v', 'Approved__v', 'Submitted__v'],
-    approvedStates: ['Approved__v', 'Submitted__v', 'Accepted__v'],
-    draftStates: ['Draft__v', 'Under Review__v'],
-    terminalStates: ['Rejected__v'],
+    states: ['draft__v', 'under_review__v', 'approved__v', 'submitted__v', 'accepted__v', 'rejected__v'],
+    searchableStates: ['draft__v', 'under_review__v', 'approved__v', 'submitted__v'],
+    approvedStates: ['approved__v', 'submitted__v', 'accepted__v'],
+    draftStates: ['draft__v', 'under_review__v'],
+    terminalStates: ['rejected__v'],
   },
   // CAPA / Deviation Lifecycle
   QualityEvent: {
-    states: ['Open__v', 'In Progress__v', 'Pending Review__v', 'Closed__v', 'Cancelled__v'],
-    searchableStates: ['Open__v', 'In Progress__v', 'Pending Review__v'],
-    openStates: ['Open__v', 'In Progress__v'],
-    closedStates: ['Closed__v', 'Cancelled__v'],
+    states: ['open__v', 'in_progress__v', 'pending_review__v', 'closed__v', 'cancelled__v'],
+    searchableStates: ['open__v', 'in_progress__v', 'pending_review__v'],
+    openStates: ['open__v', 'in_progress__v'],
+    closedStates: ['closed__v', 'cancelled__v'],
   },
 };
 
@@ -286,28 +286,28 @@ const PERMISSIONS_MODEL = {
     },
     QA_USER: {
       allowedTypes: ['SOP', 'Deviation', 'CAPA', 'Report'],
-      allowedStates: ['Approved__v', 'Effective__v', 'Open__v', 'In Progress__v', 'Closed__v'],
+      allowedStates: ['approved__v', 'effective__v', 'open__v', 'in_progress__v', 'closed__v'],
       canViewDrafts: false,
       canViewObsolete: false,
       canViewAllVersions: false,
     },
     CLINICAL_USER: {
       allowedTypes: ['Protocol', 'Report', 'SOP'],
-      allowedStates: ['Approved__v', 'Effective__v'],
+      allowedStates: ['approved__v', 'effective__v'],
       canViewDrafts: false,
       canViewObsolete: false,
       canViewAllVersions: false,
     },
     REGULATORY_USER: {
       allowedTypes: ['SOP', 'Policy', 'Report', 'Protocol'],
-      allowedStates: ['Approved__v', 'Effective__v', 'Submitted__v'],
+      allowedStates: ['approved__v', 'effective__v', 'submitted__v'],
       canViewDrafts: false,
       canViewObsolete: false,
       canViewAllVersions: false,
     },
     READ_ONLY: {
       allowedTypes: ['SOP', 'Policy'],
-      allowedStates: ['Approved__v', 'Effective__v'],
+      allowedStates: ['approved__v', 'effective__v'],
       canViewDrafts: false,
       canViewObsolete: false,
       canViewAllVersions: false,
@@ -334,7 +334,7 @@ const PERMISSIONS_MODEL = {
       description: 'Strip obsolete versions unless user requests version history',
       condition: (doc, userRole, queryContext) =>
         !queryContext.includeVersionHistory &&
-        ['Obsolete__v', 'Superseded__v'].includes(doc.lifecycle_state__v),
+        ['obsolete__v', 'superseded__v'].includes(doc.lifecycle_state__v),
       action: 'EXCLUDE',
     },
     {
@@ -382,14 +382,14 @@ const MDL_FILTER_SCHEMA = [
     vqlField: 'lifecycle_state__v',
     type: 'MULTI_PICKLIST',
     values: [
-      { label: 'Draft',          value: 'Draft__v'         },
-      { label: 'In Review',      value: 'In Review__v'     },
-      { label: 'Approved',       value: 'Approved__v'      },
-      { label: 'Effective',      value: 'Effective__v'     },
-      { label: 'Open',           value: 'Open__v'          },
-      { label: 'In Progress',    value: 'In Progress__v'   },
-      { label: 'Closed',         value: 'Closed__v'        },
-      { label: 'Obsolete',       value: 'Obsolete__v'      },
+      { label: 'Draft',          value: 'draft__v'         },
+      { label: 'In Review',      value: 'in_review__v'     },
+      { label: 'Approved',       value: 'approved__v'      },
+      { label: 'Effective',      value: 'effective__v'     },
+      { label: 'Open',           value: 'open__v'          },
+      { label: 'In Progress',    value: 'in_progress__v'   },
+      { label: 'Closed',         value: 'closed__v'        },
+      { label: 'Obsolete',       value: 'obsolete__v'      },
     ],
     vqlOperator: 'CONTAINS',
   },
@@ -428,9 +428,9 @@ const MDL_FILTER_SCHEMA = [
     vqlField: 'severity__v',
     type: 'PICKLIST',
     values: [
-      { label: 'Critical', value: 'Critical__v' },
-      { label: 'Major',    value: 'Major__v'    },
-      { label: 'Minor',    value: 'Minor__v'    },
+      { label: 'Critical', value: 'critical__v' },
+      { label: 'Major',    value: 'major__v'    },
+      { label: 'Minor',    value: 'minor__v'    },
     ],
     vqlOperator: '=',
   },

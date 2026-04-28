@@ -62,23 +62,23 @@
     },
 
     lifecycleState: {
-      'approved':       { state: 'Approved__v',    weight: 10 },
-      'effective':      { state: 'Effective__v',   weight: 10 },
-      'current':        { state: 'Effective__v',   weight: 8  },
-      'active':         { state: 'Effective__v',   weight: 7  },
-      'draft':          { state: 'Draft__v',        weight: 10 },
-      'in review':      { state: 'In Review__v',   weight: 10 },
-      'under review':   { state: 'In Review__v',   weight: 10 },
-      'pending':        { state: 'In Review__v',   weight: 7  },
-      'open':           { state: 'Open__v',         weight: 10 },
-      'closed':         { state: 'Closed__v',       weight: 10 },
-      'obsolete':       { state: 'Obsolete__v',     weight: 10 },
-      'superseded':     { state: 'Superseded__v',   weight: 10 },
-      'old':            { state: 'Superseded__v',   weight: 5  },
-      'in progress':    { state: 'In Progress__v',  weight: 10 },
-      'ongoing':        { state: 'In Progress__v',  weight: 6  },
-      'submitted':      { state: 'Submitted__v',    weight: 10 },
-      'accepted':       { state: 'Accepted__v',     weight: 10 },
+      'approved':       { state: 'approved__v',    weight: 10 },
+      'effective':      { state: 'effective__v',   weight: 10 },
+      'current':        { state: 'effective__v',   weight: 8  },
+      'active':         { state: 'effective__v',   weight: 7  },
+      'draft':          { state: 'draft__v',        weight: 10 },
+      'in review':      { state: 'in_review__v',   weight: 10 },
+      'under review':   { state: 'in_review__v',   weight: 10 },
+      'pending':        { state: 'in_review__v',   weight: 7  },
+      'open':           { state: 'open__v',         weight: 10 },
+      'closed':         { state: 'closed__v',       weight: 10 },
+      'obsolete':       { state: 'obsolete__v',     weight: 10 },
+      'superseded':     { state: 'superseded__v',   weight: 10 },
+      'old':            { state: 'superseded__v',   weight: 5  },
+      'in progress':    { state: 'in_progress__v',  weight: 10 },
+      'ongoing':        { state: 'in_progress__v',  weight: 6  },
+      'submitted':      { state: 'submitted__v',    weight: 10 },
+      'accepted':       { state: 'accepted__v',     weight: 10 },
     },
 
     temporal: {
@@ -100,13 +100,13 @@
     },
 
     severity: {
-      'critical':  { severity: 'Critical__v', weight: 10 },
-      'major':     { severity: 'Major__v',    weight: 10 },
-      'minor':     { severity: 'Minor__v',    weight: 10 },
-      'high':      { severity: 'Critical__v', weight: 8  },
-      'severe':    { severity: 'Critical__v', weight: 8  },
-      'serious':   { severity: 'Major__v',    weight: 7  },
-      'low':       { severity: 'Minor__v',    weight: 8  },
+      'critical':  { severity: 'critical__v', weight: 10 },
+      'major':     { severity: 'major__v',    weight: 10 },
+      'minor':     { severity: 'minor__v',    weight: 10 },
+      'high':      { severity: 'critical__v', weight: 8  },
+      'severe':    { severity: 'critical__v', weight: 8  },
+      'serious':   { severity: 'major__v',    weight: 7  },
+      'low':       { severity: 'minor__v',    weight: 8  },
     },
 
     audit: {
@@ -141,7 +141,7 @@
       condition: s => s.audit && (s.audit.subtype==='inspection'||s.audit.subtype==='readiness'),
       mapTo: { templateId:'audit_inspection_package', category:'audit' } },
     { id:'RULE-002', priority:100, name:'High Severity Deviation',
-      condition: s => s.docType==='Deviation__c' && s.severity && ['Critical__v','Major__v'].includes(s.severity),
+      condition: s => s.docType==='Deviation__c' && s.severity && ['critical__v','major__v'].includes(s.severity),
       mapTo: { templateId:'deviation_high_severity', category:'deviation' } },
     { id:'RULE-003', priority:100, name:'Deviation with CAPA link',
       condition: s => s.docType==='Deviation__c' && s.docType2==='CAPA__c',
@@ -159,22 +159,22 @@
       condition: s => s.version && s.version.modifier==='version_history',
       mapTo: { templateId:'time_version_history', category:'time', requiresDocId:true } },
     { id:'RULE-010', priority:70, name:'Approved SOPs',
-      condition: s => s.docType==='Standard Operating Procedure__c' && s.state && ['Approved__v','Effective__v'].includes(s.state),
+      condition: s => s.docType==='Standard Operating Procedure__c' && s.state && ['approved__v','effective__v'].includes(s.state),
       mapTo: { templateId:'sop_approved', category:'sop' } },
     { id:'RULE-011', priority:70, name:'SOPs for Product',
       condition: s => s.docType==='Standard Operating Procedure__c' && s.product,
       mapTo: { templateId:'sop_by_product', category:'sop' } },
     { id:'RULE-012', priority:70, name:'Open Deviations',
-      condition: s => s.docType==='Deviation__c' && (!s.state||s.state==='Open__v'||s.state==='In Progress__v'),
+      condition: s => s.docType==='Deviation__c' && (!s.state||s.state==='open__v'||s.state==='in_progress__v'),
       mapTo: { templateId:'deviation_all_open', category:'deviation' } },
     { id:'RULE-013', priority:70, name:'Open CAPAs',
-      condition: s => s.docType==='CAPA__c' && (!s.state||s.state==='Open__v'||s.state==='In Progress__v'),
+      condition: s => s.docType==='CAPA__c' && (!s.state||s.state==='open__v'||s.state==='in_progress__v'),
       mapTo: { templateId:'capa_open', category:'capa' } },
     { id:'RULE-014', priority:70, name:'Closed CAPAs',
-      condition: s => s.docType==='CAPA__c' && s.state==='Closed__v',
+      condition: s => s.docType==='CAPA__c' && s.state==='closed__v',
       mapTo: { templateId:'capa_closed', category:'capa' } },
     { id:'RULE-015', priority:80, name:'High Severity CAPAs',
-      condition: s => s.docType==='CAPA__c' && s.severity && ['Critical__v','Major__v'].includes(s.severity),
+      condition: s => s.docType==='CAPA__c' && s.severity && ['critical__v','major__v'].includes(s.severity),
       mapTo: { templateId:'capa_high_severity', category:'capa' } },
     { id:'RULE-016', priority:70, name:'Audit Ready Documents',
       condition: s => s.audit && !s.docType,
@@ -324,10 +324,10 @@
       ambiguity.isAmbiguous = true;
       ambiguity.reasons.push(`Multiple document types detected: ${signals.docType}, ${signals.docType2}`);
     }
-    if (signals.docType==='CAPA__c' && signals.state==='Approved__v') {
+    if (signals.docType==='CAPA__c' && signals.state==='approved__v') {
       ambiguity.isAmbiguous = true;
       ambiguity.reasons.push("CAPAs use 'Closed' not 'Approved'. Interpreting as 'Closed' state.");
-      ambiguity.stateCorrection = 'Closed__v';
+      ambiguity.stateCorrection = 'closed__v';
     }
     return ambiguity;
   }
@@ -435,7 +435,7 @@
       roleBonus:{}, contextBonus:{}, params:{ days_back:30 } },
     { id:'REC-REG-001', label:'Regulatory Submissions', description:'Documents in submitted/accepted lifecycle', templateId:'doc_by_lifecycle_state', category:'regulatory', icon:'🏛️', baseScore:30,
       triggers:{ keywords:['submission','submitted','regulatory'], roles:['REGULATORY_USER'] },
-      roleBonus:{ REGULATORY_USER:50 }, contextBonus:{}, params:{ lifecycle_state:'Submitted__v' } },
+      roleBonus:{ REGULATORY_USER:50 }, contextBonus:{}, params:{ lifecycle_state:'submitted__v' } },
     { id:'REC-CLIN-001', label:'Study Protocols', description:'All approved study protocols', templateId:'doc_by_type', category:'clinical', icon:'🧪', baseScore:30,
       triggers:{ keywords:['protocol','study','clinical','trial'], roles:['CLINICAL_USER'] },
       roleBonus:{ CLINICAL_USER:50 }, contextBonus:{ docType:'Protocol__c', bonus:25 }, params:{ type:'Protocol__c' } },

@@ -126,7 +126,7 @@ USER INPUT (Vault SDK UI)
 
 ### Version Hierarchy Rules
 
-1. **Latest Approved First**: `ORDER BY major_version_number__v DESC` where `lifecycle_state__v IN ('Approved__v', 'Effective__v')`
+1. **Latest Approved First**: `ORDER BY major_version_number__v DESC` where `lifecycle_state__v IN ('approved__v', 'effective__v')`
 2. **Version Group Key**: All records sharing `id` (not `version_id`) belong to one document group
 3. **Superseded Suppression**: Obsolete/Superseded versions hidden unless explicitly requested
 4. **Minor Version Collapse**: Minor versions (1.1, 1.2) collapsed under major version card in UI
@@ -170,8 +170,8 @@ Each template:
 Input:  "show me critical deviations"
 Output: {
   intent: { templateId: 'deviation_high_severity', ruleId: 'RULE-002' },
-  signals: { docType: 'Deviation__c', severity: 'Critical__v' },
-  params:  { severity: 'Critical__v' },
+  signals: { docType: 'Deviation__c', severity: 'critical__v' },
+  params:  { severity: 'critical__v' },
   ambiguity: { isAmbiguous: false }
 }
 ```
@@ -281,7 +281,7 @@ All scoring values are hardcoded integers. No floating point inference.
 │    major_version_number__v, effective_date__v            │
 │  FROM documents                                          │
 │  WHERE type__v = 'Standard Operating Procedure__c'       │
-│    AND lifecycle_state__v IN ('Approved__v','Effective__v')│
+│    AND lifecycle_state__v IN ('approved__v','effective__v')│
 │    AND is_latest_version__v = true                       │
 │  ORDER BY name__v ASC                                    │
 └──────────────────────────────────────────────────────────┘
@@ -334,7 +334,7 @@ const result = await queryService.executeTemplate(
   results: [
     {
       documentId: '100001',
-      primaryVersion: { name: '...', lifecycleState: 'Effective__v', ... },
+      primaryVersion: { name: '...', lifecycleState: 'effective__v', ... },
       versionCount: 3,
       versions: [...],      // Only if includeVersionHistory=true
       hasMultipleVersions: true,

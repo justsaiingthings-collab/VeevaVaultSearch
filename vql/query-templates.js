@@ -96,13 +96,13 @@ const DOCUMENT_DISCOVERY_TEMPLATES = [
              last_modified_date__v, owner__v, status__v
       FROM documents
       WHERE is_latest_version__v = true
-        AND lifecycle_state__v != 'Obsolete__v'
+        AND lifecycle_state__v != 'obsolete__v'
       ORDER BY last_modified_date__v DESC
       LIMIT 100
     `,
     explanation: `
       - is_latest_version__v = true        → Only the most recent version of each document
-      - lifecycle_state__v != 'Obsolete__v' → Excludes retired documents from default view
+      - lifecycle_state__v != 'obsolete__v' → Excludes retired documents from default view
       - ORDER BY last_modified_date__v DESC → Most recently changed documents appear first
       - LIMIT 100                           → Pagination guard; use OFFSET for subsequent pages
     `,
@@ -123,13 +123,13 @@ const DOCUMENT_DISCOVERY_TEMPLATES = [
       FROM documents
       WHERE type__v = '{{type}}'
         AND is_latest_version__v = true
-        AND lifecycle_state__v != 'Obsolete__v'
+        AND lifecycle_state__v != 'obsolete__v'
       ORDER BY name__v ASC
     `,
     explanation: `
       - type__v = '{{type}}'              → Exact match on Vault document type API name
       - is_latest_version__v = true        → Latest version only (no version noise)
-      - lifecycle_state__v != 'Obsolete__v' → Exclude retired documents
+      - lifecycle_state__v != 'obsolete__v' → Exclude retired documents
       - ORDER BY name__v ASC               → Alphabetical for predictable ordering
     `,
   },
@@ -138,7 +138,7 @@ const DOCUMENT_DISCOVERY_TEMPLATES = [
     id: 'doc_by_lifecycle_state',
     category: 'Document Discovery',
     name: 'Documents by Lifecycle State',
-    description: 'Returns all documents in a specific lifecycle state (e.g., "Approved__v", "Draft__v").',
+    description: 'Returns all documents in a specific lifecycle state (e.g., "approved__v", "draft__v").',
     filters: {
       lifecycle_state: { required: true, vqlField: 'lifecycle_state__v', description: 'Vault lifecycle state API name' },
     },
@@ -170,7 +170,7 @@ const DOCUMENT_DISCOVERY_TEMPLATES = [
       FROM documents
       WHERE product__v CONTAINS '{{product_id}}'
         AND is_latest_version__v = true
-        AND lifecycle_state__v != 'Obsolete__v'
+        AND lifecycle_state__v != 'obsolete__v'
       ORDER BY type__v ASC, name__v ASC
     `,
     explanation: `
@@ -197,13 +197,13 @@ const SOP_TEMPLATES = [
              effective_date__v, owner__v, last_modified_date__v
       FROM documents
       WHERE type__v = 'Standard Operating Procedure__c'
-        AND lifecycle_state__v IN ('Approved__v', 'Effective__v')
+        AND lifecycle_state__v IN ('approved__v', 'effective__v')
         AND is_latest_version__v = true
       ORDER BY name__v ASC
     `,
     explanation: `
       - type__v = 'Standard Operating Procedure__c'   → SOP type only
-      - lifecycle_state__v IN ('Approved__v','Effective__v') → Both approved and in-effect states
+      - lifecycle_state__v IN ('approved__v','effective__v') → Both approved and in-effect states
       - is_latest_version__v = true                    → Current version only
     `,
   },
@@ -224,7 +224,7 @@ const SOP_TEMPLATES = [
       ORDER BY last_modified_date__v DESC
     `,
     explanation: `
-      - No lifecycle_state__v filter → Returns ALL states including Draft, In Review
+      - No lifecycle_state__v filter → Returns ALL states including draft, in_review__v
       - is_latest_version__v = true  → Latest version only (no historical versions)
       - Useful for: QA admin oversight, workflow management
       - Access: QA_ADMIN role only (enforced at permission layer)
@@ -245,7 +245,7 @@ const SOP_TEMPLATES = [
       FROM documents
       WHERE type__v = 'Standard Operating Procedure__c'
         AND product__v CONTAINS '{{product_id}}'
-        AND lifecycle_state__v IN ('Approved__v', 'Effective__v')
+        AND lifecycle_state__v IN ('approved__v', 'effective__v')
         AND is_latest_version__v = true
       ORDER BY name__v ASC
     `,
@@ -294,7 +294,7 @@ const SOP_TEMPLATES = [
              effective_date__v, owner__v
       FROM documents
       WHERE type__v = 'Standard Operating Procedure__c'
-        AND lifecycle_state__v IN ('Approved__v', 'Effective__v')
+        AND lifecycle_state__v IN ('approved__v', 'effective__v')
         AND is_latest_version__v = true
         AND expiration_date__v != null
         AND expiration_date__v <= dateadd(now(), {{days_ahead}}, 'day')
@@ -327,13 +327,13 @@ const DEVIATION_TEMPLATES = [
              created_date__v, owner__v, product__v
       FROM documents
       WHERE type__v = 'Deviation__c'
-        AND lifecycle_state__v IN ('Open__v', 'In Progress__v')
+        AND lifecycle_state__v IN ('open__v', 'in_progress__v')
         AND is_latest_version__v = true
       ORDER BY severity__v ASC, created_date__v DESC
     `,
     explanation: `
       - type__v = 'Deviation__c'                         → Deviation documents only
-      - lifecycle_state__v IN ('Open__v','In Progress__v') → Active investigations only
+      - lifecycle_state__v IN ('open__v','in_progress__v') → Active investigations only
       - ORDER BY severity__v ASC, created_date__v DESC    → Critical first, then newest
     `,
   },
@@ -375,13 +375,13 @@ const DEVIATION_TEMPLATES = [
              created_date__v, owner__v, capa_id__c, product__v
       FROM documents
       WHERE type__v = 'Deviation__c'
-        AND severity__v IN ('Critical__v', 'Major__v')
-        AND lifecycle_state__v IN ('Open__v', 'In Progress__v')
+        AND severity__v IN ('critical__v', 'major__v')
+        AND lifecycle_state__v IN ('open__v', 'in_progress__v')
         AND is_latest_version__v = true
       ORDER BY severity__v ASC, created_date__v DESC
     `,
     explanation: `
-      - severity__v IN ('Critical__v','Major__v') → High severity filter
+      - severity__v IN ('critical__v','major__v') → High severity filter
       - Open/In Progress states only              → Active issues
       - Critical listed before Major (ASC sort)   → Worst first
     `,
@@ -449,13 +449,13 @@ const CAPA_TEMPLATES = [
              created_date__v, owner__v, product__v
       FROM documents
       WHERE type__v = 'CAPA__c'
-        AND lifecycle_state__v IN ('Open__v', 'In Progress__v')
+        AND lifecycle_state__v IN ('open__v', 'in_progress__v')
         AND is_latest_version__v = true
       ORDER BY priority__v ASC, created_date__v DESC
     `,
     explanation: `
       - type__v = 'CAPA__c'                              → CAPA documents only
-      - lifecycle_state__v IN ('Open__v','In Progress__v') → Active CAPAs
+      - lifecycle_state__v IN ('open__v','in_progress__v') → Active CAPAs
       - ORDER BY priority__v ASC                         → Highest priority first
     `,
   },
@@ -472,12 +472,12 @@ const CAPA_TEMPLATES = [
              owner__v, product__v
       FROM documents
       WHERE type__v = 'CAPA__c'
-        AND lifecycle_state__v = 'Closed__v'
+        AND lifecycle_state__v = 'closed__v'
         AND is_latest_version__v = true
       ORDER BY last_modified_date__v DESC
     `,
     explanation: `
-      - lifecycle_state__v = 'Closed__v' → Only completed CAPAs
+      - lifecycle_state__v = 'closed__v' → Only completed CAPAs
       - Closed date approximated via last_modified_date__v
       - Useful for: inspection readiness, effectiveness checks
     `,
@@ -495,12 +495,12 @@ const CAPA_TEMPLATES = [
              created_date__v, owner__v, product__v
       FROM documents
       WHERE type__v = 'CAPA__c'
-        AND severity__v IN ('Critical__v', 'Major__v')
+        AND severity__v IN ('critical__v', 'major__v')
         AND is_latest_version__v = true
       ORDER BY severity__v ASC, lifecycle_state__v ASC, created_date__v DESC
     `,
     explanation: `
-      - severity__v IN ('Critical__v','Major__v') → High severity only
+      - severity__v IN ('critical__v','major__v') → High severity only
       - All lifecycle states → Shows open and closed critical CAPAs
       - Sorted: Critical first, then by state (Open before Closed)
     `,
@@ -518,7 +518,7 @@ const CAPA_TEMPLATES = [
              owner__v, product__v, created_date__v
       FROM documents
       WHERE type__v = 'CAPA__c'
-        AND lifecycle_state__v IN ('Open__v', 'In Progress__v')
+        AND lifecycle_state__v IN ('open__v', 'in_progress__v')
         AND expiration_date__v != null
         AND expiration_date__v < now()
         AND is_latest_version__v = true
@@ -572,14 +572,14 @@ const AUDIT_TEMPLATES = [
              major_version_number__v, effective_date__v,
              expiration_date__v, owner__v, gxp_relevant__c
       FROM documents
-      WHERE lifecycle_state__v IN ('Approved__v', 'Effective__v')
+      WHERE lifecycle_state__v IN ('approved__v', 'effective__v')
         AND gxp_relevant__c = true
         AND is_latest_version__v = true
         AND expiration_date__v > now()
       ORDER BY type__v ASC, name__v ASC
     `,
     explanation: `
-      - lifecycle_state__v IN ('Approved__v','Effective__v') → Only approved documents
+      - lifecycle_state__v IN ('approved__v','effective__v') → Only approved documents
       - gxp_relevant__c = true                               → GxP-relevant documents only
       - expiration_date__v > now()                           → Not expired
       - is_latest_version__v = true                          → Current version
@@ -606,7 +606,7 @@ const AUDIT_TEMPLATES = [
           'CAPA__c',
           'Report__c'
         )
-        AND lifecycle_state__v IN ('Approved__v', 'Effective__v', 'Closed__v')
+        AND lifecycle_state__v IN ('approved__v', 'effective__v', 'closed__v')
         AND is_latest_version__v = true
       ORDER BY type__v ASC, name__v ASC
     `,
@@ -632,7 +632,7 @@ const AUDIT_TEMPLATES = [
              last_modified_by__v
       FROM documents
       WHERE last_modified_date__v >= dateadd(now(), -{{days_back}}, 'day')
-        AND lifecycle_state__v NOT IN ('Obsolete__v', 'Superseded__v')
+        AND lifecycle_state__v NOT IN ('obsolete__v', 'superseded__v')
       ORDER BY last_modified_date__v DESC
     `,
     explanation: `
@@ -654,7 +654,7 @@ const AUDIT_TEMPLATES = [
              owner__v, effective_date__v
       FROM documents
       WHERE gxp_relevant__c = true
-        AND lifecycle_state__v IN ('Approved__v', 'Effective__v')
+        AND lifecycle_state__v IN ('approved__v', 'effective__v')
         AND electronic_signature__v = false
         AND is_latest_version__v = true
       ORDER BY type__v ASC, name__v ASC
@@ -708,7 +708,7 @@ const TIME_BASED_TEMPLATES = [
       SELECT id, name__v, title__v, type__v, lifecycle_state__v,
              major_version_number__v, approved_date__v, owner__v
       FROM documents
-      WHERE lifecycle_state__v IN ('Approved__v', 'Effective__v')
+      WHERE lifecycle_state__v IN ('approved__v', 'effective__v')
         AND approved_date__v >= dateadd(now(), -{{days_back}}, 'day')
         AND is_latest_version__v = true
       ORDER BY approved_date__v DESC
@@ -736,7 +736,7 @@ const TIME_BASED_TEMPLATES = [
       WHERE expiration_date__v != null
         AND expiration_date__v >= now()
         AND expiration_date__v <= dateadd(now(), {{days_ahead}}, 'day')
-        AND lifecycle_state__v IN ('Approved__v', 'Effective__v')
+        AND lifecycle_state__v IN ('approved__v', 'effective__v')
         AND is_latest_version__v = true
       ORDER BY expiration_date__v ASC
     `,
@@ -836,7 +836,7 @@ const ETMF_TEMPLATES = [
       FROM documents
       WHERE type__v = 'TMF__c'
         AND clinical_study__c != null
-        AND lifecycle_state__v NOT IN ('Obsolete__v', 'Closed__v')
+        AND lifecycle_state__v NOT IN ('obsolete__v', 'closed__v')
         AND is_latest_version__v = true
       ORDER BY clinical_study__c ASC, type__v ASC, name__v ASC
     `,
@@ -859,7 +859,7 @@ const RIM_TEMPLATES = [
              major_version_number__v, last_modified_date__v, owner__v
       FROM documents
       WHERE type__v = 'Regulatory__c'
-        AND lifecycle_state__v IN ('Submitted__v', 'Pending Approval__v', 'In Review__v')
+        AND lifecycle_state__v IN ('submitted__v', 'pending_approval__v', 'in_review__v')
         AND is_latest_version__v = true
       ORDER BY last_modified_date__v DESC
     `,
@@ -879,7 +879,7 @@ const RIM_TEMPLATES = [
              major_version_number__v, last_modified_date__v, owner__v
       FROM documents
       WHERE type__v = 'Regulatory__c'
-        AND lifecycle_state__v IN ('Approved__v', 'Effective__v')
+        AND lifecycle_state__v IN ('approved__v', 'effective__v')
         AND is_latest_version__v = true
       ORDER BY name__v ASC
     `,
@@ -902,7 +902,7 @@ const SAFETY_TEMPLATES = [
              severity__v, last_modified_date__v, owner__v
       FROM documents
       WHERE type__v = 'AdverseEvent__c'
-        AND lifecycle_state__v IN ('Open__v', 'In Progress__v')
+        AND lifecycle_state__v IN ('open__v', 'in_progress__v')
         AND is_latest_version__v = true
       ORDER BY severity__v ASC, last_modified_date__v DESC
     `,
@@ -923,7 +923,7 @@ const SAFETY_TEMPLATES = [
              severity__v, last_modified_date__v, owner__v
       FROM documents
       WHERE type__v IN ('AdverseEvent__c', 'SafetyCase__c')
-        AND lifecycle_state__v != 'Closed__v'
+        AND lifecycle_state__v != 'closed__v'
         AND is_latest_version__v = true
       ORDER BY last_modified_date__v DESC
     `,
@@ -946,7 +946,7 @@ const PROMOMATS_TEMPLATES = [
              major_version_number__v, last_modified_date__v, owner__v
       FROM documents
       WHERE type__v = 'PromotionalMaterial__c'
-        AND lifecycle_state__v IN ('Approved__v', 'Effective__v')
+        AND lifecycle_state__v IN ('approved__v', 'effective__v')
         AND is_latest_version__v = true
       ORDER BY name__v ASC
     `,
@@ -968,7 +968,7 @@ const PROMOMATS_TEMPLATES = [
       WHERE type__v = 'PromotionalMaterial__c'
         AND expiration_date__v > now()
         AND expiration_date__v <= dateadd(now(), 90, 'day')
-        AND lifecycle_state__v IN ('Approved__v', 'Effective__v')
+        AND lifecycle_state__v IN ('approved__v', 'effective__v')
         AND is_latest_version__v = true
       ORDER BY expiration_date__v ASC
     `,

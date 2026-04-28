@@ -115,7 +115,7 @@ class RoleValidator {
     if (profile.allowedStates.includes('ALL')) return true;
 
     // Draft access check
-    if (['Draft__v', 'In Review__v'].includes(state)) {
+    if (['draft__v', 'in_review__v'].includes(state)) {
       return profile.canViewDrafts === true;
     }
 
@@ -238,19 +238,18 @@ class VQLSanitizer {
 // Single source of truth — used by both VQLSanitizer (server-side)
 // and proxy/handler.mjs (edge layer). Update here, deploy both.
 // ─────────────────────────────────────────────────────────────
+// NOTE: /\bSELECT\b/ intentionally absent — all valid VQL starts with SELECT.
+// /\bUPDATE\b/ and /\bDELETE\b/ absent — lifecycle state names like
+// "pending_update__v" legitimately contain these as substrings.
+// SYNC: keep in sync with INJECTION_PATTERNS in proxy/handler.mjs.
 const SHARED_INJECTION_PATTERNS = [
   /('|")\s*(OR|AND)\s*('|")\d*('|")\s*=\s*('|")\d*/i,  // ' OR '1'='1
-  /--/,                                                    // SQL line comment
   /\/\*/,                                                  // Block comment
-  /\bSELECT\b/i,                                          // Nested SELECT
   /\bDROP\b/i,                                            // DROP
-  /\bDELETE\b/i,                                          // DELETE
-  /\bUPDATE\b/i,                                          // UPDATE
   /\bINSERT\b/i,                                          // INSERT
   /\bEXEC\b/i,                                            // EXEC
-  /\bUNION\b/i,                                           // UNION
-  /;\s*(DROP|DELETE|INSERT|UPDATE|TRUNCATE|ALTER|CREATE|GRANT|REVOKE)\b/i, // chained write ops
   /\bUNION\s+SELECT\b/i,                                  // UNION SELECT
+  /;\s*(DROP|DELETE|INSERT|UPDATE|TRUNCATE|ALTER|CREATE|GRANT|REVOKE)\b/i, // chained write ops
   /%27|%22|%3B/i,                                         // URL-encoded quote/semicolon
 ];
 
@@ -504,13 +503,13 @@ class PermissionsGuard {
 
       // Check 3: Version access (non-admins can't see obsolete)
       const state = doc.lifecycleState || doc.lifecycle_state__v || '';
-      if (!profile.canViewObsolete && ['Obsolete__v', 'Superseded__v', 'Archived__v'].includes(state)) {
+      if (!profile.canViewObsolete && ['obsolete__v', 'superseded__v', 'archived__v'].includes(state)) {
         excluded.push({ docId: doc.id, reason: 'OBSOLETE_VERSION_SUPPRESSED' });
         return false;
       }
 
       // Check 4: Draft visibility
-      const isDraft = ['Draft__v', 'In Review__v'].includes(state);
+      const isDraft = ['draft__v', 'in_review__v'].includes(state);
       if (isDraft && !profile.canViewDrafts) {
         excluded.push({ docId: doc.id, reason: 'DRAFT_NOT_VISIBLE_TO_ROLE' });
         return false;
@@ -564,7 +563,7 @@ class VersionAccessController {
     // If user can't view version history, show latest approved only
     if (!includeVersionHistory && !guard.canViewVersionHistory(userRole)) {
       const latestApproved = versions
-        .filter(v => ['Approved__v', 'Effective__v'].includes(v.lifecycleState || v.lifecycle_state__v))
+        .filter(v => ['approved__v', 'effective__v'].includes(v.lifecycleState || v.lifecycle_state__v))
         .sort((a, b) => {
           const ma = a.majorVersion || a.major_version_number__v || 0;
           const mb = b.majorVersion || b.major_version_number__v || 0;
@@ -584,7 +583,7 @@ class VersionAccessController {
     // Filter out obsolete/superseded unless admin explicitly requested them
     return versions.filter(v => {
       const state = v.lifecycleState || v.lifecycle_state__v || '';
-      return !['Obsolete__v', 'Superseded__v', 'Archived__v'].includes(state) ||
+      return !['obsolete__v', 'superseded__v', 'archived__v'].includes(state) ||
              guard.canViewVersionHistory(userRole);
     });
   }

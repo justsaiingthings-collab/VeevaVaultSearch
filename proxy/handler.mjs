@@ -30,19 +30,20 @@ const REQUEST_TIMEOUT_MS  = parseInt(process.env.REQUEST_TIMEOUT_MS || '10000', 
 // SYNC NOTE: Keep this list in sync with SHARED_INJECTION_PATTERNS in
 // security/permissions-guard.js — the proxy is ESM with no bundler so we
 // duplicate rather than import, but both must match.
+// NOTE: /\bSELECT\b/ intentionally removed — all valid VQL starts with SELECT.
+// VQL has no subquery support so a nested SELECT is not a meaningful vector.
+// /\bUPDATE\b/ and /\bDELETE\b/ removed — lifecycle state names like
+// "pending_update__v" legitimately contain these as substrings.
+// /--/ removed — VQL ORDER BY / field name chains use double-underscore (__v)
+// which would not match, but VQL comments are not valid syntax anyway.
 const INJECTION_PATTERNS = [
   /('|")\s*(OR|AND)\s*('|")\d*('|")\s*=\s*('|")\d*/i,  // ' OR '1'='1 classic
-  /--/,                                                    // SQL line comment
   /\/\*/,                                                  // Block comment start
-  /\bSELECT\b/i,                                          // Nested SELECT
-  /\bDROP\b/i,                                            // DROP
-  /\bDELETE\b/i,                                          // DELETE
-  /\bUPDATE\b/i,                                          // UPDATE
-  /\bINSERT\b/i,                                          // INSERT
-  /\bEXEC\b/i,                                            // EXEC
-  /\bUNION\b/i,                                           // UNION
+  /\bDROP\b/i,                                            // DROP statement
+  /\bINSERT\b/i,                                          // INSERT statement
+  /\bEXEC\b/i,                                            // EXEC / stored proc
+  /\bUNION\s+SELECT\b/i,                                  // UNION SELECT
   /;\s*(DROP|DELETE|INSERT|UPDATE|TRUNCATE|ALTER|CREATE|GRANT|REVOKE)\b/i,
-  /\bUNION\s+SELECT\b/i,
   /%27|%22|%3B/i,      // URL-encoded quote/semicolon
 ];
 

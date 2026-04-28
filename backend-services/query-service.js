@@ -250,7 +250,7 @@ class ResultAggregationService {
 
       // Determine primary version (latest approved, or latest draft)
       const latestApproved = versions.find(v =>
-        ['Approved__v', 'Effective__v'].includes(v.lifecycleState)
+        ['approved__v', 'effective__v'].includes(v.lifecycleState)
       );
       const primaryVersion = latestApproved || versions[0];
 
@@ -301,7 +301,7 @@ class MetadataService {
         filter = {
           ...filter,
           values: filter.values.filter(v =>
-            !['Draft__v', 'In Review__v'].includes(v.value)
+            !['draft__v', 'in_review__v'].includes(v.value)
           ),
         };
       }

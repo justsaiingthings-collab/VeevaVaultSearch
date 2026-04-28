@@ -363,7 +363,7 @@ const RECOMMENDATION_CATALOG = [
     },
     roleBonus:    { REGULATORY_USER: 50 },
     contextBonus: {},
-    params:       { lifecycle_state: 'Submitted__v' },
+    params:       { lifecycle_state: 'submitted__v' },
   },
 
   // ── ROLE-SPECIFIC: CLINICAL USER ─────────────────────────

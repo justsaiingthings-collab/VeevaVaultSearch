@@ -66,10 +66,10 @@ Step 2 — Config file per Vault module (ship with defaults):
     "report":    "Report__c"
   },
   "states": {
-    "approved":   ["Approved__v", "Effective__v"],
-    "draft":      ["Draft__v"],
-    "pending":    ["Pending Approval__v"],
-    "obsolete":   ["Obsolete__v", "Superseded__v"]
+    "approved":   ["approved__v", "effective__v"],
+    "draft":      ["draft__v"],
+    "pending":    ["pending_approval__v"],
+    "obsolete":   ["obsolete__v", "superseded__v"]
   },
   "fields": {
     "severity":      "severity__v",
@@ -125,7 +125,7 @@ const TEMPLATES = {
     source: 'documents',       // 'documents' | 'objects' | 'auto'
     object_type: 'capaaction__v',
     vql_docs:    `SELECT id, name__v, type__v, lifecycle_state__v ... FROM documents WHERE type__v = '${cfg.types.capa}'...`,
-    vql_objects: `SELECT id, name__v, status__v, severity__v, due_date__v, assigned_to__vr.name__v FROM capaaction__v WHERE status__v NOT IN ('Closed__v','Cancelled__v') ORDER BY severity__v ASC LIMIT 50`,
+    vql_objects: `SELECT id, name__v, status__v, severity__v, due_date__v, assigned_to__vr.name__v FROM capaaction__v WHERE status__v NOT IN ('closed__v','cancelled__v') ORDER BY severity__v ASC LIMIT 50`,
   }
 }
 ```

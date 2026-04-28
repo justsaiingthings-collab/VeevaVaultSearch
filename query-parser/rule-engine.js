@@ -64,21 +64,21 @@ const KEYWORD_DICTIONARIES = {
 
   // --- Lifecycle State Keywords ---
   lifecycleState: {
-    'approved':       { state: 'Approved__v',    weight: 10 },
-    'effective':      { state: 'Effective__v',   weight: 10 },
-    'current':        { state: 'Effective__v',   weight: 8  },
-    'active':         { state: 'Effective__v',   weight: 7  },
-    'draft':          { state: 'Draft__v',        weight: 10 },
-    'in review':      { state: 'In Review__v',   weight: 10 },
-    'under review':   { state: 'In Review__v',   weight: 10 },
-    'pending':        { state: 'In Review__v',   weight: 7  },
-    'open':           { state: 'Open__v',         weight: 10 },
-    'closed':         { state: 'Closed__v',       weight: 10 },
-    'obsolete':       { state: 'Obsolete__v',     weight: 10 },
-    'superseded':     { state: 'Superseded__v',   weight: 10 },
-    'old':            { state: 'Superseded__v',   weight: 5  },
-    'in progress':    { state: 'In Progress__v',  weight: 10 },
-    'ongoing':        { state: 'In Progress__v',  weight: 6  },
+    'approved':       { state: 'approved__v',    weight: 10 },
+    'effective':      { state: 'effective__v',   weight: 10 },
+    'current':        { state: 'effective__v',   weight: 8  },
+    'active':         { state: 'effective__v',   weight: 7  },
+    'draft':          { state: 'draft__v',        weight: 10 },
+    'in review':      { state: 'in_review__v',   weight: 10 },
+    'under review':   { state: 'in_review__v',   weight: 10 },
+    'pending':        { state: 'in_review__v',   weight: 7  },
+    'open':           { state: 'open__v',         weight: 10 },
+    'closed':         { state: 'closed__v',       weight: 10 },
+    'obsolete':       { state: 'obsolete__v',     weight: 10 },
+    'superseded':     { state: 'superseded__v',   weight: 10 },
+    'old':            { state: 'superseded__v',   weight: 5  },
+    'in progress':    { state: 'in_progress__v',  weight: 10 },
+    'ongoing':        { state: 'in_progress__v',  weight: 6  },
   },
 
   // --- Temporal Keywords ---
@@ -102,13 +102,13 @@ const KEYWORD_DICTIONARIES = {
 
   // --- Severity Keywords ---
   severity: {
-    'critical':  { severity: 'Critical__v', weight: 10 },
-    'major':     { severity: 'Major__v',    weight: 10 },
-    'minor':     { severity: 'Minor__v',    weight: 10 },
-    'high':      { severity: 'Critical__v', weight: 8  },
-    'severe':    { severity: 'Critical__v', weight: 8  },
-    'serious':   { severity: 'Major__v',    weight: 7  },
-    'low':       { severity: 'Minor__v',    weight: 8  },
+    'critical':  { severity: 'critical__v', weight: 10 },
+    'major':     { severity: 'major__v',    weight: 10 },
+    'minor':     { severity: 'minor__v',    weight: 10 },
+    'high':      { severity: 'critical__v', weight: 8  },
+    'severe':    { severity: 'critical__v', weight: 8  },
+    'serious':   { severity: 'major__v',    weight: 7  },
+    'low':       { severity: 'minor__v',    weight: 8  },
   },
 
   // --- Audit / Compliance Keywords ---
@@ -159,7 +159,7 @@ const INTENT_MAPPING_RULES = [
     name: 'High Severity Deviation',
     condition: (signals) =>
       signals.docType === 'Deviation__c' && signals.severity &&
-      ['Critical__v', 'Major__v'].includes(signals.severity),
+      ['critical__v', 'major__v'].includes(signals.severity),
     mapTo: { templateId: 'deviation_high_severity', category: 'deviation' },
   },
   {
@@ -222,7 +222,7 @@ const INTENT_MAPPING_RULES = [
     name: 'Approved SOPs',
     condition: (signals) =>
       signals.docType === 'Standard Operating Procedure__c' &&
-      signals.state && ['Approved__v', 'Effective__v'].includes(signals.state),
+      signals.state && ['approved__v', 'effective__v'].includes(signals.state),
     mapTo: { templateId: 'sop_approved', category: 'sop' },
   },
   {
@@ -239,7 +239,7 @@ const INTENT_MAPPING_RULES = [
     name: 'Open Deviations',
     condition: (signals) =>
       signals.docType === 'Deviation__c' &&
-      (!signals.state || signals.state === 'Open__v' || signals.state === 'In Progress__v'),
+      (!signals.state || signals.state === 'open__v' || signals.state === 'in_progress__v'),
     mapTo: { templateId: 'deviation_all_open', category: 'deviation' },
   },
   {
@@ -248,7 +248,7 @@ const INTENT_MAPPING_RULES = [
     name: 'Open CAPAs',
     condition: (signals) =>
       signals.docType === 'CAPA__c' &&
-      (!signals.state || signals.state === 'Open__v' || signals.state === 'In Progress__v'),
+      (!signals.state || signals.state === 'open__v' || signals.state === 'in_progress__v'),
     mapTo: { templateId: 'capa_open', category: 'capa' },
   },
   {
@@ -256,7 +256,7 @@ const INTENT_MAPPING_RULES = [
     priority: 70,
     name: 'Closed CAPAs',
     condition: (signals) =>
-      signals.docType === 'CAPA__c' && signals.state === 'Closed__v',
+      signals.docType === 'CAPA__c' && signals.state === 'closed__v',
     mapTo: { templateId: 'capa_closed', category: 'capa' },
   },
   {
@@ -265,7 +265,7 @@ const INTENT_MAPPING_RULES = [
     name: 'High Severity CAPAs',
     condition: (signals) =>
       signals.docType === 'CAPA__c' && signals.severity &&
-      ['Critical__v', 'Major__v'].includes(signals.severity),
+      ['critical__v', 'major__v'].includes(signals.severity),
     mapTo: { templateId: 'capa_high_severity', category: 'capa' },
   },
   {
@@ -638,17 +638,17 @@ class QueryParser {
     }
 
     // Check if query implies both "open" and "closed"
-    if (signals.state === 'Open__v' && signals.rawKeywords.includes('closed')) {
+    if (signals.state === 'open__v' && signals.rawKeywords.includes('closed')) {
       ambiguity.isAmbiguous = true;
       ambiguity.reasons.push('Query mentions both open and closed states');
       ambiguity.alternativeTemplates.push('capa_closed');
     }
 
     // Check if doc type + state combination doesn't make logical sense
-    if (signals.docType === 'CAPA__c' && signals.state === 'Approved__v') {
+    if (signals.docType === 'CAPA__c' && signals.state === 'approved__v') {
       ambiguity.isAmbiguous = true;
       ambiguity.reasons.push("CAPAs use 'Closed' not 'Approved'. Interpreting as 'Closed' state.");
-      ambiguity.stateCorrection = 'Closed__v';
+      ambiguity.stateCorrection = 'closed__v';
     }
 
     return ambiguity;
