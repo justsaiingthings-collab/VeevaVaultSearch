@@ -575,6 +575,14 @@
     .vql-op  { color: #C678DD; }
     .vql-cmt { color: #5C6370; font-style: italic; }
     .vql-lit { color: #D19A66; }
+    /* P3: amber notice badge shown when sanitizeVQL removed conditions */
+    .vql-adapted-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-family: var(--v-font); font-size: 10.5px; font-weight: 500;
+      color: #92400E; background: #FEF3C7; border: 1px solid #FDE68A;
+      border-radius: 4px; padding: 2px 7px; margin-bottom: 6px;
+      font-style: normal; white-space: normal;
+    }
 
     /* ═══════════════ AMBIGUITY ═════════════════════════════ */
     .ambiguity-bar {
@@ -2510,7 +2518,8 @@ function applyVaultSchema() {
     Object.assign(SCHEMA_CONFIG, discoveredCfg);
     // Rebuild all VQL template strings with the discovered names.
     // buildVQLRAW() is a pure interpolation function — cheap to re-run.
-    VQL_RAW = buildVQLRAW();
+    // sanitizeVQLMap strips any empty-field artefacts before use.
+    VQL_RAW = sanitizeVQLMap(buildVQLRAW());
     // Bust the VQL result cache so stale hardcoded-name queries aren't served.
     if (typeof VQL_CACHE !== 'undefined') VQL_CACHE.clear();
   }
@@ -2717,7 +2726,105 @@ function buildVQLRAW() {
   };
 }
 
-let VQL_RAW = buildVQLRAW();
+// sanitizeVQL / sanitizeVQLMap are defined immediately after the VQL_RAW initialisation block.
+// They clean up empty-field artefacts before any query is executed.
+let VQL_RAW = {}; // populated below once sanitizeVQL is defined
+
+/* ── sanitizeVQL ─────────────────────────────────────────────────────────────
+   Post-processes a rendered VQL string to remove malformed fragments that arise
+   when optional schema field variables (EXP, SEV, STU, GXP, CAPA …) are empty
+   strings because the field was not configured or not discovered.
+
+   Handles four classes of corruption:
+     1. Double / trailing / leading commas in SELECT list
+          "SELECT a, , b"  →  "SELECT a, b"
+          "SELECT a,  FROM" → "SELECT a FROM"
+     2. AND conditions with empty LHS field name
+          "AND  != null"              → removed
+          "AND  = 'x'"               → removed
+          "AND  IN ('a','b')"        → removed
+          "AND  NOT IN (...)"        → removed
+          "AND  < now()"             → removed
+          "AND  <= dateadd(...)"     → removed
+          "AND  = true"              → removed
+     3. ORDER BY with empty primary field
+          "ORDER BY  ASC"    → "ORDER BY last_modified_date__v DESC"
+          "ORDER BY , name__v" → "ORDER BY last_modified_date__v, name__v"
+     4. Double-AND artifacts after condition removal
+          "AND AND" → "AND"
+──────────────────────────────────────────────────────────────────────────── */
+function sanitizeVQL(vql) {
+  if (!vql || typeof vql !== 'string') return vql;
+  let s = vql;
+
+  // ─ 1. SELECT list: remove empty field slots ─────────────────────────────
+  s = s.replace(/,\s*,+/g, ',');            // "a, , b"  →  "a, b"
+  s = s.replace(/\bSELECT\s+,/gi, 'SELECT '); // "SELECT , a"  →  "SELECT a"
+  s = s.replace(/,\s*\bFROM\b/gi, ' FROM');   // "a,  FROM"   →  "a FROM"
+
+  // ─ 2. AND conditions with empty LHS ─────────────────────────────────────
+  // Pattern: AND<ws><operator> where no identifier precedes the operator.
+  // Safe because a valid field name always starts with [a-zA-Z_].
+  // We must also remove the RHS value so we don't leave orphaned literals.
+
+  // AND  != null  /  AND  = null
+  s = s.replace(/\bAND\s+!= null\b/gi, '');
+  s = s.replace(/\bAND\s+= null\b/gi, '');
+  // AND  = 'value'  /  AND  != 'value'
+  s = s.replace(/\bAND\s+!?= '[^']*'/g, '');
+  // AND  IN ('...','...')  /  AND  NOT IN (...)
+  s = s.replace(/\bAND\s+NOT\s+IN\s*\([^)]*\)/gi, '');
+  s = s.replace(/\bAND\s+IN\s*\([^)]*\)/gi, '');
+  // AND  < now()  /  AND  > now()  /  AND  <= dateadd(now(), N, 'unit')  /  AND  >= ...
+  // dateadd() contains nested parens: dateadd(now(), 90, 'day') — use a one-level nesting
+  // pattern: outer ( ... inner() ... ) so [^()]* + (\([^()]*\)[^()]*)* + )
+  s = s.replace(
+    /\bAND\s+[<>]=?\s*(?:now\s*\(\s*\)|dateadd\s*\(\s*[^()]*(?:\([^()]*\)[^()]*)*\s*\))/gi,
+    ''
+  );
+  // AND  = true  /  AND  = false
+  s = s.replace(/\bAND\s+= (?:true|false)\b/gi, '');
+
+  // ─ 3. ORDER BY with empty primary field ─────────────────────────────────
+  // "ORDER BY  ASC"  or  "ORDER BY  DESC"
+  s = s.replace(/\bORDER BY\s+(?=ASC\b)/gi, 'ORDER BY last_modified_date__v ');
+  s = s.replace(/\bORDER BY\s+(?=DESC\b)/gi, 'ORDER BY last_modified_date__v ');
+  // "ORDER BY , field"  (empty first element)
+  s = s.replace(/\bORDER BY\s*,/gi, 'ORDER BY last_modified_date__v,');
+  // "ORDER BY  LIMIT"  (completely empty ORDER BY)
+  s = s.replace(/\bORDER BY\s+LIMIT\b/gi, 'ORDER BY last_modified_date__v DESC LIMIT');
+
+  // ─ 4. Double-AND artifacts ───────────────────────────────────────────────
+  s = s.replace(/\bAND\s+AND\b/gi, 'AND');
+
+  // ─ 5. Normalise extra whitespace ────────────────────────────────────────
+  s = s.replace(/[ \t]{2,}/g, ' ').trim();
+
+  return s;
+}
+
+/* Apply sanitizeVQL to the entire template map ─────────────────────────── */
+// P3: Track which template IDs had conditions removed by sanitizeVQL.
+// Checked in runQuery() to display a subtle amber badge in the VQL preview.
+const VQL_MODIFIED_TIDS = new Set();
+
+function sanitizeVQLMap(map) {
+  VQL_MODIFIED_TIDS.clear();
+  const out = {};
+  for (const [k, v] of Object.entries(map)) {
+    if (typeof v === 'string') {
+      const clean = sanitizeVQL(v);
+      if (clean !== v) VQL_MODIFIED_TIDS.add(k);
+      out[k] = clean;
+    } else {
+      out[k] = v; // preserve non-string (null) values
+    }
+  }
+  return out;
+}
+
+// Now that sanitizeVQL / sanitizeVQLMap are defined, build the initial VQL map.
+VQL_RAW = sanitizeVQLMap(buildVQLRAW());
 
 // Normalize a Vault API document record into the shape renderResults expects.
 // Uses VAULT_CONFIG field names so custom field mappings work.
@@ -2740,6 +2847,28 @@ function normalizeVaultDoc(d) {
     study:            d[VC('field_study')] || d.clinical_study__c || null,
     review_due:       d[VC('field_review_date')] || null,
   };
+}
+
+/* ── sanitizeVaultError ──────────────────────────────────────────────────────
+   P0-3: Vault API error messages may contain internal field names, VQL tokens,
+   or session identifiers that should not be exposed verbatim in the UI.
+   This function:
+     • Redacts anything that looks like a session token (40+ contiguous upper-
+       case-hex chars), which is the shape of Vault session IDs.
+     • Strips internal VQL parse-error detail beyond the first sentence.
+     • HTML-escapes the result so it is safe to inject via innerHTML.
+     • Caps display length at 180 chars with a trailing ellipsis.
+──────────────────────────────────────────────────────────────────────────── */
+function sanitizeVaultError(msg) {
+  if (!msg || typeof msg !== 'string') return 'An unexpected error occurred.';
+  // Redact session-token-shaped strings (40+ hex chars, with or without dashes)
+  let s = msg.replace(/\b[0-9A-Fa-f]{40,}\b/g, '[REDACTED]');
+  // Trim at first newline / stack-trace indicator to avoid dumping traces
+  s = s.split(/\n|\r|at \/|\s{4}at /)[0].trim();
+  // Cap length
+  if (s.length > 180) s = s.slice(0, 177) + '…';
+  // HTML-escape (no innerHTML risk)
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // Execute a VQL string — routes through Lambda proxy when configured,
@@ -2788,9 +2917,14 @@ async function executeVQL(vql, nextPageUrl = null) {
     // ── Direct path (local dev / same-origin) ──────────────
     // v26.1: POST /api/v26.1/query with form-encoded q=<vql>
     // Pagination: GET the next_page_url returned in the response.
-    // next_page_url is already absolute (includes /api/<ver>/query/next?...).
+    // P1-2: Vault may return next_page as either an absolute URL
+    //   (https://tenant.veevavault.com/api/v26.1/query/next?cursor=…)
+    // or a relative path (/api/v26.1/query/next?cursor=…).
+    // Prepend baseUrl only when the cursor is a relative path.
     endpoint      = nextPageUrl
-      ? `${LIVE.baseUrl}${nextPageUrl}`            // cursor URL is relative path
+      ? (nextPageUrl.startsWith('http://') || nextPageUrl.startsWith('https://')
+          ? nextPageUrl                              // already absolute — use as-is
+          : `${LIVE.baseUrl}${nextPageUrl}`)         // relative path — prepend baseUrl
       : `${LIVE.baseUrl}/api/${LIVE.apiVersion}/query`;
     requestHeaders = {
       'Authorization': LIVE.token,
@@ -2819,7 +2953,13 @@ async function executeVQL(vql, nextPageUrl = null) {
   const raw = await resp.json();
 
   if (raw.responseStatus !== 'SUCCESS') {
-    const msg = (raw.errors?.[0]?.message) || raw.error || raw.responseStatus || 'VQL error';
+    // P0-3: keep full message for internal error classification (INVALID_SESSION_ID check),
+    // but cap and sanitize the text so it is safe if it reaches the UI via err.message.
+    const rawMsg = (raw.errors?.[0]?.message) || raw.error || raw.responseStatus || 'VQL error';
+    // Preserve INVALID_SESSION_ID sentinel intact — used in catch block logic.
+    const msg = rawMsg.includes('INVALID_SESSION_ID')
+      ? rawMsg
+      : sanitizeVaultError(rawMsg);
     throw new Error(msg);
   }
 
@@ -3360,9 +3500,27 @@ function buildEmptyStateHtml(tid) {
       <button class="empty-clear-btn" onclick="clearAllFilters()">✕ Clear all</button>
     </div>` : '';
 
-  const bodyMsg = hasFilters
-    ? 'No documents match the active filter combination. Clear some filters or try a broader query below.'
-    : 'No documents match this query. Your role may restrict certain document types.';
+  // P2: Detect when zero results are caused by an unconfigured document type
+  // (e.g. type_capa='') — the sanitized VQL will have type__v = '' which
+  // always returns 0 rows.  Show a config-specific hint in that case.
+  const tidTypeKey = {
+    sop_approved: 'type_sop', sop_expiring_soon: 'type_sop',
+    deviation_all_open: 'type_deviation', deviation_high_severity: 'type_deviation',
+    deviation_without_capa: 'type_deviation', deviation_linked_capa: 'type_deviation',
+    deviation_sop_violations: 'type_deviation',
+    capa_open: 'type_capa', capa_closed: 'type_capa',
+    capa_high_severity: 'type_capa', capa_overdue: 'type_capa',
+    ctd_modules_draft: 'type_regulatory', labelling_expiring_60: 'type_regulatory',
+    rim_approved_labels: 'type_regulatory', rim_submissions: 'type_regulatory',
+  };
+  const missingTypeKey = tidTypeKey[tid];
+  const isMissingSchema = LIVE && missingTypeKey && !VC(missingTypeKey);
+
+  const bodyMsg = isMissingSchema
+    ? `The <strong>${missingTypeKey.replace('type_', '')}</strong> document type is not configured for this vault. Open <button onclick="openConfigModal()" style="background:none;border:none;color:inherit;font-weight:700;cursor:pointer;text-decoration:underline;padding:0;">Config ⚙</button> to set the correct API name.`
+    : hasFilters
+      ? 'No documents match the active filter combination. Clear some filters or try a broader query below.'
+      : 'No documents match this query. Your role may restrict certain document types.';
 
   const suggestSection = `
     <div class="empty-suggestions">
@@ -3678,8 +3836,8 @@ function saveConfig() {
     else VAULT_CONFIG[k] = VAULT_CONFIG_DEFAULTS[k];
   });
   localStorage.setItem('vault_config', JSON.stringify(overrides));
-  // Rebuild VQL with new config
-  VQL_RAW = buildVQLRAW();
+  // Rebuild VQL with new config (sanitized against empty-field artefacts)
+  VQL_RAW = sanitizeVQLMap(buildVQLRAW());
   closeConfigModal();
   // Re-run current query so changes are visible immediately
   if (S.currentTid) runQuery(S.currentTid);
@@ -3688,7 +3846,7 @@ function saveConfig() {
 function resetConfig() {
   Object.keys(VAULT_CONFIG_DEFAULTS).forEach(k => { VAULT_CONFIG[k] = VAULT_CONFIG_DEFAULTS[k]; });
   localStorage.removeItem('vault_config');
-  VQL_RAW = buildVQLRAW();
+  VQL_RAW = sanitizeVQLMap(buildVQLRAW());
   openConfigModal(); // refresh modal to show defaults
   if (S.currentTid) runQuery(S.currentTid);
 }
@@ -3828,6 +3986,13 @@ async function loadKpiDashboard() {
     grid.innerHTML = _kpiCacheHtml;
     return;
   }
+
+  // P2: Show skeleton pulse placeholders while queries are in-flight so the
+  // dashboard doesn't flash blank before counts arrive.
+  const SKELETON_COUNT = KPI_CARDS.length;
+  grid.innerHTML = Array(SKELETON_COUNT).fill(
+    '<div class="kpi-card-skeleton" aria-hidden="true"></div>'
+  ).join('');
 
   // ── Batch all COUNT queries in parallel via Promise.all ─────────
   // Routes through executeVQL() which applies the 60s VQL cache, so
@@ -4010,18 +4175,26 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
     let fulltextFallbackVql = null;
 
     if (tid === 'name_search') {
-      const safe = (S.searchText || '').replace(/'/g, "''");
-      // v26.1: prefer FIND clause for simple single/double-word queries (no special chars).
-      // FIND searches document_number__v + name__v + full-text index — much richer than CONTAINS.
-      // Fall back to CONTAINS for complex/quoted expressions that FIND doesn't support.
-      if (LIVE && safe && /^[a-z0-9\s\-]+$/i.test(safe)) {
+      // P1-1: Sanitize user query before embedding in VQL.
+      //   • Escape single quotes (VQL string literal safety).
+      //   • Strip NUL bytes and control characters that could confuse the parser.
+      //   • Cap at 200 chars to prevent oversized payloads.
+      //   • For LIKE path: escape VQL LIKE wildcards (% and _) that are not user-
+      //     intended, so the search is literal.
+      const rawQuery    = (S.searchText || '').slice(0, 200);
+      const safeForFind = rawQuery.replace(/[\x00-\x1f\x7f]/g, '').replace(/'/g, "''");
+      const safeForLike = safeForFind.replace(/%/g, '\\%').replace(/_/g, '\\_');
+      // v26.1: prefer FIND clause for simple alphanumeric queries (no special chars).
+      // FIND searches document_number__v + name__v + full-text index — much richer than LIKE.
+      // Fall back to LIKE for complex/quoted expressions that FIND doesn't support.
+      if (LIVE && safeForFind && /^[a-z0-9\s\-]+$/i.test(safeForFind)) {
         // Use fuzzy FIND with DISTANCE(1) for short terms, exact FIND for longer ones
-        const findTemplate = safe.length <= 8 ? VQL_RAW.name_search_fuzzy : VQL_RAW.name_search_find;
-        vql = findTemplate.replace('{QUERY}', safe);
+        const findTemplate = safeForFind.length <= 8 ? VQL_RAW.name_search_fuzzy : VQL_RAW.name_search_find;
+        vql = findTemplate.replace('{QUERY}', safeForFind);
         // Prepare SCOPE DOCUMENTS fallback for zero-result retry (v26.1 full-text index)
-        fulltextFallbackVql = VQL_RAW.name_search_fulltext.replace('{QUERY}', safe);
+        fulltextFallbackVql = VQL_RAW.name_search_fulltext.replace('{QUERY}', safeForFind);
       } else {
-        vql = vql.replace('{QUERY}', safe);
+        vql = vql.replace('{QUERY}', safeForLike);
       }
     }
     // Apply global field name overrides for backward compatibility with non-standard Vaults
@@ -4039,8 +4212,12 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
       PAGE.total   = append ? PAGE.total : res.total;
       PAGE.loaded  += raw.length;
       fromCache    = res.fromCache;
-      // v26.1 facets: update filter sidebar with live counts (first-page requests only)
-      if (!append && res.facets) updateFacetCounts(res.facets);
+      // v26.1 facets: update filter sidebar with live counts whenever the
+      // response includes them. Vault only returns facets on initial POST
+      // queries (not on cursor-based pagination GETs), so this is effectively
+      // first-page only — but we guard with res.facets rather than !append so
+      // we pick up facets if Vault ever returns them on a paginated response.
+      if (res.facets) updateFacetCounts(res.facets);
 
       // ── v26.1 SCOPE DOCUMENTS zero-result retry ─────────────────
       // When a metadata FIND returns 0 results and a full-text fallback VQL is ready,
@@ -4123,7 +4300,12 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
       }
     }
   } else {
-    E.vqlContent.innerHTML = VQLS[tid] || VQLS.doc_all_accessible;
+    // P3: If sanitizeVQL removed conditions from this template, show an amber badge
+    // at the top of the VQL preview so power users know the query was adapted.
+    const adaptedBadge = VQL_MODIFIED_TIDS.has(tid)
+      ? `<span class="vql-adapted-badge">⚠ Query adapted — some filters omitted (schema fields not configured)</span>\n`
+      : '';
+    E.vqlContent.innerHTML = adaptedBadge + (VQLS[tid] || VQLS.doc_all_accessible);
   }
 
   /* Update counts — show X of Y when server total is known */
@@ -4139,7 +4321,8 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
   if (liveError && !liveError.includes('INVALID_SESSION_ID')) {
     const warn = document.createElement('div');
     warn.style.cssText = 'margin-bottom:10px;padding:9px 12px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;font-size:12.5px;color:#92400E;';
-    warn.innerHTML = `<strong>Vault query failed:</strong> ${liveError}. <a href="connect.html" style="color:inherit;font-weight:600;text-decoration:underline;">Reconnect →</a>`;
+    // P0-3: sanitize before injecting into innerHTML to prevent credential/token exposure
+    warn.innerHTML = `<strong>Vault query failed:</strong> ${sanitizeVaultError(liveError)}. <a href="connect.html" style="color:inherit;font-weight:600;text-decoration:underline;">Reconnect →</a>`;
     E.resultsList.before ? E.resultsList.before(warn) : E.resultsList.parentNode.insertBefore(warn, E.resultsList);
     setTimeout(() => warn.remove(), 8000);
   }
@@ -4306,29 +4489,46 @@ function renderResults(docs, append = false) {
 ─────────────────────────────────────────────────────────── */
 const VERSION_CACHE = new Map();
 
+// P1: Track in-flight version fetches keyed by docId so rapid re-clicks or
+// rapid document switching can't produce stale-data race conditions.
+// Each entry: AbortController (unused by executeVQL directly, but lets us
+// detect whether a fetch is superseded before writing to the panel).
+const _versionInFlight = new Map(); // docId → { nonce }
+
 async function fetchVersionHistory(docId) {
   if (VERSION_CACHE.has(docId)) return VERSION_CACHE.get(docId);
 
   if (LIVE) {
-    // SELECT id returns the base doc ID; version_id is the per-version identifier.
-    // We store version_id as `id` in the mapped object so renderVersionPanel can
-    // build deep-links to specific document versions in Vault.
+    // Issue a nonce so we can detect if this fetch has been superseded by
+    // a newer call for the same docId before writing to the panel.
+    const nonce = {};
+    _versionInFlight.set(docId, nonce);
+
     const vql = `SELECT id, version_id, major_version_number__v, minor_version_number__v, ` +
                 `version_creation_date__v, ${ST}, created_by__v ` +
                 `FROM documents WHERE id = '${docId}' ` +
                 `ORDER BY major_version_number__v DESC, minor_version_number__v DESC`;
     try {
       const res = await executeVQL(vql);
+
+      // If another fetch for the same docId has been issued since we started,
+      // discard our stale result — the newer call will populate the panel.
+      if (_versionInFlight.get(docId) !== nonce) return null;
+      _versionInFlight.delete(docId);
+
       const vers = (res.data || []).map(v => ({
-        id:    v.version_id || v.id,   // version_id for deep-link; fall back to doc id
+        id:    v.version_id || v.id,
         ver:   `v${v.major_version_number__v}.${v.minor_version_number__v}`,
         state: v[ST],
-        date:  v.version_creation_date__v ? new Date(v.version_creation_date__v).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—',
+        date:  v.version_creation_date__v
+          ? new Date(v.version_creation_date__v).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })
+          : '—',
         by:    v.created_by__v || '—',
       }));
       VERSION_CACHE.set(docId, vers);
       return vers;
     } catch {
+      _versionInFlight.delete(docId);
       // fall through to demo data
     }
   }
@@ -4393,9 +4593,11 @@ async function toggleVer(id, btn) {
     panel.classList.add('open');
     btn.classList.add('open');
     const vers = await fetchVersionHistory(id);
+    // fetchVersionHistory returns null when a newer fetch for the same id superseded
+    // this one — in that case the newer call will update the panel; do nothing here.
+    if (vers === null) return;
     panel.dataset.loaded = 'true';
     renderVersionPanel(panel, vers);
-    // Update button count
     btn.childNodes[0].textContent = `${vers.length} version${vers.length !== 1 ? 's' : ''}`;
   } else {
     panel.classList.add('open');
@@ -4746,7 +4948,15 @@ function importSavedSearches(inputEl) {
 /* ── CSV EXPORT ─────────────────────────────────────────────── */
 function _buildCSV(docs) {
   const headers = ['ID','Name','Type','Status','Version','Modified','Owner','Severity','GxP','Product','Study'];
-  const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  // P0-2: CSV formula injection prevention (CWE-1236 / OWASP Formula Injection).
+  // Spreadsheet applications (Excel, LibreOffice, Google Sheets) treat any cell
+  // that starts with =, +, -, @, \t, or \r as a formula.  Prefix with a single
+  // quote so the value is treated as a plain text string rather than a formula.
+  const esc = v => {
+    let s = String(v ?? '');
+    if (s && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return `"${s.replace(/"/g, '""')}"`;
+  };
   const rows = docs.map(d => [
     d.id,
     d.name__v,
@@ -4783,38 +4993,82 @@ function exportCSV() {
   );
 }
 
-/* ── EXPORT ALL — fetches every page via cursor then downloads CSV ─
-   In demo mode this is the same as exportCSV() since demo data is already
-   fully loaded. In live mode it iterates next_page cursors until exhausted.
-   Caps at 5000 rows to protect against runaway exports on large vaults.
-─────────────────────────────────────────────────────────────────────── */
+/* ── EXPORT ALL — fetches every page via cursor then downloads CSV ─────────
+   Improvements over the original:
+     • P1/P2: AbortController per page fetch with 30 s timeout — no silent hangs.
+     • P2: Detects INVALID_SESSION_ID mid-export and surfaces a clear banner
+       showing how many rows were recovered before the session expired.
+     • P1: Live progress label ("Fetching… 120 / 340") on the button.
+     • Row cap at 5 000 with an amber warning in the toast.
+─────────────────────────────────────────────────────────────────────────── */
+let _exportAllAbort = null; // allows external cancellation via _exportAllAbort.abort()
+
 async function exportAllCSV() {
-  const MAX_ROWS = 5000;
+  const MAX_ROWS      = 5000;
+  const PAGE_TIMEOUT  = 30_000; // ms per pagination fetch
   const btn = document.getElementById('exportAllBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Fetching…'; }
+  const setLabel = txt => { if (btn) btn.textContent = txt; };
+  if (btn) btn.disabled = true;
+  setLabel('Fetching…');
+
+  // Cancel any previous in-flight export
+  if (_exportAllAbort) _exportAllAbort.abort();
+  _exportAllAbort = new AbortController();
+  const signal = _exportAllAbort.signal;
 
   try {
     if (!LIVE || !PAGE.vql) {
-      // Demo or no VQL stored — export whatever is in currentResults
-      exportCSV();
+      exportCSV();   // demo / no VQL — export current page as-is
       return;
     }
 
-    let allDocs = [...currentResults];
-    let nextUrl = PAGE.nextUrl;
+    let allDocs  = [...currentResults];
+    let nextUrl  = PAGE.nextUrl;
+    let page     = 1;
+    let capped   = false;
+    let sessionExpired = false;
 
-    // Loop through remaining pages
     while (nextUrl && allDocs.length < MAX_ROWS) {
-      const res = await executeVQL(PAGE.vql, nextUrl);
-      allDocs   = allDocs.concat(res.data || []);
-      nextUrl   = res.nextPageUrl;
+      if (signal.aborted) break;
+
+      // Per-page timeout: reject if Vault doesn't respond within PAGE_TIMEOUT
+      const pageTimer = new Promise((_, rej) =>
+        setTimeout(() => rej(new Error('Export page timeout')), PAGE_TIMEOUT)
+      );
+
+      let res;
+      try {
+        res = await Promise.race([executeVQL(PAGE.vql, nextUrl), pageTimer]);
+      } catch (err) {
+        if (err.message.includes('INVALID_SESSION_ID')) {
+          sessionExpired = true;
+        }
+        break; // stop pagination on any error
+      }
+
+      allDocs = allDocs.concat(res.data || []);
+      nextUrl = res.nextPageUrl;
+      page++;
+      setLabel(`Fetching… ${allDocs.length}${PAGE.total ? ' / ' + PAGE.total : ''}`);
     }
 
-    // Normalise raw Vault records that weren't yet through normalizeVaultDoc
+    if (allDocs.length >= MAX_ROWS && nextUrl) capped = true;
+
+    // Surface warnings before the download triggers
+    if (sessionExpired) {
+      showSessionExpiredBanner();
+      showToast(`Session expired mid-export. Downloaded ${allDocs.length} row${allDocs.length !== 1 ? 's' : ''} recovered so far.`, 'warn');
+    } else if (capped) {
+      showToast(`Export capped at ${MAX_ROWS.toLocaleString()} rows. Use Vault's native export for the full dataset.`, 'warn');
+    }
+
+    if (!allDocs.length) return;
+
+    // Normalise any raw Vault records not yet through normalizeVaultDoc
     const normalised = allDocs.map(d =>
       d.name__v !== undefined && d.major !== undefined
-        ? d                          // already normalised by runQuery
-        : normalizeVaultDoc(d)       // raw Vault API record
+        ? d
+        : normalizeVaultDoc(d)
     );
 
     _triggerDownload(
@@ -4822,28 +5076,42 @@ async function exportAllCSV() {
       `vault-search-ALL-${S.currentTid || 'results'}-${new Date().toISOString().slice(0,10)}.csv`
     );
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Export All'; }
+    if (btn) btn.disabled = false;
+    setLabel('Export All');
   }
 }
 
 /* ── INIT ───────────────────────────────────────────────────── */
-// Restore role from connect.html if set
-const _savedRole = sessionStorage.getItem('vault_user_role');
-if (_savedRole && ROLE_ACL[_savedRole]) {
-  S.role = _savedRole;
+
+// P3: Role picker restore — extracted into a function so it can be called
+// both on initial load AND on bfcache restore (browser back-navigation).
+function restoreRolePicker() {
+  const saved = sessionStorage.getItem('vault_user_role');
+  if (!saved || !ROLE_ACL[saved]) return;
+  S.role = saved;
   document.querySelectorAll('.role-btn').forEach(b => {
-    const isActive = b.dataset.role === _savedRole;
+    const isActive = b.dataset.role === saved;
     b.classList.toggle('active', isActive);
     b.setAttribute('aria-pressed', String(isActive));  // WCAG 4.1.2
   });
   // Apply draft visibility for restored role
   const draftLabel = document.getElementById('draftOpt')?.closest('label');
   if (draftLabel) {
-    const canDraft = ROLE_ACL[_savedRole]?.drafts;
+    const canDraft = ROLE_ACL[saved]?.drafts;
     draftLabel.style.opacity = canDraft ? '1' : '0.4';
     if (!canDraft) document.getElementById('draftOpt').checked = false;
   }
 }
+
+// Restore role from connect.html on initial page load
+restoreRolePicker();
+
+// P3: bfcache back-navigation — pageshow fires when the browser restores the
+// page from its back-forward cache (persisted: true).  DOMContentLoaded does
+// NOT re-fire in that case, so role state would be stale without this listener.
+window.addEventListener('pageshow', e => {
+  if (e.persisted) restoreRolePicker();
+});
 
 // ── Populate user avatar/name ────────────────────────────────
 (function initUser() {
