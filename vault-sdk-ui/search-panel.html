@@ -2386,6 +2386,10 @@ const VAULT_CONFIG = (() => {
 // Convenience accessor — short alias
 const VC = key => VAULT_CONFIG[key] || VAULT_CONFIG_DEFAULTS[key] || '';
 
+// Global shorthand for the lifecycle-state field name (e.g. 'lifecycle_state__v').
+// Used for bracket-notation property access on doc/version objects: doc[ST]
+const ST = VC('field_state') || 'lifecycle_state__v';
+
 /* ── SCHEMA APPLICATION ──────────────────────────────────────
    Reads vault_schema (set by connect.html discovery) and:
    1. Adds discovered document type filter chips
