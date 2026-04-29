@@ -4151,7 +4151,7 @@ function renderResults(docs, append = false) {
 
   const html = docs.map(doc => {
     const tm   = TYPE_META[doc.type__v]         || { icon:'📄', cls:'t-policy', label:'Doc' };
-    const sm   = STATE_META[doc.${ST}] || { cls:'pill-state-closed', label:doc.${ST} };
+    const sm   = STATE_META[doc[ST]] || { cls:'pill-state-closed', label:doc[ST] };
     const sevm = doc.severity ? SEV_META[doc.severity] : null;
     // In demo mode use MOCK_VERSIONS for count label; in live mode always show expand button
     const mockVers = MOCK_VERSIONS[doc.id];
@@ -4235,7 +4235,7 @@ async function fetchVersionHistory(docId) {
       const vers = (res.data || []).map(v => ({
         id:    v.version_id || v.id,   // version_id for deep-link; fall back to doc id
         ver:   `v${v.major_version_number__v}.${v.minor_version_number__v}`,
-        state: v.${ST},
+        state: v[ST],
         date:  v.version_creation_date__v ? new Date(v.version_creation_date__v).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—',
         by:    v.created_by__v || '—',
       }));
