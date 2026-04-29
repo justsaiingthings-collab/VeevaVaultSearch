@@ -3089,7 +3089,7 @@ function applyACL(docs, role) {
   if (LIVE) return docs;
   const acl = ROLE_ACL[role] || ROLE_ACL.QA_USER;
   return docs.filter(d => {
-    if (!acl.drafts && d.${ST} === 'draft__v') return false;
+    if (!acl.drafts && d[ST] === 'draft__v') return false;
     if (acl.types.includes('ALL')) return true;
     return acl.types.includes(TYPE_KEY[d.type__v] || '');
   });
@@ -3104,7 +3104,7 @@ function applySidebarFilters(docs) {
   return docs.filter(d => {
     const tk = (TYPE_KEY[d.type__v]||'').toLowerCase();
     if (types.length    && !types.includes(tk))              return false;
-    if (states.length   && !states.includes(d.${ST})) return false;
+    if (states.length   && !states.includes(d[ST])) return false;
     if (sevs.length     && !sevs.includes(d.severity))       return false;
     // Subtype filter: in demo mode use deviation_type__v as the subtype proxy
     if (subtypes.length && !subtypes.includes(d.deviation_type__v||d.subtype__v||'')) return false;
@@ -3694,14 +3694,14 @@ const KPI_CARDS = [
     label:  'Approved / Effective',
     tid:    'sop_approved',
     color:  'var(--v-green)',
-    countFn: docs => docs.filter(d => ['approved__v','effective__v'].includes(d.${ST})).length,
+    countFn: docs => docs.filter(d => ['approved__v','effective__v'].includes(d[ST])).length,
     liveVql: `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true AND ${ST} IN ('approved__v','effective__v')`,
   },
   {
     label:  'Open CAPAs',
     tid:    'capa_open',
     color:  'var(--v-orange)',
-    countFn: docs => docs.filter(d => d.type__v === 'CAPA__c' && d.${ST} === 'open__v').length,
+    countFn: docs => docs.filter(d => d.type__v === 'CAPA__c' && d[ST] === 'open__v').length,
     liveVql: `SELECT COUNT(*) FROM documents WHERE type__v = 'CAPA__c' AND ${ST} = 'open__v'`,
   },
   {
@@ -3715,7 +3715,7 @@ const KPI_CARDS = [
     label:  'Awaiting Approval',
     tid:    'awaiting_approval',
     color:  'var(--v-amber)',
-    countFn: docs => docs.filter(d => ['pending_approval__v','in_review__v'].includes(d.${ST})).length,
+    countFn: docs => docs.filter(d => ['pending_approval__v','in_review__v'].includes(d[ST])).length,
     liveVql: `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true AND ${ST} IN ('pending_approval__v','in_review__v')`,
   },
   {
@@ -4664,7 +4664,7 @@ function _buildCSV(docs) {
     d.id,
     d.name__v,
     (TYPE_META[d.type__v] || {}).label || d.type__v,
-    (STATE_META[d.${ST}] || {}).label || d.${ST},
+    (STATE_META[d[ST]] || {}).label || d[ST],
     `v${d.major}.${d.minor}`,
     d.modified,
     d.owner,
