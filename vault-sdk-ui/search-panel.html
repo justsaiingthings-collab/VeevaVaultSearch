@@ -1579,15 +1579,15 @@
   <div id="configModalBackdrop" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.5);"
        role="presentation">
     <div role="dialog" aria-modal="true" aria-labelledby="configModalTitle"
-         style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;width:min(640px,94vw);max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-      <div style="padding:18px 22px 0;border-bottom:1px solid var(--v-border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;">
+         style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:12px;width:min(760px,96vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+      <div style="padding:18px 22px 0;border-bottom:1px solid var(--v-border);display:flex;align-items:flex-start;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;border-radius:12px 12px 0 0;">
         <div>
           <h2 id="configModalTitle" style="font-size:16px;font-weight:700;color:var(--v-ink);margin:0;">Vault Configuration</h2>
-          <p style="font-size:12px;color:var(--v-ink-60);margin:3px 0 14px;">Override document type and field names to match your Vault tenant's schema. Changes are saved to localStorage and take effect immediately.</p>
+          <p style="font-size:12px;color:var(--v-ink-60);margin:3px 0 14px;">Map your tenant's API names to search categories. Source badges show <span style="background:#FEF3C7;color:#92400E;font-size:10px;padding:1px 5px;border-radius:8px;font-weight:600;">Manual</span> · <span style="background:#DBEAFE;color:#1D4ED8;font-size:10px;padding:1px 5px;border-radius:8px;font-weight:600;">Auto-detected</span> · <span style="background:#F3F4F6;color:#6B7280;font-size:10px;padding:1px 5px;border-radius:8px;font-weight:500;">Default</span></p>
         </div>
-        <button onclick="closeConfigModal()" aria-label="Close dialog" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--v-ink-60);padding:4px 8px;border-radius:4px;">✕</button>
+        <button onclick="closeConfigModal()" aria-label="Close dialog" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--v-ink-60);padding:4px 8px;border-radius:4px;flex-shrink:0;">✕</button>
       </div>
-      <div style="padding:18px 22px;" id="configModalBody">
+      <div style="padding:18px 22px;overflow-y:auto;flex:1;" id="configModalBody">
         <!-- Injected by openConfigModal() -->
       </div>
       <div style="padding:14px 22px;border-top:1px solid var(--v-border);display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:#fff;">
@@ -3183,15 +3183,20 @@ async function detectObjectSources() {
   if (OBJECT_SOURCE.capa !== 'unknown' && OBJECT_SOURCE.deviation !== 'unknown') return;
 
   const probe = async (typeVal) => {
-    // Try documents table first — COUNT(*) is fast and auth-safe
-    const vql = `SELECT COUNT(*) FROM documents WHERE type__v = '${typeVal}' AND is_latest_version__v = true`;
+    if (!typeVal) return 'unknown';
+    // COUNT(*) without is_latest_version__v — that field is not filterable in some Vault tenants
+    // (e.g. PromoMats, RIM) and causes a FAILURE responseStatus even though the type exists.
+    // We only need to know if ANY document with this type exists in the documents object.
+    const vql = `SELECT COUNT(*) FROM documents WHERE type__v = '${typeVal.replace(/'/g, "''")}'`;
     try {
       // Use executeVQL so the request goes through the proxy (POST, CORS-safe)
       const json = await executeVQL(vql);
       const count = (json.data && json.data[0]) ? (json.data[0]['COUNT(*)'] || 0) : 0;
-      return count > 0 ? 'documents' : 'objects';  // 0 results → likely in objects
-    } catch {}
-    return 'unknown';
+      return count > 0 ? 'documents' : 'objects';  // 0 results → likely tracked as Vault Object
+    } catch (err) {
+      // Query failed entirely (field/type not recognized in documents) → assume objects table
+      return err.message && err.message.includes('INVALID_SESSION_ID') ? 'unknown' : 'objects';
+    }
   };
 
   OBJECT_SOURCE.capa      = await probe(VC('type_capa'));
@@ -3687,60 +3692,192 @@ function copyMdlBlock() {
 }
 
 /* ── G-01: VAULT_CONFIG modal ──────────────────────────────── */
+
+// CONFIG_FIELD_LABELS kept for backward-compat (used by saveConfig key iteration)
 const CONFIG_FIELD_LABELS = {
-  type_sop:        'SOP type name',
-  type_deviation:  'Deviation type name',
-  type_capa:       'CAPA type name',
-  type_protocol:   'Protocol type name',
-  type_report:     'Report type name',
-  type_policy:     'Policy type name',
-  type_regulatory: 'Regulatory type name',
-  state_approved:         'Approved state',
-  state_effective:        'Effective state',
-  state_draft:            'Draft state',
-  state_in_review:        'In Review state',
-  state_open:             'Open state',
-  state_in_progress:      'In Progress state',
-  state_closed:           'Closed state',
-  state_obsolete:         'Obsolete state',
-  state_pending_approval: 'Pending Approval state',
-  sev_critical: 'Critical severity value',
-  sev_major:    'Major severity value',
-  sev_minor:    'Minor severity value',
-  field_gxp:         'GxP field name',
-  field_capa_link:   'CAPA link field name',
-  field_product:     'Product field name',
-  field_study:       'Study field name',
-  field_review_date: 'Periodic review date field',
-  field_expiry:      'Expiry date field',
-  field_severity:    'Severity field name',
-  field_priority:    'Priority field name',
-  field_dev_type:    'Deviation type field',
-  default_page_size: 'Default page size',
+  type_sop:'SOP type name', type_deviation:'Deviation type name', type_capa:'CAPA type name',
+  type_protocol:'Protocol type name', type_report:'Report type name', type_policy:'Policy type name',
+  type_regulatory:'Regulatory type name', state_approved:'Approved state', state_effective:'Effective state',
+  state_draft:'Draft state', state_in_review:'In Review state', state_open:'Open state',
+  state_in_progress:'In Progress state', state_closed:'Closed state', state_obsolete:'Obsolete state',
+  state_pending_approval:'Pending Approval state', sev_critical:'Critical severity value',
+  sev_major:'Major severity value', sev_minor:'Minor severity value', field_gxp:'GxP field name',
+  field_capa_link:'CAPA link field name', field_product:'Product field name', field_study:'Study field name',
+  field_review_date:'Periodic review date field', field_expiry:'Expiry date field',
+  field_severity:'Severity field name', field_priority:'Priority field name',
+  field_dev_type:'Deviation type field', field_state:'Lifecycle state field', default_page_size:'Default page size',
 };
 
-const CONFIG_SECTIONS = {
-  'Document Types':  ['type_sop','type_deviation','type_capa','type_protocol','type_report','type_policy','type_regulatory'],
-  'Lifecycle States':['state_approved','state_effective','state_draft','state_in_review','state_open','state_in_progress','state_closed','state_obsolete','state_pending_approval'],
-  'Severity Values': ['sev_critical','sev_major','sev_minor'],
-  'Custom Fields':   ['field_gxp','field_capa_link','field_product','field_study','field_review_date','field_expiry','field_severity','field_priority','field_dev_type'],
-  'Query Settings':  ['default_page_size'],
+// Rich field metadata: label, description, placeholder hint
+const CONFIG_FIELD_META = {
+  type_sop:        { label:'SOP',              desc:'Standard Operating Procedures',             hint:'e.g. sop__c' },
+  type_deviation:  { label:'Deviation',         desc:'Deviation records / documents',             hint:'e.g. deviation__c' },
+  type_capa:       { label:'CAPA',              desc:'Corrective &amp; Preventive Actions',       hint:'e.g. capa__c' },
+  type_protocol:   { label:'Protocol',          desc:'Study or test protocols',                   hint:'e.g. protocol__c' },
+  type_report:     { label:'Report',            desc:'Clinical or regulatory reports',            hint:'e.g. report__c' },
+  type_policy:     { label:'Policy',            desc:'Corporate policies',                        hint:'e.g. policy__c' },
+  type_regulatory: { label:'Regulatory',        desc:'Regulatory submissions',                    hint:'e.g. regulatory__c' },
+
+  state_approved:         { label:'Approved',         desc:'Final approved state',                      hint:'e.g. approved__v' },
+  state_effective:        { label:'Effective',         desc:'Active / in-use state (some tenants)',     hint:'e.g. effective__v' },
+  state_draft:            { label:'Draft',             desc:'Work-in-progress state',                   hint:'e.g. draft__v' },
+  state_in_review:        { label:'In Review',         desc:'Under review state',                       hint:'e.g. in_review__v' },
+  state_open:             { label:'Open',              desc:'Open deviations / CAPAs',                  hint:'e.g. open__v' },
+  state_in_progress:      { label:'In Progress',       desc:'Being worked on',                          hint:'e.g. in_progress__v' },
+  state_closed:           { label:'Closed',            desc:'Completed / resolved state',               hint:'e.g. closed__v' },
+  state_obsolete:         { label:'Obsolete',          desc:'Superseded / retired state',               hint:'e.g. obsolete__v' },
+  state_pending_approval: { label:'Pending Approval',  desc:'Awaiting approval state',                  hint:'e.g. pending_approval__v' },
+
+  field_state:       { label:'State Field ★',    desc:'Field holding lifecycle state — CRITICAL. Wrong value breaks all state filters.',  hint:'lifecycle_state__v or status__v', critical:true },
+  field_severity:    { label:'Severity',          desc:'Severity level field on deviations/CAPAs',       hint:'e.g. severity__v' },
+  field_priority:    { label:'Priority',          desc:'Priority ranking field on CAPAs',                hint:'e.g. priority__v' },
+  field_gxp:         { label:'GxP Flag',          desc:'Boolean field marking GxP-relevant documents',   hint:'e.g. gxp_relevant__c' },
+  field_capa_link:   { label:'CAPA Link',         desc:'Field linking a Deviation to its CAPA record',   hint:'e.g. capa_id__c' },
+  field_product:     { label:'Product',           desc:'Product reference field',                        hint:'e.g. product__c' },
+  field_study:       { label:'Study ID',          desc:'Clinical study identifier field',                hint:'e.g. study_id__c' },
+  field_review_date: { label:'Review Date',       desc:'Periodic review due date',                       hint:'e.g. periodic_review_date__v' },
+  field_expiry:      { label:'Expiry Date',       desc:'Document expiration date',                       hint:'e.g. expiration_date__v' },
+  field_dev_type:    { label:'Deviation Sub-type',desc:'Sub-type classification for deviations',         hint:'e.g. deviation_type__v' },
+
+  sev_critical:      { label:'Critical value',    desc:'Picklist API value for Critical severity',       hint:'e.g. critical__v' },
+  sev_major:         { label:'Major value',        desc:'Picklist API value for Major severity',          hint:'e.g. major__v' },
+  sev_minor:         { label:'Minor value',        desc:'Picklist API value for Minor severity',          hint:'e.g. minor__v' },
+
+  default_page_size: { label:'Page Size',         desc:'Number of results per page (10 – 200)',          hint:'50' },
 };
+
+/** Test whether a document type API name exists in the Vault documents table.
+ *  Updates the input border color green/amber/red and shows a tooltip. */
+async function verifyDocType(cfgKey) {
+  if (!LIVE) return;
+  const el = document.getElementById(`cfg_${cfgKey}`);
+  if (!el) return;
+  const typeVal = (el.value.trim() || VAULT_CONFIG_DEFAULTS[cfgKey] || '').replace(/'/g, "''");
+  if (!typeVal) return;
+  el.style.transition = 'border-color .25s';
+  el.style.borderColor = '#9CA3AF';
+  el.title = 'Verifying…';
+  try {
+    const json = await executeVQL(`SELECT COUNT(*) FROM documents WHERE type__v = '${typeVal}'`);
+    const count = (json.data && json.data[0]) ? (json.data[0]['COUNT(*)'] || 0) : 0;
+    el.style.borderColor = count > 0 ? '#10B981' : '#F59E0B';
+    el.title = count > 0
+      ? `✓ ${count.toLocaleString()} document(s) found with this type`
+      : '⚠ 0 documents found — type may be a Vault Object, not a Document, or the API name is wrong';
+  } catch (err) {
+    el.style.borderColor = '#EF4444';
+    const msg = sanitizeVaultError(err.message || 'Query failed');
+    el.title = `✗ ${msg}`;
+  }
+}
 
 function _renderConfigFields() {
-  return Object.entries(CONFIG_SECTIONS).map(([section, keys]) => `
-    <div style="margin-bottom:18px;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--v-ink-60);margin-bottom:8px;">${section}</div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
-        ${keys.map(k => `
-          <div>
-            <label style="font-size:11px;color:var(--v-ink-60);display:block;margin-bottom:2px;">${CONFIG_FIELD_LABELS[k] || k}</label>
-            <input id="cfg_${k}" type="text" value="${VAULT_CONFIG[k] || ''}"
-              placeholder="${VAULT_CONFIG_DEFAULTS[k] || ''}"
-              style="width:100%;padding:5px 8px;border:1px solid var(--v-border-mid);border-radius:4px;font-size:12px;font-family:monospace;">
-          </div>`).join('')}
+  // Read persisted manual overrides for source-badge logic
+  let manualCfg = {};
+  try { manualCfg = JSON.parse(localStorage.getItem('vault_config') || '{}'); } catch {}
+
+  // Source badge: where does the current effective value come from?
+  const badge = k => {
+    if (manualCfg[k])    return `<span style="font-size:10px;padding:1px 7px;border-radius:9px;background:#FEF3C7;color:#92400E;font-weight:600;white-space:nowrap;">Manual</span>`;
+    if (SCHEMA_CONFIG[k]) return `<span style="font-size:10px;padding:1px 7px;border-radius:9px;background:#DBEAFE;color:#1D4ED8;font-weight:600;white-space:nowrap;">Auto-detected</span>`;
+    return `<span style="font-size:10px;padding:1px 7px;border-radius:9px;background:var(--v-ink-10);color:var(--v-ink-60);font-weight:500;white-space:nowrap;">Default</span>`;
+  };
+
+  // Single field row
+  const fieldRow = k => {
+    const m = CONFIG_FIELD_META[k] || { label:k, desc:'', hint:'' };
+    const isType = k.startsWith('type_');
+    const isCritical = m.critical;
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:7px;
+                  background:${isCritical ? '#FFF9EC' : 'var(--v-ink-05)'};
+                  border:1px solid ${isCritical ? '#FDE68A' : 'transparent'};margin-bottom:5px;">
+        <div style="flex:0 0 145px;">
+          <label for="cfg_${k}" style="font-size:12px;font-weight:600;color:var(--v-ink-80);display:block;line-height:1.3;">${m.label}</label>
+          <span style="font-size:10.5px;color:var(--v-ink-60);line-height:1.4;">${m.desc}</span>
+        </div>
+        <div style="flex:1;display:flex;gap:6px;align-items:center;">
+          <input id="cfg_${k}" type="${k === 'default_page_size' ? 'number' : 'text'}"
+            value="${(VAULT_CONFIG[k] || '').replace(/"/g,'&quot;')}"
+            placeholder="${(VAULT_CONFIG_DEFAULTS[k] || m.hint || '').toString().replace(/"/g,'&quot;')}"
+            style="flex:1;padding:6px 9px;border:1px solid var(--v-border-mid);border-radius:5px;
+                   font-size:11.5px;font-family:monospace;background:var(--v-white);
+                   transition:border-color .25s;" autocomplete="off">
+          ${isType && LIVE ? `<button type="button" onclick="verifyDocType('${k}')"
+            title="Run a COUNT(*) query to check this type exists in Vault"
+            style="padding:5px 10px;border:1px solid var(--v-blue-20);border-radius:5px;
+                   background:var(--v-blue-10);color:var(--v-blue);font-size:11px;
+                   font-weight:600;cursor:pointer;white-space:nowrap;">Verify ↗</button>` : ''}
+        </div>
+        ${badge(k)}
+      </div>`;
+  };
+
+  // Section card
+  const section = (title, desc, keys, accent) => `
+    <div style="margin-bottom:20px;border-left:3px solid ${accent};padding-left:13px;">
+      <div style="font-size:12.5px;font-weight:700;color:var(--v-ink-80);margin-bottom:3px;">${title}</div>
+      ${desc ? `<div style="font-size:11px;color:var(--v-ink-60);margin-bottom:10px;line-height:1.5;">${desc}</div>` : ''}
+      ${keys.map(k => fieldRow(k)).join('')}
+    </div>`;
+
+  // Connection / API version block
+  const apiVer  = (LIVE?.apiVersion) || VAULT_CONFIG_DEFAULTS.api_version;
+  const apiSrc  = sessionStorage.getItem('vault_api_version') ? 'from Vault session' : 'hardcoded default';
+  let tenantHost = '';
+  try { tenantHost = LIVE ? new URL(LIVE.baseUrl).hostname : ''; } catch {}
+  const connBlock = `
+    <div style="margin-bottom:16px;padding:11px 13px;background:var(--v-blue-10);border-radius:8px;
+                border:1px solid var(--v-blue-20);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <div style="line-height:1.6;">
+        <span style="font-size:12px;font-weight:700;color:var(--v-blue-dark);">API Version: ${apiVer}</span>
+        <span style="font-size:11px;color:var(--v-ink-60);margin-left:8px;">(${apiSrc})</span>
+        ${tenantHost ? `<span style="font-size:11px;color:var(--v-ink-60);margin-left:8px;">· ${tenantHost}</span>` : ''}
+        <div style="font-size:10.5px;color:var(--v-ink-60);margin-top:1px;">
+          API version is set at connect time and controls which Vault endpoint is called (/api/${apiVer}/query).
+          Wrong version → 404 or missing VQL features. Re-connect to update.
+        </div>
       </div>
-    </div>`).join('');
+      <span style="font-size:11px;padding:3px 10px;border-radius:9px;
+                   background:${LIVE ? '#D1FAE5' : 'var(--v-ink-10)'};
+                   color:${LIVE ? '#065F46' : 'var(--v-ink-60)'};font-weight:600;">
+        ${LIVE ? '🟢 Live' : '⚪ Demo mode'}</span>
+    </div>`;
+
+  // Naming convention tip
+  const tip = `
+    <div style="margin-bottom:16px;padding:9px 13px;background:#FFFBEB;border-radius:7px;border:1px solid #FDE68A;">
+      <span style="font-size:11px;color:#78350F;line-height:1.6;">
+        <strong>API name format rules:</strong>
+        Veeva-managed fields end in <code style="background:#FEF9C3;padding:1px 4px;border-radius:3px;">__v</code>
+        (e.g. <code style="background:#FEF9C3;padding:1px 4px;border-radius:3px;">lifecycle_state__v</code>).
+        Tenant-custom fields end in <code style="background:#FEF9C3;padding:1px 4px;border-radius:3px;">__c</code>
+        (e.g. <code style="background:#FEF9C3;padding:1px 4px;border-radius:3px;">severity__c</code>).
+        Find API names in <strong>Vault Admin → Document Types → API Name</strong> column.
+        Wrong type names return 0 results — not errors. Use <strong>Verify ↗</strong> to confirm.
+      </span>
+    </div>`;
+
+  return connBlock + tip +
+    section('Document Types',
+      'Map search categories to your vault\'s document type API names. Click <strong>Verify ↗</strong> to confirm a type exists (live mode only).',
+      ['type_sop','type_deviation','type_capa','type_protocol','type_report','type_policy','type_regulatory'],
+      'var(--v-blue)') +
+    section('Lifecycle States',
+      'VQL uses these in <code>WHERE lifecycle_state__v IN (…)</code> filters. Leave blank to skip state filtering for that state.',
+      ['state_approved','state_effective','state_draft','state_in_review','state_open','state_in_progress','state_closed','state_obsolete','state_pending_approval'],
+      'var(--v-green)') +
+    section('Custom Fields',
+      'Field API names for advanced query filters. If a field doesn\'t exist on your tenant, that filter is silently omitted by the sanitizer.',
+      ['field_state','field_severity','field_priority','field_gxp','field_capa_link','field_product','field_study','field_review_date','field_expiry','field_dev_type'],
+      'var(--v-purple)') +
+    section('Severity Values',
+      'Picklist API values for the severity field, used in high-severity CAPA queries.',
+      ['sev_critical','sev_major','sev_minor'],
+      'var(--v-red)') +
+    section('Query Settings', '',
+      ['default_page_size'],
+      'var(--v-ink-40)');
 }
 
 function _renderDiscoveredSchemaTab() {
