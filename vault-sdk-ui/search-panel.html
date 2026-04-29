@@ -2373,6 +2373,12 @@ const VAULT_CONFIG_DEFAULTS = {
   field_dev_type:    'deviation_type__v',
   field_state:       'lifecycle_state__v', // Default for documents; some Vaults use 'status__v'
 
+  // Vault application-specific document types — common API names, override per tenant
+  type_tmf:            'TMF__c',                // eTMF: Trial Master File documents
+  type_adverse_event:  'AdverseEvent__c',        // Safety: Adverse Event reports
+  type_safety_case:    'SafetyCase__c',          // Safety: Safety Case documents
+  type_promo_material: 'PromotionalMaterial__c', // PromoMats: Promotional Materials
+
   // API / query defaults
   default_page_size: 50,
   api_version: 'v26.1',   // bump here when Vault releases a new API version
@@ -2604,17 +2610,36 @@ function buildVQLRAW() {
 
   // ── State guard ──────────────────────────────────────────────
   // Vault validates lifecycle state string literals at PARSE TIME against the
-  // picklist for that vault. Using a state name that doesn't exist in this
-  // tenant's lifecycle (e.g. 'open__v' in a PromoMats/RIM vault) causes:
+  // actual lifecycle picklist for that tenant. Using a state name that doesn't
+  // exist in the vault (e.g. 'open__v' in a PromoMats/RIM vault) causes:
   //   "Unknown token ['open__v'] found near position N"
-  // We only add state filters when we have verified state API names —
-  // either auto-discovered via schema discovery or explicitly set in ⚙ config.
   //
-  // When no states are known, queries run without state filters and return
-  // all matching documents (safe fallback, no VQL errors).
-  const anyStateKnown =
-    Object.keys(SCHEMA_CONFIG).some(k => k.startsWith('state_')) ||
-    Object.keys(VAULT_CONFIG).some(k => k.startsWith('state_'));
+  // CRITICAL: VAULT_CONFIG is always seeded from VAULT_CONFIG_DEFAULTS which
+  // contains all state_ keys with generic __v values. Checking
+  // Object.keys(VAULT_CONFIG) would therefore ALWAYS return true — causing
+  // state filters to fire with wrong default values on every non-standard vault.
+  //
+  // We must check ONLY:
+  //   (a) SCHEMA_CONFIG — states discovered at connect time from the live vault, OR
+  //   (b) vault_schema.config in localStorage — same data, available before
+  //       applyVaultSchema() populates SCHEMA_CONFIG (initial page load), OR
+  //   (c) vault_config in localStorage — explicit manual overrides by the user.
+  // VAULT_CONFIG_DEFAULTS are intentionally excluded from this check.
+  const anyStateKnown = (() => {
+    // (a) Already applied to SCHEMA_CONFIG
+    if (Object.keys(SCHEMA_CONFIG).some(k => k.startsWith('state_'))) return true;
+    // (b) Persisted schema (before SCHEMA_CONFIG is populated by applyVaultSchema)
+    try {
+      const sc = JSON.parse(localStorage.getItem('vault_schema') || '{}');
+      if (sc.config && Object.keys(sc.config).some(k => k.startsWith('state_'))) return true;
+    } catch {}
+    // (c) Explicit manual overrides in config modal
+    try {
+      const mc = JSON.parse(localStorage.getItem('vault_config') || '{}');
+      if (Object.keys(mc).some(k => k.startsWith('state_'))) return true;
+    } catch {}
+    return false;
+  })();
 
   // Conditional filter snippets — each includes its leading AND so templates
   // can append them directly. Empty string = filter omitted entirely.
@@ -2693,10 +2718,11 @@ function buildVQLRAW() {
       `${SEL_BASE} FIND '{QUERY}' SCOPE DOCUMENTS WHERE is_latest_version__v = true ${F_NOT_OBS} LIMIT ${ps}`,
 
     // ── eTMF (Trial Master File) pack ─────────────────────────────────────────
+    // type_tmf defaults to 'TMF__c' — override in ⚙ Config for your tenant
     etmf_all_docs:
-      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${STU}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'TMF__c' AND is_latest_version__v = true ORDER BY ${STU}, name__v ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${STU}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_tmf')}' AND is_latest_version__v = true ORDER BY ${STU}, name__v ASC LIMIT ${ps}`,
     etmf_by_study:
-      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${STU}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'TMF__c' AND ${STU} != null ${F_NOT_CLOSED_OBS} AND is_latest_version__v = true ORDER BY ${STU}, type__v ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${STU}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_tmf')}' AND ${STU} != null ${F_NOT_CLOSED_OBS} AND is_latest_version__v = true ORDER BY ${STU}, type__v ASC LIMIT ${ps}`,
 
     // ── RIM (Regulatory Information Management) pack ──────────────────────────
     rim_submissions: anyStateKnown
@@ -2706,23 +2732,28 @@ function buildVQLRAW() {
       `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' ${F_APPROVED} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
 
     // ── Safety pack ───────────────────────────────────────────────────────────
+    // type_adverse_event / type_safety_case default to common API names — override in ⚙ Config
     safety_adverse_events:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'AdverseEvent__c' ${F_OPEN} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_adverse_event')}' ${F_OPEN} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
     safety_open_cases: anyStateKnown
-      ? `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v IN ('AdverseEvent__c','SafetyCase__c') AND ${ST} != '${VC('state_closed')}' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`
-      : `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v IN ('AdverseEvent__c','SafetyCase__c') AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+      ? `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v IN ('${VC('type_adverse_event')}','${VC('type_safety_case')}') AND ${ST} != '${VC('state_closed')}' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`
+      : `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v IN ('${VC('type_adverse_event')}','${VC('type_safety_case')}') AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
 
     // ── PromoMats pack ────────────────────────────────────────────────────────
+    // type_promo_material defaults to 'PromotionalMaterial__c' — override in ⚙ Config
     promomats_approved:
-      `${SEL_BASE} WHERE type__v = 'PromotionalMaterial__c' ${F_APPROVED} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
+      `${SEL_BASE} WHERE type__v = '${VC('type_promo_material')}' ${F_APPROVED} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
     promomats_expiring:
-      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${EXP}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'PromotionalMaterial__c' AND ${EXP} > now() AND ${EXP} <= dateadd(now(), 90, 'day') ${F_APPROVED} AND is_latest_version__v = true ORDER BY ${EXP} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${EXP}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_promo_material')}' AND ${EXP} > now() AND ${EXP} <= dateadd(now(), 90, 'day') ${F_APPROVED} AND is_latest_version__v = true ORDER BY ${EXP} ASC LIMIT ${ps}`,
 
     // ── Additional Deviation templates ────────────────────────────────────────
     deviation_linked_capa:
       `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${CAPA}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' ${F_OPEN} AND ${CAPA} != null AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+    // Removed hardcoded 'procedural__v' picklist value — it doesn't exist on most tenants.
+    // Instead: returns all deviations that have a sub-type value set (field != null),
+    // which is a cross-tenant safe proxy for "typed / categorized" deviations.
     deviation_sop_violations:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${VC('field_dev_type')}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND ${VC('field_dev_type')} = 'procedural__v' ${F_OPEN} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${VC('field_dev_type')}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND ${VC('field_dev_type')} != null ${F_OPEN} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
   };
 }
 
@@ -2797,7 +2828,11 @@ function sanitizeVQL(vql) {
   // ─ 4. Double-AND artifacts ───────────────────────────────────────────────
   s = s.replace(/\bAND\s+AND\b/gi, 'AND');
 
-  // ─ 5. Normalise extra whitespace ────────────────────────────────────────
+  // ─ 5. WHERE AND — orphaned AND when a filter variable was first after WHERE ─
+  // e.g.  "WHERE  AND is_latest__v = true"  →  "WHERE is_latest__v = true"
+  s = s.replace(/\bWHERE\s+AND\b/gi, 'WHERE');
+
+  // ─ 6. Normalise extra whitespace ────────────────────────────────────────
   s = s.replace(/[ \t]{2,}/g, ' ').trim();
 
   return s;
@@ -2935,8 +2970,9 @@ async function executeVQL(vql, nextPageUrl = null) {
         ? {}
         : {
           'Content-Type':       'application/x-www-form-urlencoded',
-          // v26.1: request facet counts for type and state filter sidebar (first-page only)
-          'X-VaultAPI-Facets':  'type__v,${ST}',
+          // v26.1: request facet counts for type and state filter sidebar (first-page only).
+          // IMPORTANT: must be a template literal so ST is interpolated at runtime.
+          'X-VaultAPI-Facets':  `type__v,${ST}`,
         }),
     };
     requestBody = nextPageUrl ? null : `q=${encodeURIComponent(vql)}`;
@@ -3697,7 +3733,10 @@ function copyMdlBlock() {
 const CONFIG_FIELD_LABELS = {
   type_sop:'SOP type name', type_deviation:'Deviation type name', type_capa:'CAPA type name',
   type_protocol:'Protocol type name', type_report:'Report type name', type_policy:'Policy type name',
-  type_regulatory:'Regulatory type name', state_approved:'Approved state', state_effective:'Effective state',
+  type_regulatory:'Regulatory type name',
+  type_tmf:'TMF type name', type_adverse_event:'Adverse Event type name',
+  type_safety_case:'Safety Case type name', type_promo_material:'Promo Material type name',
+  state_approved:'Approved state', state_effective:'Effective state',
   state_draft:'Draft state', state_in_review:'In Review state', state_open:'Open state',
   state_in_progress:'In Progress state', state_closed:'Closed state', state_obsolete:'Obsolete state',
   state_pending_approval:'Pending Approval state', sev_critical:'Critical severity value',
@@ -3716,7 +3755,11 @@ const CONFIG_FIELD_META = {
   type_protocol:   { label:'Protocol',          desc:'Study or test protocols',                   hint:'e.g. protocol__c' },
   type_report:     { label:'Report',            desc:'Clinical or regulatory reports',            hint:'e.g. report__c' },
   type_policy:     { label:'Policy',            desc:'Corporate policies',                        hint:'e.g. policy__c' },
-  type_regulatory: { label:'Regulatory',        desc:'Regulatory submissions',                    hint:'e.g. regulatory__c' },
+  type_regulatory: { label:'Regulatory',         desc:'Regulatory submissions',                    hint:'e.g. regulatory__c' },
+  type_tmf:        { label:'TMF Document',       desc:'Trial Master File documents (eTMF vaults)',  hint:'e.g. TMF__c' },
+  type_adverse_event: { label:'Adverse Event',   desc:'Adverse Event reports (Safety vaults)',      hint:'e.g. AdverseEvent__c' },
+  type_safety_case:   { label:'Safety Case',     desc:'Safety Case documents (Safety vaults)',      hint:'e.g. SafetyCase__c' },
+  type_promo_material:{ label:'Promo Material',  desc:'Promotional Materials (PromoMats vaults)',   hint:'e.g. PromotionalMaterial__c' },
 
   state_approved:         { label:'Approved',         desc:'Final approved state',                      hint:'e.g. approved__v' },
   state_effective:        { label:'Effective',         desc:'Active / in-use state (some tenants)',     hint:'e.g. effective__v' },
@@ -3861,7 +3904,8 @@ function _renderConfigFields() {
   return connBlock + tip +
     section('Document Types',
       'Map search categories to your vault\'s document type API names. Click <strong>Verify ↗</strong> to confirm a type exists (live mode only).',
-      ['type_sop','type_deviation','type_capa','type_protocol','type_report','type_policy','type_regulatory'],
+      ['type_sop','type_deviation','type_capa','type_protocol','type_report','type_policy','type_regulatory',
+       'type_tmf','type_adverse_event','type_safety_case','type_promo_material'],
       'var(--v-blue)') +
     section('Lifecycle States',
       'VQL uses these in <code>WHERE lifecycle_state__v IN (…)</code> filters. Leave blank to skip state filtering for that state.',
@@ -4414,6 +4458,14 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
       liveError = err.message;
       if (err.message.includes('INVALID_SESSION_ID')) {
         showSessionExpiredBanner();
+      } else if (tid === 'doc_archived' && (
+        err.message.toLowerCase().includes('unknown') ||
+        err.message.toLowerCase().includes('not found') ||
+        err.message.toLowerCase().includes('invalid')
+      )) {
+        // archived_documents object only exists in Vault API v26.1+.
+        // Surface a clear actionable message instead of a cryptic VQL error.
+        liveError = `archived_documents is not available on this Vault — requires API v26.1 or later. Your Vault is using ${LIVE.apiVersion}.`;
       }
       // Never show demo data when a live session is present but fails —
       // return empty so the UI shows the real error state, not mock docs.

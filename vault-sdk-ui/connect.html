@@ -2103,13 +2103,18 @@
 
       // ── Map document types ──────────────────────────────────
       const TYPE_PATTERNS = {
-        type_sop:        ['standard operating', 'sop', 'work instruction', 'standard practice'],
-        type_deviation:  ['deviation', 'out of specification', 'oos report', 'non-conformance', 'lab incident'],
-        type_capa:       ['capa', 'corrective action', 'corrective and preventive'],
-        type_protocol:   ['protocol', 'study protocol', 'test protocol', 'analytical method'],
-        type_report:     ['study report', 'technical report', 'csr', 'clinical study report', 'report'],
-        type_policy:     ['policy', 'guideline', 'procedure'],
-        type_regulatory: ['regulatory submission', 'submission', 'application', 'ectd'],
+        type_sop:           ['standard operating', 'sop', 'work instruction', 'standard practice'],
+        type_deviation:     ['deviation', 'out of specification', 'oos report', 'non-conformance', 'lab incident'],
+        type_capa:          ['capa', 'corrective action', 'corrective and preventive'],
+        type_protocol:      ['protocol', 'study protocol', 'test protocol', 'analytical method'],
+        type_report:        ['study report', 'technical report', 'csr', 'clinical study report', 'report'],
+        type_policy:        ['policy', 'guideline', 'procedure'],
+        type_regulatory:    ['regulatory submission', 'submission', 'application', 'ectd'],
+        // App-specific types auto-detected per vault application
+        type_tmf:           ['trial master file', 'tmf document', 'tmf', 'essential document'],
+        type_adverse_event: ['adverse event', 'icsr', 'individual case safety'],
+        type_safety_case:   ['safety case', 'safety report', 'pharmacovigilance'],
+        type_promo_material:['promotional material', 'promotional piece', 'mlr', 'promo'],
       };
       const config = {};
       for (const [key, pats] of Object.entries(TYPE_PATTERNS)) {
@@ -2119,15 +2124,18 @@
 
       // ── Map optional document fields ────────────────────────
       const FIELD_CANDIDATES = {
-        field_product:     ['product__v', 'product__c'],
-        field_study:       ['study__v', 'study_id__c', 'study__c'],
-        field_expiry:      ['expiration_date__v', 'expiry_date__c', 'expiration_date__c'],
-        field_gxp:         ['gxp_relevant__c', 'gxp__c', 'gxp_relevant__v'],
-        field_severity:    ['severity__v', 'severity__c'],
-        field_capa_link:   ['capa_id__c', 'capa__c', 'capa_link__c'],
-        field_review_date: ['periodic_review_date__v', 'review_date__c', 'next_review_date__c'],
+        // field_state MUST be first — drives all state-based VQL filters.
+        // lifecycle_state__v is Veeva standard; some vaults use status__v.
+        field_state:       ['lifecycle_state__v', 'status__v', 'state__v'],
+        field_product:     ['product__v', 'product__c', 'product_name__c'],
+        field_study:       ['study__v', 'study_id__c', 'study__c', 'clinical_study__c'],
+        field_expiry:      ['expiration_date__v', 'expiry_date__c', 'expiration_date__c', 'expiry__c'],
+        field_gxp:         ['gxp_relevant__c', 'gxp__c', 'gxp_relevant__v', 'is_gxp__c'],
+        field_severity:    ['severity__v', 'severity__c', 'risk_level__c'],
+        field_capa_link:   ['capa_id__c', 'capa__c', 'capa_link__c', 'linked_capa__c'],
+        field_review_date: ['periodic_review_date__v', 'review_date__c', 'next_review_date__c', 'periodic_review_date__c'],
         field_priority:    ['priority__v', 'priority__c'],
-        field_dev_type:    ['deviation_type__v', 'deviation_type__c'],
+        field_dev_type:    ['deviation_type__v', 'deviation_type__c', 'event_type__c'],
       };
       for (const [key, cands] of Object.entries(FIELD_CANDIDATES)) {
         const found = cands.find(f => fieldNames.includes(f));
