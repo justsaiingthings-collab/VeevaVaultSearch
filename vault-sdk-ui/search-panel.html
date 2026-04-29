@@ -3186,15 +3186,10 @@ async function detectObjectSources() {
     // Try documents table first — COUNT(*) is fast and auth-safe
     const vql = `SELECT COUNT(*) FROM documents WHERE type__v = '${typeVal}' AND is_latest_version__v = true`;
     try {
-      const res = await fetch(
-        `${LIVE.baseUrl}/api/${LIVE.apiVersion}/query?q=${encodeURIComponent(vql)}`,
-        { headers: { Authorization: LIVE.token, Accept: 'application/json' } }
-      );
-      const json = await res.json();
-      if (json.responseStatus === 'SUCCESS') {
-        const count = (json.data && json.data[0]) ? (json.data[0]['COUNT(*)'] || 0) : 0;
-        return count > 0 ? 'documents' : 'objects';  // 0 results → likely in objects
-      }
+      // Use executeVQL so the request goes through the proxy (POST, CORS-safe)
+      const json = await executeVQL(vql);
+      const count = (json.data && json.data[0]) ? (json.data[0]['COUNT(*)'] || 0) : 0;
+      return count > 0 ? 'documents' : 'objects';  // 0 results → likely in objects
     } catch {}
     return 'unknown';
   };
@@ -3340,6 +3335,42 @@ function showSessionExpiredBanner() {
   b.innerHTML = `<span>⚠ Vault session expired. Results shown are demo data.</span>
     <a href="connect.html" style="color:#FCA5A5;font-weight:700;text-decoration:underline;">Reconnect →</a>`;
   document.body.prepend(b);
+}
+
+/** Show a one-time amber warning when queries will be blocked by CORS.
+ *  This happens when the page is served from a different origin than Vault
+ *  (e.g. GitHub Pages) and no proxy URL was configured in connect.html.
+ *  The banner is dismissible and stored in sessionStorage so it only shows once. */
+function checkCorsWarning() {
+  if (!LIVE) return;
+  if (LIVE.proxyUrl) return;          // proxy configured — no CORS issue
+  if (sessionStorage.getItem('cors_warning_dismissed')) return;
+  try {
+    const vaultOrigin = new URL(LIVE.baseUrl).origin;
+    if (window.location.origin === vaultOrigin) return;  // same origin — no CORS
+  } catch { return; }
+  if (document.getElementById('corsWarningBanner')) return;
+  const b = document.createElement('div');
+  b.id = 'corsWarningBanner';
+  b.style.cssText = [
+    'position:fixed;top:0;left:0;right:0;z-index:9998',
+    'padding:10px 20px;background:#FEF3C7;color:#78350F',
+    'font-size:13px;display:flex;align-items:center',
+    'justify-content:space-between;gap:12px;border-bottom:1px solid #FDE68A',
+  ].join(';');
+  b.innerHTML = `
+    <span>⚠ <strong>Proxy URL not configured.</strong>
+      Queries go directly to Vault and will be blocked by CORS.
+      <a href="connect.html" style="color:#92400E;font-weight:700;text-decoration:underline;margin-left:4px;">Add a proxy URL in Connect →</a>
+    </span>
+    <button id="corsWarningDismiss"
+      style="background:none;border:none;cursor:pointer;font-size:16px;color:#78350F;padding:0 4px;"
+      aria-label="Dismiss CORS warning">✕</button>`;
+  document.body.prepend(b);
+  document.getElementById('corsWarningDismiss').addEventListener('click', () => {
+    sessionStorage.setItem('cors_warning_dismissed', '1');
+    b.remove();
+  });
 }
 
 /* ── G-09: Query composition — stubs (filters added by sidebar) ── */
@@ -3592,16 +3623,20 @@ function buildMdlConfigBlock(schema) {
     .join('\n');
 
   // Extra doc types as VQL WHERE clause helper comments
+  // Guard: t.name / o.name may be undefined if schema discovery returned partial data
   const docTypes = (schema.extra_doc_types || [])
-    .map(t => ` *   ${t.name.padEnd(28)} // ${t.label}`)
+    .filter(t => t && t.name)
+    .map(t => ` *   ${t.name.padEnd(28)} // ${t.label || ''}`)
     .join('\n');
 
   const states = (schema.lifecycle_states || [])
+    .filter(Boolean)
     .map(s => ` *   '${s}'`)
     .join('\n');
 
   const objs = (schema.queryable_objects || [])
-    .map(o => ` *   ${o.name.padEnd(28)} // ${o.label}`)
+    .filter(o => o && o.name)
+    .map(o => ` *   ${o.name.padEnd(28)} // ${o.label || ''}`)
     .join('\n');
 
   return `/*
@@ -5145,6 +5180,9 @@ initFilterAriaExpanded(); // P3-3: WCAG — set initial aria-expanded on filter 
 renderHistory();       // render any history from previous session actions
 renderSavedSearches(); // render saved searches from localStorage
 
+// Show CORS warning if proxy not configured and running cross-origin
+checkCorsWarning();
+
 // G-02: Probe object sources in live mode (non-blocking)
 detectObjectSources().catch(() => {});
 
@@ -5195,18 +5233,16 @@ loadKpiDashboard().catch(() => {}).finally(() => runQuery('sop_approved'));
   async function pingSession() {
     if (document.hidden) return;   // skip while tab is hidden
     try {
-      // Use VQL query endpoint (lightweight COUNT) — /objects/documents deprecated in v26.1
+      // Use executeVQL so request goes through proxy (POST, CORS-safe).
+      // executeVQL throws with message 'INVALID_SESSION_ID' on 401.
       const pingVql = `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true LIMIT 1`;
-      const res = await fetch(
-        `${LIVE.baseUrl}/api/${LIVE.apiVersion}/query?q=${encodeURIComponent(pingVql)}`,
-        { headers: { Authorization: LIVE.token, Accept: 'application/json' } }
-      );
-      if (res.status === 401) {
+      await executeVQL(pingVql);
+    } catch (err) {
+      if (err.message && err.message.includes('INVALID_SESSION_ID')) {
         clearInterval(timer);
         showSessionExpiredBanner();
       }
-    } catch {
-      // network error — let the next real query surface the issue
+      // network/CORS errors — let the next real query surface the issue
     }
   }
 
