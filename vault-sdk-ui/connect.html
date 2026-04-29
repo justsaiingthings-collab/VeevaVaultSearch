@@ -1128,8 +1128,6 @@
       <div id="disc-results" style="display:none;"></div>
     </div>
     <div class="card-footer" id="step4-footer" style="display:none;">
-      <button class="btn btn-secondary" onclick="skipDiscovery()" style="font-size:13px;">Skip</button>
-      <div class="spacer"></div>
       <button class="btn btn-primary" id="btn-open-after-disc" onclick="openSearch()">
         Open VaultSearch
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
@@ -1974,8 +1972,14 @@
         }
       } catch (e) { discSetItem('objects', 'error', e.message); }
 
-      // ── 4. Lifecycle states (facet probe) ───────────────────
+      // ── 4. Lifecycle states ─────────────────────────────────
+      // Primary: X-VaultAPI-Facets header (fast, 1-doc query).
+      // Fallback: sample up to 100 latest documents and collect
+      //   unique lifecycle_state__v values directly from results.
+      //   Required for vaults (PromoMats, RIM) where facets are
+      //   disabled or return empty for lifecycle_state__v.
       discSetItem('states', 'running', 'Querying live lifecycle states…');
+      let facetStatesFound = false;
       try {
         const r = await discFetch('/query', {
           method:       'POST',
@@ -1990,11 +1994,45 @@
           facets = json.facets || null;
           const sf = facets?.find(f => f.name === 'lifecycle_state__v');
           const cnt = sf?.values?.length || 0;
-          discSetItem('states', 'done', `${cnt} lifecycle state${cnt !== 1 ? 's' : ''} discovered`);
-        } else {
-          discSetItem('states', 'error', json.responseMessage || 'API error');
+          if (cnt > 0) {
+            facetStatesFound = true;
+            discSetItem('states', 'done', `${cnt} lifecycle state${cnt !== 1 ? 's' : ''} discovered`);
+          }
         }
-      } catch (e) { discSetItem('states', 'error', e.message); }
+      } catch (_) { /* fall through to sample query */ }
+
+      // Fallback: sample real documents when facets returned nothing
+      if (!facetStatesFound) {
+        try {
+          const r2 = await discFetch('/query', {
+            method:   'POST',
+            postBody: 'q=' + encodeURIComponent(
+              'SELECT lifecycle_state__v FROM documents WHERE is_latest_version__v = true LIMIT 100'
+            ),
+          });
+          const j2 = await r2.json();
+          if (j2.responseStatus === 'SUCCESS' && Array.isArray(j2.data)) {
+            const seen = new Set();
+            const sampled = [];
+            j2.data.forEach(d => {
+              const s = d.lifecycle_state__v;
+              if (s && !seen.has(s)) { seen.add(s); sampled.push({ value: s }); }
+            });
+            if (sampled.length > 0) {
+              // Inject as a synthetic facet so synthesizeSchema picks it up
+              facets = [{ name: 'lifecycle_state__v', values: sampled }];
+              discSetItem('states', 'done',
+                `${sampled.length} lifecycle state${sampled.length !== 1 ? 's' : ''} discovered`);
+            } else {
+              discSetItem('states', 'done', '0 lifecycle states — queries will run without state filters');
+            }
+          } else {
+            discSetItem('states', 'done', '0 lifecycle states — queries will run without state filters');
+          }
+        } catch (e2) {
+          discSetItem('states', 'error', e2.message);
+        }
+      }
 
       // ── Synthesize and save ─────────────────────────────────
       const schema = synthesizeSchema(docTypes, docFields, vaultObjects, facets);

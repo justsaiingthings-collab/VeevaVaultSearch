@@ -550,6 +550,7 @@
     /* FIX: padding is INSIDE .open — zero padding when collapsed */
     .vql-preview {
       background: #1A1E2E;
+      color: #CDD6F4;            /* bright near-white — high contrast on dark bg */
       border-bottom: 1px solid #0D1117;
       font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
       font-size: 11.5px;
@@ -558,6 +559,8 @@
       max-height: 0;
       padding: 0 18px;          /* zero top/bottom padding when closed */
       transition: max-height 0.22s var(--v-ease), padding 0.22s var(--v-ease);
+      white-space: pre-wrap;     /* preserve VQL line breaks, wrap long lines */
+      word-break: break-all;     /* prevent horizontal scroll on very long clauses */
     }
 
     .vql-preview.open {
@@ -2383,11 +2386,21 @@ const VAULT_CONFIG = (() => {
   return cfg;
 })();
 
+// ── Schema-discovered config (middle tier) ──────────────────────
+// Populated at runtime by applyVaultSchema() when a vault_schema is
+// present in localStorage. Sits between manual overrides and defaults
+// so that auto-discovered values win over defaults but never override
+// an intentional manual setting from the ⚙ config modal.
+//
+// Priority chain: VAULT_CONFIG (manual) > SCHEMA_CONFIG (discovered) > VAULT_CONFIG_DEFAULTS (hardcoded)
+let SCHEMA_CONFIG = {};
+
 // Convenience accessor — short alias
-const VC = key => VAULT_CONFIG[key] || VAULT_CONFIG_DEFAULTS[key] || '';
+const VC = key => VAULT_CONFIG[key] || SCHEMA_CONFIG[key] || VAULT_CONFIG_DEFAULTS[key] || '';
 
 // Global shorthand for the lifecycle-state field name (e.g. 'lifecycle_state__v').
 // Used for bracket-notation property access on doc/version objects: doc[ST]
+// lifecycle_state__v is the standard Vault field name — it never changes across tenants.
 const ST = VC('field_state') || 'lifecycle_state__v';
 
 /* ── SCHEMA APPLICATION ──────────────────────────────────────
@@ -2483,6 +2496,24 @@ function applyVaultSchema() {
       savedSection.insertAdjacentElement('beforebegin', objSection);
     }
   }
+
+  // ── Apply discovered config → SCHEMA_CONFIG → rebuild VQL ─────
+  // schema.config keys (type_sop, state_approved, field_study, …) exactly
+  // match VAULT_CONFIG_DEFAULTS keys. Merging them here means every VQL
+  // template will use this tenant's actual type/field/state API names
+  // instead of hardcoded defaults — making the system schema-agnostic.
+  //
+  // Manual overrides saved via ⚙ config modal (in VAULT_CONFIG) always
+  // take precedence over auto-discovered values (VC() checks VAULT_CONFIG first).
+  const discoveredCfg = schema.config || {};
+  if (Object.keys(discoveredCfg).length > 0) {
+    Object.assign(SCHEMA_CONFIG, discoveredCfg);
+    // Rebuild all VQL template strings with the discovered names.
+    // buildVQLRAW() is a pure interpolation function — cheap to re-run.
+    VQL_RAW = buildVQLRAW();
+    // Bust the VQL result cache so stale hardcoded-name queries aren't served.
+    if (typeof VQL_CACHE !== 'undefined') VQL_CACHE.clear();
+  }
 }
 
 // ── Object-type → enriched field set mapping ───────────────────
@@ -2561,95 +2592,128 @@ function buildVQLRAW() {
   const CAPA = VC('field_capa_link');
   const STU  = VC('field_study');
   const OBS  = VC('state_obsolete');
+
+  // ── State guard ──────────────────────────────────────────────
+  // Vault validates lifecycle state string literals at PARSE TIME against the
+  // picklist for that vault. Using a state name that doesn't exist in this
+  // tenant's lifecycle (e.g. 'open__v' in a PromoMats/RIM vault) causes:
+  //   "Unknown token ['open__v'] found near position N"
+  // We only add state filters when we have verified state API names —
+  // either auto-discovered via schema discovery or explicitly set in ⚙ config.
+  //
+  // When no states are known, queries run without state filters and return
+  // all matching documents (safe fallback, no VQL errors).
+  const anyStateKnown =
+    Object.keys(SCHEMA_CONFIG).some(k => k.startsWith('state_')) ||
+    Object.keys(VAULT_CONFIG).some(k => k.startsWith('state_'));
+
+  // Conditional filter snippets — each includes its leading AND so templates
+  // can append them directly. Empty string = filter omitted entirely.
+  const F_APPROVED = anyStateKnown ? `AND ${ST} IN ${APPROVED_STATES}` : '';
+  const F_OPEN     = anyStateKnown ? `AND ${ST} IN ${OPEN_STATES}` : '';
+  const F_CLOSED   = anyStateKnown ? `AND ${ST} = '${VC('state_closed')}'` : '';
+  const F_DRAFT    = anyStateKnown ? `AND ${ST} = '${VC('state_draft')}'` : '';
+  const F_PENDING  = anyStateKnown ? `AND ${ST} = '${VC('state_pending_approval')}'` : '';
+  const F_NOT_OBS  = anyStateKnown ? `AND ${ST} != '${OBS}'` : '';
+  // For tmf_incomplete: exclude completed/approved/obsolete states
+  const F_TMF_EXCL = anyStateKnown
+    ? `AND ${ST} NOT IN ('${VC('state_approved')}','${VC('state_effective')}','${VC('state_closed')}','${OBS}')`
+    : '';
+  // For etmf_by_study: exclude closed and obsolete
+  const F_NOT_CLOSED_OBS = anyStateKnown
+    ? `AND ${ST} NOT IN ('${OBS}','${VC('state_closed')}')`
+    : '';
+
   return {
     sop_approved:
-      `${SEL_BASE} WHERE type__v = '${VC('type_sop')}' AND ${ST} IN ${APPROVED_STATES} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
+      `${SEL_BASE} WHERE type__v = '${VC('type_sop')}' ${F_APPROVED} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
     sop_expiring_soon:
-      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${EXP}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_sop')}' AND ${ST} IN ${APPROVED_STATES} AND is_latest_version__v = true AND ${EXP} <= dateadd(now(), 90, 'day') ORDER BY ${EXP} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${EXP}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_sop')}' ${F_APPROVED} AND is_latest_version__v = true AND ${EXP} <= dateadd(now(), 90, 'day') ORDER BY ${EXP} ASC LIMIT ${ps}`,
     deviation_all_open:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${VC('field_dev_type')}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND ${ST} IN ${OPEN_STATES} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${VC('field_dev_type')}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' ${F_OPEN} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
     deviation_high_severity:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${VC('field_dev_type')}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND ${SEV} IN ('${VC('sev_critical')}','${VC('sev_major')}') AND ${ST} IN ${OPEN_STATES} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${VC('field_dev_type')}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND ${SEV} IN ('${VC('sev_critical')}','${VC('sev_major')}') ${F_OPEN} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
     capa_open:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${PRI}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' AND ${ST} IN ${OPEN_STATES} AND is_latest_version__v = true LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${PRI}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' ${F_OPEN} AND is_latest_version__v = true LIMIT ${ps}`,
     capa_closed:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' AND ${ST} = '${VC('state_closed')}' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' ${F_CLOSED} AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
     capa_high_severity:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${PRI}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' AND ${SEV} IN ('${VC('sev_critical')}','${VC('sev_major')}') AND ${ST} IN ${OPEN_STATES} AND is_latest_version__v = true LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${PRI}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' AND ${SEV} IN ('${VC('sev_critical')}','${VC('sev_major')}') ${F_OPEN} AND is_latest_version__v = true LIMIT ${ps}`,
     capa_overdue:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${EXP}, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' AND ${ST} IN ${OPEN_STATES} AND ${EXP} < now() AND is_latest_version__v = true LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${EXP}, owner__v FROM documents WHERE type__v = '${VC('type_capa')}' ${F_OPEN} AND ${EXP} < now() AND is_latest_version__v = true LIMIT ${ps}`,
     audit_ready_docs:
-      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, last_modified_date__v, owner__v FROM documents WHERE ${ST} IN ${APPROVED_STATES} AND ${GXP} = true AND is_latest_version__v = true ORDER BY type__v ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, last_modified_date__v, owner__v FROM documents WHERE is_latest_version__v = true ${F_APPROVED} AND ${GXP} = true ORDER BY type__v ASC LIMIT ${ps}`,
     time_last_30_days_changes:
       `${SEL_BASE} WHERE last_modified_date__v >= dateadd(now(), -30, 'day') AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
     doc_all_accessible:
-      `${SEL_BASE} WHERE is_latest_version__v = true AND ${ST} != '${OBS}' ORDER BY last_modified_date__v DESC LIMIT 100`,
+      `${SEL_BASE} WHERE is_latest_version__v = true ${F_NOT_OBS} ORDER BY last_modified_date__v DESC LIMIT 100`,
     periodic_review_overdue:
-      `SELECT id, name__v, type__v, ${ST}, ${REV}, owner__v FROM documents WHERE ${ST} IN ${APPROVED_STATES} AND ${REV} < now() AND is_latest_version__v = true ORDER BY ${REV} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${REV}, owner__v FROM documents WHERE is_latest_version__v = true ${F_APPROVED} AND ${REV} < now() ORDER BY ${REV} ASC LIMIT ${ps}`,
     periodic_review_due_soon:
-      `SELECT id, name__v, type__v, ${ST}, ${REV}, owner__v FROM documents WHERE ${ST} IN ${APPROVED_STATES} AND ${REV} >= now() AND ${REV} <= dateadd(now(), 90, 'day') AND is_latest_version__v = true ORDER BY ${REV} ASC LIMIT ${ps}`,
-    awaiting_approval:
-      `${SEL_BASE} WHERE ${ST} = '${VC('state_pending_approval')}' AND is_latest_version__v = true ORDER BY last_modified_date__v ASC LIMIT ${ps}`,
-    stale_drafts:
-      `${SEL_BASE} WHERE ${ST} = '${VC('state_draft')}' AND last_modified_date__v < dateadd(now(), -90, 'day') AND is_latest_version__v = true ORDER BY last_modified_date__v ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${REV}, owner__v FROM documents WHERE is_latest_version__v = true ${F_APPROVED} AND ${REV} >= now() AND ${REV} <= dateadd(now(), 90, 'day') ORDER BY ${REV} ASC LIMIT ${ps}`,
+    awaiting_approval: anyStateKnown
+      ? `${SEL_BASE} WHERE ${ST} = '${VC('state_pending_approval')}' AND is_latest_version__v = true ORDER BY last_modified_date__v ASC LIMIT ${ps}`
+      : `${SEL_BASE} WHERE is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+    stale_drafts: anyStateKnown
+      ? `${SEL_BASE} WHERE ${ST} = '${VC('state_draft')}' AND last_modified_date__v < dateadd(now(), -90, 'day') AND is_latest_version__v = true ORDER BY last_modified_date__v ASC LIMIT ${ps}`
+      : `${SEL_BASE} WHERE last_modified_date__v < dateadd(now(), -90, 'day') AND is_latest_version__v = true ORDER BY last_modified_date__v ASC LIMIT ${ps}`,
     tmf_incomplete:
-      `SELECT id, name__v, type__v, ${ST}, ${STU}, last_modified_date__v, owner__v FROM documents WHERE ${STU} != null AND ${ST} NOT IN ('${VC('state_approved')}','${VC('state_effective')}','${VC('state_closed')}','${OBS}') AND is_latest_version__v = true ORDER BY ${STU}, type__v ASC LIMIT ${ps}`,
-    ctd_modules_draft:
-      `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' AND ${ST} = '${VC('state_draft')}' AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${STU}, last_modified_date__v, owner__v FROM documents WHERE ${STU} != null ${F_TMF_EXCL} AND is_latest_version__v = true ORDER BY ${STU}, type__v ASC LIMIT ${ps}`,
+    ctd_modules_draft: anyStateKnown
+      ? `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' AND ${ST} = '${VC('state_draft')}' AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`
+      : `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
     labelling_expiring_60:
-      `SELECT id, name__v, type__v, ${ST}, ${EXP}, owner__v FROM documents WHERE type__v = '${VC('type_regulatory')}' AND ${EXP} > now() AND ${EXP} <= dateadd(now(), 60, 'day') AND ${ST} IN ${APPROVED_STATES} AND is_latest_version__v = true ORDER BY ${EXP} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${EXP}, owner__v FROM documents WHERE type__v = '${VC('type_regulatory')}' AND ${EXP} > now() AND ${EXP} <= dateadd(now(), 60, 'day') ${F_APPROVED} AND is_latest_version__v = true ORDER BY ${EXP} ASC LIMIT ${ps}`,
     deviation_without_capa:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND ${ST} IN ${OPEN_STATES} AND ${CAPA} = null AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' ${F_OPEN} AND ${CAPA} = null AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
     // LIKE '%...%' is universally valid VQL for partial name matching.
     // In live mode this is overridden by FIND (name_search_find / name_search_fuzzy)
     // for simple alphanumeric queries; LIKE is the safe fallback for complex expressions.
     name_search:
-      `${SEL_BASE} WHERE name__v LIKE '%{QUERY}%' AND ${ST} != '${OBS}' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+      `${SEL_BASE} WHERE name__v LIKE '%{QUERY}%' ${F_NOT_OBS} AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
     // v26.1: archived_documents object (native support added in v26.1 SDK)
     doc_archived:
       `SELECT id, name__v, type__v, ${ST}, major_version_number__v, minor_version_number__v, last_modified_date__v, owner__v FROM archived_documents WHERE is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
     // v26.1: FIND clause with optional DISTANCE() for typo-tolerant search
-    // Searches across document_number__v, name__v, and full-text index.
-    // Only used in live mode (demo falls back to name_search CONTAINS logic).
     name_search_find:
-      `${SEL_BASE} FIND '{QUERY}' SCOPE document_number__v, name__v WHERE ${ST} != '${OBS}' AND is_latest_version__v = true LIMIT ${ps}`,
+      `${SEL_BASE} FIND '{QUERY}' SCOPE document_number__v, name__v WHERE is_latest_version__v = true ${F_NOT_OBS} LIMIT ${ps}`,
     name_search_fuzzy:
-      `${SEL_BASE} FIND '{QUERY}' DISTANCE(1) SCOPE document_number__v, name__v WHERE ${ST} != '${OBS}' AND is_latest_version__v = true LIMIT ${ps}`,
-    // v26.1: FIND SCOPE DOCUMENTS — searches full document body text via Vault's full-text index.
-    // Used as a zero-result fallback when metadata FIND returns nothing.
-    // Broader than name/number scope but slower; only triggered automatically on 0-result retry.
+      `${SEL_BASE} FIND '{QUERY}' DISTANCE(1) SCOPE document_number__v, name__v WHERE is_latest_version__v = true ${F_NOT_OBS} LIMIT ${ps}`,
+    // v26.1: FIND SCOPE DOCUMENTS — searches full document body text.
     name_search_fulltext:
-      `${SEL_BASE} FIND '{QUERY}' SCOPE DOCUMENTS WHERE ${ST} != '${OBS}' AND is_latest_version__v = true LIMIT ${ps}`,
+      `${SEL_BASE} FIND '{QUERY}' SCOPE DOCUMENTS WHERE is_latest_version__v = true ${F_NOT_OBS} LIMIT ${ps}`,
 
     // ── eTMF (Trial Master File) pack ─────────────────────────────────────────
     etmf_all_docs:
       `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${STU}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'TMF__c' AND is_latest_version__v = true ORDER BY ${STU}, name__v ASC LIMIT ${ps}`,
     etmf_by_study:
-      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${STU}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'TMF__c' AND ${STU} != null AND ${ST} NOT IN ('${OBS}','${VC('state_closed')}') AND is_latest_version__v = true ORDER BY ${STU}, type__v ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${STU}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'TMF__c' AND ${STU} != null ${F_NOT_CLOSED_OBS} AND is_latest_version__v = true ORDER BY ${STU}, type__v ASC LIMIT ${ps}`,
 
     // ── RIM (Regulatory Information Management) pack ──────────────────────────
-    rim_submissions:
-      `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' AND ${ST} IN ('submitted__v','pending_approval__v','${VC('state_in_review')}') AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+    rim_submissions: anyStateKnown
+      ? `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' AND ${ST} IN ('${VC('state_in_review')}','${VC('state_pending_approval')}') AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`
+      : `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
     rim_approved_labels:
-      `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' AND ${ST} IN ${APPROVED_STATES} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
+      `${SEL_BASE} WHERE type__v = '${VC('type_regulatory')}' ${F_APPROVED} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
 
     // ── Safety pack ───────────────────────────────────────────────────────────
     safety_adverse_events:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'AdverseEvent__c' AND ${ST} IN ${OPEN_STATES} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
-    safety_open_cases:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v IN ('AdverseEvent__c','SafetyCase__c') AND ${ST} != '${VC('state_closed')}' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'AdverseEvent__c' ${F_OPEN} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+    safety_open_cases: anyStateKnown
+      ? `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v IN ('AdverseEvent__c','SafetyCase__c') AND ${ST} != '${VC('state_closed')}' AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`
+      : `SELECT id, name__v, type__v, ${ST}, ${SEV}, last_modified_date__v, owner__v FROM documents WHERE type__v IN ('AdverseEvent__c','SafetyCase__c') AND is_latest_version__v = true ORDER BY last_modified_date__v DESC LIMIT ${ps}`,
 
     // ── PromoMats pack ────────────────────────────────────────────────────────
     promomats_approved:
-      `${SEL_BASE} WHERE type__v = 'PromotionalMaterial__c' AND ${ST} IN ${APPROVED_STATES} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
+      `${SEL_BASE} WHERE type__v = 'PromotionalMaterial__c' ${F_APPROVED} AND is_latest_version__v = true ORDER BY name__v ASC LIMIT ${ps}`,
     promomats_expiring:
-      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${EXP}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'PromotionalMaterial__c' AND ${EXP} > now() AND ${EXP} <= dateadd(now(), 90, 'day') AND ${ST} IN ${APPROVED_STATES} AND is_latest_version__v = true ORDER BY ${EXP} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, major_version_number__v, ${EXP}, last_modified_date__v, owner__v FROM documents WHERE type__v = 'PromotionalMaterial__c' AND ${EXP} > now() AND ${EXP} <= dateadd(now(), 90, 'day') ${F_APPROVED} AND is_latest_version__v = true ORDER BY ${EXP} ASC LIMIT ${ps}`,
 
     // ── Additional Deviation templates ────────────────────────────────────────
     deviation_linked_capa:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${CAPA}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND ${ST} IN ${OPEN_STATES} AND ${CAPA} != null AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${CAPA}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' ${F_OPEN} AND ${CAPA} != null AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
     deviation_sop_violations:
-      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${VC('field_dev_type')}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND ${VC('field_dev_type')} = 'procedural__v' AND ${ST} IN ${OPEN_STATES} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
+      `SELECT id, name__v, type__v, ${ST}, ${SEV}, ${VC('field_dev_type')}, last_modified_date__v, owner__v FROM documents WHERE type__v = '${VC('type_deviation')}' AND ${VC('field_dev_type')} = 'procedural__v' ${F_OPEN} AND is_latest_version__v = true ORDER BY ${SEV} ASC LIMIT ${ps}`,
   };
 }
 
@@ -3686,41 +3750,54 @@ async function loadMore() {
    COUNT(*) VQL queries in live mode. Each card is clickable
    and fires the underlying template.
 ─────────────────────────────────────────────────────────── */
+// KPI cards — liveVql is an arrow function (not a string literal) so it
+// calls VC() at query time. This means schema-discovered type/state names
+// are used even though SCHEMA_CONFIG is populated after KPI_CARDS is defined.
 const KPI_CARDS = [
   {
     label:  'All Documents',
     tid:    'doc_all_accessible',
     color:  'var(--v-blue)',
     countFn: docs => docs.length,
-    liveVql: `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true`,
+    liveVql: () => `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true`,
   },
   {
     label:  'Approved / Effective',
     tid:    'sop_approved',
     color:  'var(--v-green)',
     countFn: docs => docs.filter(d => ['approved__v','effective__v'].includes(d[ST])).length,
-    liveVql: `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true AND ${ST} IN ('approved__v','effective__v')`,
+    liveVql: () => `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true AND ${VC('field_state')} IN ('${VC('state_approved')}','${VC('state_effective')}')`,
   },
   {
     label:  'Open CAPAs',
     tid:    'capa_open',
     color:  'var(--v-orange)',
     countFn: docs => docs.filter(d => d.type__v === 'CAPA__c' && d[ST] === 'open__v').length,
-    liveVql: `SELECT COUNT(*) FROM documents WHERE type__v = 'CAPA__c' AND ${ST} = 'open__v'`,
+    liveVql: () => {
+      const capaType  = VC('type_capa');
+      const openState = VC('state_open');
+      // If no CAPA document type was discovered, skip the KPI (returns null → falls back to demo count)
+      if (!capaType) return null;
+      return `SELECT COUNT(*) FROM documents WHERE type__v = '${capaType}' AND ${VC('field_state')} = '${openState}'`;
+    },
   },
   {
     label:  'Review Overdue',
     tid:    'periodic_review_overdue',
     color:  'var(--v-red)',
     countFn: docs => { const now = new Date().toISOString().split('T')[0]; return docs.filter(d => d.review_due && d.review_due < now).length; },
-    liveVql: `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true AND review_due_date__v <= '${new Date().toISOString().split('T')[0]}'`,
+    liveVql: () => {
+      const reviewField = VC('field_review_date') || 'review_due_date__v';
+      const today = new Date().toISOString().split('T')[0];
+      return `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true AND ${reviewField} <= '${today}'`;
+    },
   },
   {
     label:  'Awaiting Approval',
     tid:    'awaiting_approval',
     color:  'var(--v-amber)',
     countFn: docs => docs.filter(d => ['pending_approval__v','in_review__v'].includes(d[ST])).length,
-    liveVql: `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true AND ${ST} IN ('pending_approval__v','in_review__v')`,
+    liveVql: () => `SELECT COUNT(*) FROM documents WHERE is_latest_version__v = true AND ${VC('field_state')} IN ('${VC('state_pending_approval')}','${VC('state_in_review')}')`,
   },
   {
     label:  'Expiring ≤60d',
@@ -3755,10 +3832,16 @@ async function loadKpiDashboard() {
   // ── Batch all COUNT queries in parallel via Promise.all ─────────
   // Routes through executeVQL() which applies the 60s VQL cache, so
   // repeat calls within a minute are served from memory — no Vault round-trips.
-  const counts = await Promise.all(KPI_CARDS.map(async card => {
-    if (LIVE && card.liveVql) {
+  // Resolve lazy liveVql functions at call time so schema-discovered names are used
+  const resolvedVqls = KPI_CARDS.map(card =>
+    typeof card.liveVql === 'function' ? card.liveVql() : card.liveVql
+  );
+
+  const counts = await Promise.all(KPI_CARDS.map(async (card, i) => {
+    const vql = resolvedVqls[i];
+    if (LIVE && vql) {
       try {
-        const res = await executeVQL(card.liveVql);
+        const res = await executeVQL(vql);
         return (res.data && res.data[0]) ? (res.data[0]['COUNT(*)'] ?? res.data[0].count ?? 0) : 0;
       } catch { /* fall through to demo count */ }
     }
@@ -3766,7 +3849,7 @@ async function loadKpiDashboard() {
   }));
 
   const fromCache = LIVE && counts.every((_, i) => {
-    const key = KPI_CARDS[i].liveVql ? KPI_CARDS[i].liveVql.trim().replace(/\s+/g,' ') : null;
+    const key = resolvedVqls[i] ? resolvedVqls[i].trim().replace(/\s+/g,' ') : null;
     return key && VQL_CACHE.has(key);
   });
 
