@@ -726,6 +726,86 @@
       font-size:11.5px; padding:3px 10px; border-radius:20px;
       background:var(--c-surface); border:1px solid var(--c-border); color:var(--c-text-2);
     }
+
+    /* ── Config Preview Panel (Schema Discovery step) ────────────── */
+    .cfg-preview-wrap {
+      margin-top: 18px;
+      border: 1px solid var(--c-border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .cfg-preview-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--c-bg);
+      border-bottom: 1px solid var(--c-border);
+    }
+    .cfg-preview-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .cfg-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .cfg-row:nth-child(even) { background: var(--c-bg); }
+    .cfg-row:nth-child(odd)  { background: var(--c-surface); }
+    .cfg-key-cell {
+      padding: 9px 14px;
+      width: 46%;
+      vertical-align: middle;
+    }
+    .cfg-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--c-text);
+      display: block;
+    }
+    .cfg-val-cell {
+      padding: 7px 14px 7px 0;
+      vertical-align: middle;
+    }
+    .cfg-input {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid var(--c-border);
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-family: monospace;
+      color: var(--c-text);
+      background: var(--c-surface);
+      transition: border-color var(--transition);
+    }
+    .cfg-input:focus {
+      outline: none;
+      border-color: var(--c-border-focus);
+      box-shadow: 0 0 0 3px rgba(74,108,247,.12);
+    }
+    .cfg-src-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 2px;
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+    .cfg-src-auto    { background: #DBEAFE; color: #1D4ED8; }
+    .cfg-src-manual  { background: #FEF9C3; color: #92400E; }
+    .cfg-src-default { background: #F3F4F6; color: #6B7280; }
+    .cfg-save-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 10px 14px;
+      border-top: 1px solid var(--c-border);
+      background: var(--c-bg);
+    }
   </style>
 </head>
 <body>
@@ -2224,7 +2304,43 @@
       const objects  = schema.object_types?.length || 0;
       const states   = schema.lifecycle_states?.length || 0;
       const extras   = schema.extra_doc_types || [];
-      const overrides = Object.keys(schema.config || {}).filter(k => !k.includes('is_object')).length;
+      const cfg      = schema.config || {};
+      const overrides = Object.keys(cfg).filter(k => !k.includes('is_object')).length;
+
+      // ── Build config preview rows ────────────────────────────────────────
+      // Show the key type/field mappings so the user can verify and edit them
+      // before opening VaultSearch. Edits are written to vault_config in localStorage.
+      const PREVIEW_KEYS = [
+        { key: 'type_sop',       label: 'SOP document type',         tip: 'e.g. Standard_Operating_Procedure__c' },
+        { key: 'type_deviation', label: 'Deviation document type',    tip: 'e.g. Deviation__c  (or leave blank if tracked as Vault Object)' },
+        { key: 'type_capa',      label: 'CAPA document type',         tip: 'e.g. CAPA__c  (or leave blank if tracked as Vault Object)' },
+        { key: 'type_protocol',  label: 'Protocol document type',     tip: 'e.g. Protocol__c' },
+        { key: 'field_state',    label: 'Lifecycle state field',      tip: 'lifecycle_state__v  or  status__v' },
+        { key: 'field_severity', label: 'Severity field',             tip: 'e.g. severity__v  or  risk_level__c' },
+        { key: 'field_product',  label: 'Product field',              tip: 'e.g. product__v  or  product_name__c' },
+      ];
+
+      // Merge any existing manual vault_config so edits survive a re-discovery
+      let existingManual = {};
+      try { existingManual = JSON.parse(localStorage.getItem('vault_config') || '{}'); } catch {}
+
+      const previewRows = PREVIEW_KEYS.map(({ key, label, tip }) => {
+        const val = existingManual[key] ?? cfg[key] ?? '';
+        const source = existingManual[key] ? 'manual' : cfg[key] ? 'auto' : 'default';
+        const badgeClass = source === 'manual' ? 'cfg-src-manual' : source === 'auto' ? 'cfg-src-auto' : 'cfg-src-default';
+        const badgeLabel = source === 'manual' ? 'Manual' : source === 'auto' ? 'Auto' : 'Default';
+        return `
+          <tr class="cfg-row">
+            <td class="cfg-key-cell">
+              <span class="cfg-label">${escHtml(label)}</span>
+              <span class="cfg-src-badge ${badgeClass}">${badgeLabel}</span>
+            </td>
+            <td class="cfg-val-cell">
+              <input class="cfg-input" type="text" data-cfgkey="${escHtml(key)}"
+                     value="${escHtml(val)}" placeholder="${escHtml(tip)}" />
+            </td>
+          </tr>`;
+      }).join('');
 
       panel.innerHTML = `
         <div class="app-type-card">
@@ -2248,19 +2364,77 @@
             <div class="disc-stat-label">Config Keys</div>
           </div>
         </div>
-        ${states > 0 ? `<p style="font-size:12.5px;color:var(--c-text-3);margin:8px 0 4px;">${states} lifecycle states mapped · Query templates rebuilt for <strong style="color:var(--c-text);">${escHtml(schema.app_label)}</strong></p>` : ''}
+        ${states > 0 ? `<p style="font-size:12.5px;color:var(--c-text-3);margin:8px 0 12px;">${states} lifecycle states mapped · Query templates rebuilt for <strong style="color:var(--c-text);">${escHtml(schema.app_label)}</strong></p>` : ''}
         ${extras.length > 0 ? `
-        <div class="extra-types-wrap">
+        <div class="extra-types-wrap" style="margin-bottom:16px;">
           <h4>Additional document types discovered (${extras.length})</h4>
           <div class="extra-types-list">
             ${extras.map(t => `<span class="extra-type-chip">${escHtml(t.emoji)} ${escHtml(t.label)}</span>`).join('')}
           </div>
         </div>` : ''}
+
+        <!-- ── Configuration Preview — editable before opening VaultSearch ── -->
+        <div class="cfg-preview-wrap">
+          <div class="cfg-preview-header">
+            <span class="cfg-preview-icon">⚙</span>
+            <div>
+              <strong>Configuration preview</strong>
+              <p style="font-size:12px;color:var(--c-text-2);margin:2px 0 0;">Review the auto-detected type &amp; field names. Edit any value before opening VaultSearch — changes are saved automatically.</p>
+            </div>
+            <span class="cfg-src-badge cfg-src-auto" style="align-self:flex-start;margin-left:auto;">Auto-detected</span>
+          </div>
+          <table class="cfg-table">
+            <tbody id="cfg-preview-body">
+              ${previewRows}
+            </tbody>
+          </table>
+          <div class="cfg-save-row">
+            <span id="cfg-save-status" style="font-size:12px;color:var(--c-success);display:none;">✓ Saved</span>
+            <button class="btn btn-secondary" style="padding:6px 14px;font-size:13px;" onclick="saveDiscoveryConfig()">Save config</button>
+          </div>
+        </div>
       `;
       panel.style.display = 'block';
+
+      // Auto-save on any input change (debounced 600 ms)
+      let saveDebounce;
+      panel.querySelectorAll('.cfg-input').forEach(inp => {
+        inp.addEventListener('input', () => {
+          clearTimeout(saveDebounce);
+          saveDebounce = setTimeout(saveDiscoveryConfig, 600);
+        });
+      });
+    }
+
+    function saveDiscoveryConfig() {
+      // Collect all edited values from the config preview table
+      const inputs = document.querySelectorAll('#disc-results .cfg-input');
+      if (!inputs.length) return;
+
+      let existing = {};
+      try { existing = JSON.parse(localStorage.getItem('vault_config') || '{}'); } catch {}
+
+      inputs.forEach(inp => {
+        const key = inp.dataset.cfgkey;
+        const val = inp.value.trim();
+        if (key) {
+          if (val) existing[key] = val;
+          else     delete existing[key];   // blank → fall back to schema/defaults
+        }
+      });
+      localStorage.setItem('vault_config', JSON.stringify(existing));
+
+      // Flash "Saved" indicator
+      const status = document.getElementById('cfg-save-status');
+      if (status) {
+        status.style.display = 'inline';
+        setTimeout(() => { status.style.display = 'none'; }, 2000);
+      }
     }
 
     function openSearch() {
+      // Flush any unsaved config-preview edits before navigating
+      saveDiscoveryConfig();
       if (state.sessionToken) {
         // Live: pass credentials via sessionStorage (tab-scoped, cleared on close)
         sessionStorage.setItem('vault_session_token', state.sessionToken);

@@ -2866,21 +2866,30 @@ VQL_RAW = sanitizeVQLMap(buildVQLRAW());
 function normalizeVaultDoc(d) {
   const gxpVal = d[VC('field_gxp')];
   return {
-    id:               d.id,
-    name__v:          d.name__v || d.title__v || '(Untitled)',
-    type__v:          d.type__v || 'Unknown__c',
-    lifecycle_state__v: d[VC('field_state')] || '',
-    major:            d.major_version_number__v ?? 1,
-    minor:            d.minor_version_number__v ?? 0,
-    modified:         (d.last_modified_date__v || '').slice(0, 10),
-    owner:            d.owner__v || '',
-    severity:         d[VC('field_severity')] || null,
-    gxp:              gxpVal === true || gxpVal === 'true',
-    capa:             d[VC('field_capa_link')] || null,
-    expiry:           d[VC('field_expiry')] || null,
-    product:          d[VC('field_product')] || d.product_name__c || null,
-    study:            d[VC('field_study')] || d.clinical_study__c || null,
-    review_due:       d[VC('field_review_date')] || null,
+    id:    d.id,
+    name__v: d.name__v || d.title__v || '(Untitled)',
+    // Vault Documents have type__v; Vault Objects do not — infer from object_type__v or leave blank
+    type__v: d.type__v || d.object_type__v || '',
+    // Documents: VC('field_state') = lifecycle_state__v (or status__v if configured)
+    // Vault Objects: state is in status__v (standard field on all objects)
+    lifecycle_state__v: d[VC('field_state')] || d.status__v || d.lifecycle_state__v || '',
+    // Documents have version numbers; Vault Objects do not
+    major:   d.major_version_number__v ?? null,
+    minor:   d.minor_version_number__v ?? null,
+    // Documents: last_modified_date__v  |  Objects: modified_date__v or created_date__v
+    modified: (d.last_modified_date__v || d.modified_date__v || d.created_date__v || '').slice(0, 10),
+    // Documents: owner__v  |  Objects: owner__v or assigned_user__v
+    owner:   d.owner__v || d.assigned_user__v || '',
+    // Custom fields — works for both documents and objects if the field name matches
+    severity:   d[VC('field_severity')] || d.severity__v || null,
+    gxp:        gxpVal === true || gxpVal === 'true',
+    capa:       d[VC('field_capa_link')] || null,
+    expiry:     d[VC('field_expiry')] || d.due_date__v || null,
+    product:    d[VC('field_product')] || d.product_name__c || null,
+    study:      d[VC('field_study')]   || d.clinical_study__c || null,
+    review_due: d[VC('field_review_date')] || null,
+    // Flag set by runQuery when the row came from a Vault Object query
+    _isVaultObject: d._isVaultObject || false,
   };
 }
 
@@ -2927,8 +2936,13 @@ function vqlCacheSet(vql, payload) {
 
 /** Execute VQL against Vault.
  *  Returns { data: NormalizedDoc[], total: number, nextPageUrl: string|null, fromCache: bool }
+ *  @param {string}  vql            - VQL query string
+ *  @param {string}  nextPageUrl    - Pagination cursor URL (null = first page)
+ *  @param {object}  opts           - Options
+ *  @param {boolean} opts.isObjectQuery - When true, tags each result with _isVaultObject=true
+ *                                       so normalizeVaultDoc maps Vault Object fields correctly.
  */
-async function executeVQL(vql, nextPageUrl = null) {
+async function executeVQL(vql, nextPageUrl = null, { isObjectQuery = false } = {}) {
   // Cache only applies to first-page requests (not pagination continuations)
   if (!nextPageUrl) {
     const cached = vqlCacheGet(vql);
@@ -3004,7 +3018,9 @@ async function executeVQL(vql, nextPageUrl = null) {
   // Pagination cursor: responseDetails.next_page (v26.1 docs canonical).
   // Fallback to raw.next_page and legacy raw.next_page_url for older SDK variants.
   const result = {
-    data:        (raw.data || []).map(normalizeVaultDoc),
+    // When isObjectQuery, inject _isVaultObject: true so normalizeVaultDoc
+    // applies Vault Object field fallbacks (status__v, modified_date__v, etc.)
+    data:        (raw.data || []).map(d => normalizeVaultDoc(isObjectQuery ? { ...d, _isVaultObject: true } : d)),
     total:       raw.responseDetails?.total ?? (raw.data || []).length,
     pageOffset:  raw.responseDetails?.pageoffset ?? 0,
     nextPageUrl: raw.responseDetails?.next_page   // v26.1 canonical location in responseDetails
@@ -3220,35 +3236,76 @@ async function detectObjectSources() {
 
   const probe = async (typeVal) => {
     if (!typeVal) return 'unknown';
-    // COUNT(*) without is_latest_version__v — that field is not filterable in some Vault tenants
-    // (e.g. PromoMats, RIM) and causes a FAILURE responseStatus even though the type exists.
-    // We only need to know if ANY document with this type exists in the documents object.
+    // COUNT(*) probe — does any document exist in the documents table with this type?
+    // If count is 0, the type is almost certainly tracked as a Vault Object instead.
     const vql = `SELECT COUNT(*) FROM documents WHERE type__v = '${typeVal.replace(/'/g, "''")}'`;
     try {
-      // Use executeVQL so the request goes through the proxy (POST, CORS-safe)
       const json = await executeVQL(vql);
       const count = (json.data && json.data[0]) ? (json.data[0]['COUNT(*)'] || 0) : 0;
-      return count > 0 ? 'documents' : 'objects';  // 0 results → likely tracked as Vault Object
+      return count > 0 ? 'documents' : 'objects';
     } catch (err) {
-      // Query failed entirely (field/type not recognized in documents) → assume objects table
       return err.message && err.message.includes('INVALID_SESSION_ID') ? 'unknown' : 'objects';
     }
   };
 
+  // ── Resolve actual Vault Object API name from schema discovery ──────────
+  // Looks up queryable_objects saved by connect.html's schema discovery and
+  // returns the best-matching API name (e.g. "capa__v", "qms_capa__c", etc.).
+  const resolveObjName = (category) => {
+    try {
+      const sc   = JSON.parse(localStorage.getItem('vault_schema') || '{}');
+      const objs = sc.queryable_objects || [];
+      const PATS = {
+        capa:      ['capa', 'corrective_action', 'corrective action', 'corrective_preventive'],
+        deviation: ['deviation', 'non_conformance', 'nonconformance', 'non-conformance'],
+      };
+      for (const pat of (PATS[category] || [])) {
+        const m = objs.find(o =>
+          (o.name  || '').toLowerCase().includes(pat) ||
+          (o.label || '').toLowerCase().includes(pat)
+        );
+        if (m) return m.name;
+      }
+    } catch {}
+    // Fallback to the standard Veeva Vault QMS object API names
+    return category === 'capa' ? 'capa__v' : 'deviation__v';
+  };
+
   OBJECT_SOURCE.capa      = await probe(VC('type_capa'));
   OBJECT_SOURCE.deviation = await probe(VC('type_deviation'));
+
+  // Resolve actual API names when detected as Vault Objects
+  if (OBJECT_SOURCE.capa      === 'objects') OBJECT_SOURCE.capa_obj_name      = resolveObjName('capa');
+  if (OBJECT_SOURCE.deviation === 'objects') OBJECT_SOURCE.deviation_obj_name = resolveObjName('deviation');
+
   sessionStorage.setItem('vault_object_source', JSON.stringify(OBJECT_SOURCE));
 
-  // Warn user if either type resolves to objects (queries will return empty)
-  const warnings = [];
-  if (OBJECT_SOURCE.capa      === 'objects') warnings.push(`CAPA (${VC('type_capa')})`);
-  if (OBJECT_SOURCE.deviation === 'objects') warnings.push(`Deviation (${VC('type_deviation')})`);
-  if (warnings.length) {
-    const w = document.createElement('div');
-    w.style.cssText = 'margin:8px 0;padding:9px 14px;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;font-size:12.5px;color:#92400E;';
-    w.innerHTML = `<strong>⚠ Object type mismatch:</strong> ${warnings.join(' and ')} appear to be stored as <em>Vault Objects</em>, not documents. Queries for these types may return 0 results. Update the type name in <button onclick="openConfigModal()" style="background:none;border:none;color:inherit;font-weight:700;cursor:pointer;text-decoration:underline;padding:0;">Config ⚙</button>.`;
+  // ── Auto-routing notice — replaces old "update config" warning ───────────
+  // Users no longer need to manually fix config; queries are silently rerouted.
+  const autoRouted = [];
+  if (OBJECT_SOURCE.capa      === 'objects') autoRouted.push(`CAPA → <code style="font-family:monospace;background:#D1FAE5;padding:0 3px;border-radius:3px;">${OBJECT_SOURCE.capa_obj_name}</code>`);
+  if (OBJECT_SOURCE.deviation === 'objects') autoRouted.push(`Deviation → <code style="font-family:monospace;background:#D1FAE5;padding:0 3px;border-radius:3px;">${OBJECT_SOURCE.deviation_obj_name}</code>`);
+
+  if (autoRouted.length) {
+    // Remove any stale notice from a previous detection run
+    const old = document.getElementById('obj-route-notice');
+    if (old) old.remove();
+
+    const n = document.createElement('div');
+    n.id = 'obj-route-notice';
+    n.style.cssText = 'margin:8px 0;padding:9px 14px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;font-size:12.5px;color:#166534;display:flex;align-items:center;gap:8px;';
+    n.innerHTML = `<span style="font-size:16px;flex-shrink:0;">✓</span><span><strong>Auto-routing active:</strong> ${autoRouted.join(' and ')} — CAPA/Deviation queries are automatically sent to the Vault Objects API.</span>`;
     const bar = document.getElementById('connectionBanner');
-    if (bar) bar.insertAdjacentElement('afterend', w);
+    if (bar) bar.insertAdjacentElement('afterend', n);
+
+    // Re-run the active query if it's a CAPA/Deviation template —
+    // it may have returned 0 rows before routing was detected.
+    const CAPA_TIDS = new Set(['capa_open','capa_closed','capa_high_severity','capa_overdue']);
+    const DEV_TIDS  = new Set(['deviation_all_open','deviation_high_severity','deviation_without_capa','deviation_linked_capa','deviation_sop_violations']);
+    const curTid = S.currentTid;
+    if (curTid && (CAPA_TIDS.has(curTid) || DEV_TIDS.has(curTid))) {
+      setTimeout(() => runQuery(curTid), 250);
+    }
   }
 }
 
@@ -4389,6 +4446,48 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
     let vql = customVQL || VQL_RAW[tid] || VQL_RAW.doc_all_accessible;
     // Track whether a SCOPE DOCUMENTS full-text fallback is available for 0-result retry
     let fulltextFallbackVql = null;
+    // Flag set when VQL has been rewritten to target a Vault Object table
+    let _isObjectQuery = false;
+
+    // ── Auto-route CAPA/Deviation to Vault Objects API ───────────────────────
+    // When detectObjectSources() determined these types are tracked as Vault Objects
+    // (not documents), we rewrite the VQL to SELECT from the correct object table.
+    // The _isObjectQuery flag causes executeVQL to tag results with _isVaultObject:true
+    // so normalizeVaultDoc applies object-specific field mappings.
+    if (!customVQL && OBJECT_SOURCE) {
+      const ps = VC('page_size') || 20;
+      const CAPA_OBJ_TIDS = ['capa_open','capa_closed','capa_high_severity','capa_overdue'];
+      const DEV_OBJ_TIDS  = ['deviation_all_open','deviation_high_severity','deviation_without_capa',
+                              'deviation_linked_capa','deviation_sop_violations'];
+
+      if (CAPA_OBJ_TIDS.includes(tid) && OBJECT_SOURCE.capa === 'objects' && OBJECT_SOURCE.capa_obj_name) {
+        const obj = OBJECT_SOURCE.capa_obj_name;
+        // Build a WHERE clause appropriate for each CAPA template.
+        // State values use Vault's standard QMS object status picklist values.
+        const WHERE_MAP = {
+          capa_open:          `status__v != 'closed__v'`,
+          capa_closed:        `status__v = 'closed__v'`,
+          capa_high_severity: `severity__v IN ('critical__v','high__v','major__v')`,
+          capa_overdue:       `status__v != 'closed__v' AND due_date__v < TODAY()`,
+        };
+        const wc = WHERE_MAP[tid];
+        vql = `SELECT id, name__v, status__v, created_date__v, assigned_user__v, due_date__v, severity__v FROM ${obj}${wc ? ' WHERE ' + wc : ''} ORDER BY created_date__v DESC LIMIT ${ps}`;
+        _isObjectQuery = true;
+
+      } else if (DEV_OBJ_TIDS.includes(tid) && OBJECT_SOURCE.deviation === 'objects' && OBJECT_SOURCE.deviation_obj_name) {
+        const obj = OBJECT_SOURCE.deviation_obj_name;
+        const WHERE_MAP = {
+          deviation_all_open:       `status__v != 'closed__v'`,
+          deviation_high_severity:  `severity__v IN ('critical__v','high__v','major__v')`,
+          deviation_without_capa:   `status__v != 'closed__v' AND capa_id__c = null`,
+          deviation_linked_capa:    `capa_id__c != null`,
+          deviation_sop_violations: `type__v != null`,
+        };
+        const wc = WHERE_MAP[tid];
+        vql = `SELECT id, name__v, status__v, created_date__v, assigned_user__v, severity__v FROM ${obj}${wc ? ' WHERE ' + wc : ''} ORDER BY created_date__v DESC LIMIT ${ps}`;
+        _isObjectQuery = true;
+      }
+    }
 
     if (tid === 'name_search') {
       // P1-1: Sanitize user query before embedding in VQL.
@@ -4413,16 +4512,22 @@ async function runQuery(tid, { append = false, customVQL = null, customLabel = n
         vql = vql.replace('{QUERY}', safeForLike);
       }
     }
-    // Apply global field name overrides for backward compatibility with non-standard Vaults
-    vql = vql.replace(/lifecycle_state__v/g, VC('field_state'));
+    // Apply global field name overrides — only for document queries.
+    // Object queries use status__v which is a standard field; don't substitute it.
+    if (!_isObjectQuery) {
+      vql = vql.replace(/lifecycle_state__v/g, VC('field_state'));
+    }
 
     PAGE.vql = vql;
 
-    // Apply composition filters (G-09) to the VQL
-    vql = applyCompositionFilters(vql);
+    // Apply composition filters (G-09) — skip for object queries:
+    // last_modified_date__v and owner__v do not exist on Vault Objects.
+    if (!_isObjectQuery) {
+      vql = applyCompositionFilters(vql);
+    }
 
     try {
-      const res = await executeVQL(vql, append ? PAGE.nextUrl : null);
+      const res = await executeVQL(vql, append ? PAGE.nextUrl : null, { isObjectQuery: _isObjectQuery });
       raw          = res.data;
       PAGE.nextUrl = res.nextPageUrl;
       PAGE.total   = append ? PAGE.total : res.total;
